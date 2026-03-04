@@ -136,6 +136,9 @@ class DragDropGrid(QWidget):
             lbl.setStyleSheet("font-weight: bold; padding: 2px;")
             grid.addWidget(lbl, 0, col)
 
+        # Header row: minimum height
+        grid.setRowStretch(0, 0)
+
         # Meal type rows
         for row, meal_type in enumerate(self._meal_types, start=1):
             lbl = QLabel(meal_type)
@@ -148,6 +151,8 @@ class DragDropGrid(QWidget):
                 cell.remove_clicked.connect(self._on_remove)
                 grid.addWidget(cell, row, col)
                 self._cells[(day_idx, meal_type)] = cell
+
+            grid.setRowStretch(row, 1)
 
         scroll = QScrollArea()
         scroll.setWidget(self._grid_widget)
