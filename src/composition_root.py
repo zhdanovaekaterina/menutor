@@ -64,7 +64,7 @@ from src.infrastructure.repositories.sqlite_recipe_repository import (
 class ApplicationContainer:
     """Граф зависимостей всего приложения. Создаётся один раз в main()."""
 
-    def __init__(self, db_path: str = "menutor.db") -> None:
+    def __init__(self, db_path: str = "data/menutor.db") -> None:
         # ── Infrastructure ────────────────────────────────────────────
         conn = get_connection(db_path)
         apply_schema(conn)
