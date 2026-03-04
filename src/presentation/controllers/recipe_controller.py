@@ -5,6 +5,7 @@ from src.application.use_cases.manage_recipe import (
     CreateRecipe,
     DeleteRecipe,
     EditRecipe,
+    ListRecipeCategories,
     ListRecipes,
     RecipeData,
 )
@@ -23,6 +24,7 @@ class RecipeController:
         delete_uc: DeleteRecipe,
         list_uc: ListRecipes,
         list_products_uc: ListProducts,
+        list_categories_uc: ListRecipeCategories,
     ) -> None:
         self._view = view
         self._create_uc = create_uc
@@ -30,6 +32,7 @@ class RecipeController:
         self._delete_uc = delete_uc
         self._list_uc = list_uc
         self._list_products_uc = list_products_uc
+        self._list_categories_uc = list_categories_uc
 
         view.create_recipe_requested.connect(self._on_create)
         view.edit_recipe_requested.connect(self._on_edit)
@@ -43,9 +46,12 @@ class RecipeController:
     def _refresh(self) -> None:
         try:
             recipes = self._list_uc.execute()
+            categories = self._list_categories_uc.execute()
+            self._view._model.set_category_map(dict(categories))
             self._view.set_recipes(recipes)
             products = self._list_products_uc.execute()
             self._view.set_products(products)
+            self._view.set_categories(categories)
         except Exception as exc:
             self._view.show_error(str(exc))
 

@@ -9,7 +9,6 @@ def _make_recipe(servings: int = 2) -> Recipe:
     return Recipe(
         id=RecipeId(1),
         name="Test Recipe",
-        category="test",
         servings=servings,
         ingredients=[
             RecipeIngredient(ProductId(1), Quantity(100.0, "g")),
@@ -55,7 +54,7 @@ def test_scale_to_preserves_metadata() -> None:
     scaled = recipe.scale_to(4)
     assert scaled.id == recipe.id
     assert scaled.name == recipe.name
-    assert scaled.category == recipe.category
+    assert scaled.category_id == recipe.category_id
     assert scaled.dietary_tags == recipe.dietary_tags
     assert scaled.steps == recipe.steps
 

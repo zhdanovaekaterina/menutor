@@ -1,16 +1,17 @@
 from dataclasses import dataclass, field
 
 from src.domain.entities.recipe import Recipe
+from src.domain.ports.recipe_category_repository import RecipeCategoryRepository
 from src.domain.ports.recipe_repository import RecipeRepository
 from src.domain.value_objects.cooking_step import CookingStep
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import RecipeId
+from src.domain.value_objects.types import RecipeCategoryId, RecipeId
 
 
 @dataclass
 class RecipeData:
     name: str
-    category: str
+    category_id: RecipeCategoryId
     servings: int
     ingredients: list[RecipeIngredient] = field(default_factory=list)
     steps: list[CookingStep] = field(default_factory=list)
@@ -25,11 +26,11 @@ class CreateRecipe:
         recipe = Recipe(
             id=RecipeId(0),
             name=data.name,
-            category=data.category,
             servings=data.servings,
             ingredients=list(data.ingredients),
             steps=list(data.steps),
             dietary_tags=list(data.dietary_tags),
+            category_id=data.category_id,
         )
         return self._repo.save(recipe)
 
@@ -44,11 +45,11 @@ class EditRecipe:
         recipe = Recipe(
             id=id,
             name=data.name,
-            category=data.category,
             servings=data.servings,
             ingredients=list(data.ingredients),
             steps=list(data.steps),
             dietary_tags=list(data.dietary_tags),
+            category_id=data.category_id,
         )
         return self._repo.save(recipe)
 
@@ -75,3 +76,11 @@ class ListRecipes:
 
     def execute(self) -> list[Recipe]:
         return self._repo.find_all()
+
+
+class ListRecipeCategories:
+    def __init__(self, repo: RecipeCategoryRepository) -> None:
+        self._repo = repo
+
+    def execute(self) -> list[tuple[int, str]]:
+        return self._repo.find_active()

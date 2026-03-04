@@ -1,6 +1,7 @@
 from src.domain.entities.family_member import FamilyMember
 from src.domain.entities.menu import WeeklyMenu
 from src.domain.entities.shopping_list import ShoppingList, ShoppingListItem
+from src.domain.ports.product_category_repository import ProductCategoryRepository
 from src.domain.ports.product_repository import ProductRepository
 from src.domain.ports.recipe_repository import RecipeRepository
 from src.domain.services.portion_calculator import PortionCalculator
@@ -14,11 +15,13 @@ class ShoppingListBuilder:
         self,
         recipe_repo: RecipeRepository,
         product_repo: ProductRepository,
+        product_category_repo: ProductCategoryRepository,
         portion_calc: PortionCalculator,
         unit_converter: UnitConverter,
     ) -> None:
         self._recipe_repo = recipe_repo
         self._product_repo = product_repo
+        self._product_category_repo = product_category_repo
         self._portion_calc = portion_calc
         self._unit_converter = unit_converter
 
@@ -42,6 +45,8 @@ class ShoppingListBuilder:
                 else:
                     aggregated[pid] = ing.quantity
 
+        category_map = dict(self._product_category_repo.find_active())
+
         items: list[ShoppingListItem] = []
         for product_id, qty in aggregated.items():
             product = self._product_repo.get_by_id(product_id)
@@ -57,7 +62,7 @@ class ShoppingListBuilder:
             items.append(ShoppingListItem(
                 product_id=product_id,
                 product_name=product.name,
-                category=product.category,
+                category=category_map.get(product.category_id, ""),
                 quantity=purchase_qty,
                 cost=cost,
             ))

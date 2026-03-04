@@ -7,7 +7,7 @@ from src.domain.entities.menu import MenuSlot, WeeklyMenu
 from src.domain.entities.product import Product
 from src.domain.entities.recipe import Recipe
 from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import MenuId, ProductId, RecipeId
+from src.domain.value_objects.types import MenuId, ProductCategoryId, ProductId, RecipeCategoryId, RecipeId
 from src.infrastructure.repositories.sqlite_menu_repository import SqliteMenuRepository
 from src.infrastructure.repositories.sqlite_product_repository import SqliteProductRepository
 from src.infrastructure.repositories.sqlite_recipe_repository import SqliteRecipeRepository
@@ -25,11 +25,13 @@ def seeded_recipe(conn: object) -> Recipe:
     product_repo = SqliteProductRepository(c)
     recipe_repo = SqliteRecipeRepository(c)
     p = product_repo.save(Product(
-        id=ProductId(0), name="Мука", category="Сыпучие",
+        id=ProductId(0), name="Мука",
         recipe_unit="g", purchase_unit="kg",
         price_per_purchase_unit=Money(Decimal("80")), conversion_factor=0.001,
+        category_id=ProductCategoryId(1),
     ))
-    return recipe_repo.save(Recipe(RecipeId(0), "Блины", "Завтраки", 4))
+    return recipe_repo.save(Recipe(id=RecipeId(0), name="Блины", servings=4,
+                                   category_id=RecipeCategoryId(1)))
 
 
 def _empty_menu(name: str = "Неделя") -> WeeklyMenu:

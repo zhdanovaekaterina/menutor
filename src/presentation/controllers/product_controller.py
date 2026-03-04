@@ -4,6 +4,7 @@ from src.application.use_cases.manage_product import (
     CreateProduct,
     DeleteProduct,
     EditProduct,
+    ListProductCategories,
     ListProducts,
     ProductData,
 )
@@ -21,12 +22,14 @@ class ProductController:
         edit_uc: EditProduct,
         delete_uc: DeleteProduct,
         list_uc: ListProducts,
+        list_categories_uc: ListProductCategories,
     ) -> None:
         self._view = view
         self._create_uc = create_uc
         self._edit_uc = edit_uc
         self._delete_uc = delete_uc
         self._list_uc = list_uc
+        self._list_categories_uc = list_categories_uc
 
         view.create_product_requested.connect(self._on_create)
         view.edit_product_requested.connect(self._on_edit)
@@ -40,7 +43,10 @@ class ProductController:
     def _refresh(self) -> None:
         try:
             products = self._list_uc.execute()
+            categories = self._list_categories_uc.execute()
+            self._view._model.set_category_map(dict(categories))
             self._view.set_products(products)
+            self._view.set_categories(categories)
         except Exception as exc:
             self._view.show_error(str(exc))
 

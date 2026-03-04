@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 from src.domain.entities.product import Product
 from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import ProductId
+from src.domain.value_objects.types import ProductCategoryId, ProductId
 from src.application.use_cases.manage_product import (
     CreateProduct,
     DeleteProduct,
@@ -19,7 +19,7 @@ from src.application.use_cases.manage_product import (
 def _data(**kwargs) -> ProductData:
     defaults = dict(
         name="Мука",
-        category="Сыпучие",
+        category_id=ProductCategoryId(1),
         recipe_unit="g",
         purchase_unit="kg",
         price=Money(Decimal("80")),
@@ -35,11 +35,11 @@ def _saved_product(id: int = 1) -> Product:
     return Product(
         id=ProductId(id),
         name="Мука",
-        category="Сыпучие",
         recipe_unit="g",
         purchase_unit="kg",
         price_per_purchase_unit=Money(Decimal("80")),
         conversion_factor=0.001,
+        category_id=ProductCategoryId(1),
     )
 
 

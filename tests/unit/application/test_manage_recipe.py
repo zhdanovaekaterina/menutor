@@ -5,7 +5,7 @@ from src.domain.entities.recipe import Recipe
 from src.domain.value_objects.cooking_step import CookingStep
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import ProductId, RecipeId
+from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 from src.application.use_cases.manage_recipe import (
     CreateRecipe,
     DeleteRecipe,
@@ -19,7 +19,7 @@ from src.application.use_cases.manage_recipe import (
 def _data(**kwargs) -> RecipeData:
     defaults = dict(
         name="Паста",
-        category="Основные",
+        category_id=RecipeCategoryId(1),
         servings=4,
         ingredients=[RecipeIngredient(ProductId(1), Quantity(200.0, "g"))],
         steps=[CookingStep(1, "Варить")],
@@ -33,9 +33,9 @@ def _saved_recipe(id: int = 1) -> Recipe:
     return Recipe(
         id=RecipeId(id),
         name="Паста",
-        category="Основные",
         servings=4,
         ingredients=[RecipeIngredient(ProductId(1), Quantity(200.0, "g"))],
+        category_id=RecipeCategoryId(1),
     )
 
 

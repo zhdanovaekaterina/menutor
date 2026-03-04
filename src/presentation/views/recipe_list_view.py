@@ -32,7 +32,7 @@ from src.domain.entities.recipe import Recipe
 from src.domain.value_objects.cooking_step import CookingStep
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import ProductId, RecipeId
+from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 from src.presentation.models.recipe_table_model import RecipeTableModel
 
 DIETARY_TAG_OPTIONS = [
@@ -43,7 +43,7 @@ DIETARY_TAG_OPTIONS = [
     ("диетическое", "diet"),
 ]
 
-UNIT_OPTIONS = ["г", "кг", "мл", "л", "шт", "упак", "кор"]
+UNIT_OPTIONS = ["g", "kg", "ml", "l", "pcs", "box", "pack"]
 
 
 class RecipeListView(QWidget):
@@ -80,7 +80,7 @@ class RecipeListView(QWidget):
         form_layout = QVBoxLayout(form_container)
 
         self._name_edit = QLineEdit()
-        self._category_edit = QLineEdit()
+        self._category_combo = QComboBox()
         self._servings_spin = QSpinBox()
         self._servings_spin.setMinimum(1)
         self._servings_spin.setMaximum(100)
@@ -88,7 +88,7 @@ class RecipeListView(QWidget):
 
         form = QFormLayout()
         form.addRow("Название:", self._name_edit)
-        form.addRow("Категория:", self._category_edit)
+        form.addRow("Категория:", self._category_combo)
         form.addRow("Порций:", self._servings_spin)
         form_layout.addLayout(form)
 
@@ -170,6 +170,17 @@ class RecipeListView(QWidget):
     def set_recipes(self, recipes: list[Recipe]) -> None:
         self._model.set_recipes(recipes)
 
+    def set_categories(self, categories: list[tuple[int, str]]) -> None:
+        current_id = self._category_combo.currentData()
+        self._category_combo.clear()
+        for cat_id, cat_name in categories:
+            self._category_combo.addItem(cat_name, cat_id)
+        if current_id is not None:
+            for i in range(self._category_combo.count()):
+                if self._category_combo.itemData(i) == current_id:
+                    self._category_combo.setCurrentIndex(i)
+                    break
+
     def set_products(self, products: list[Product]) -> None:
         self._products = products
         # Refresh product combos in ingredient table
@@ -221,7 +232,10 @@ class RecipeListView(QWidget):
 
     def _populate_form(self, recipe: Recipe) -> None:
         self._name_edit.setText(recipe.name)
-        self._category_edit.setText(recipe.category)
+        for i in range(self._category_combo.count()):
+            if self._category_combo.itemData(i) == recipe.category_id:
+                self._category_combo.setCurrentIndex(i)
+                break
         self._servings_spin.setValue(recipe.servings)
 
         for cb, value in self._tag_checkboxes:
@@ -252,7 +266,7 @@ class RecipeListView(QWidget):
     def _clear_form(self) -> None:
         self._selected_recipe = None
         self._name_edit.clear()
-        self._category_edit.clear()
+        self._category_combo.setCurrentIndex(0)
         self._servings_spin.setValue(4)
         for cb, _ in self._tag_checkboxes:
             cb.setChecked(False)
@@ -265,7 +279,10 @@ class RecipeListView(QWidget):
         if not name:
             QMessageBox.warning(self, "Ошибка", "Введите название рецепта.")
             return None
-        category = self._category_edit.text().strip() or "Без категории"
+        category_id = self._category_combo.currentData()
+        if category_id is None:
+            QMessageBox.warning(self, "Ошибка", "Выберите категорию рецепта.")
+            return None
         servings = self._servings_spin.value()
         tags = [value for cb, value in self._tag_checkboxes if cb.isChecked()]
 
@@ -292,7 +309,7 @@ class RecipeListView(QWidget):
 
         return RecipeData(
             name=name,
-            category=category,
+            category_id=RecipeCategoryId(category_id),
             servings=servings,
             dietary_tags=tags,
             ingredients=ingredients,

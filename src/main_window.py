@@ -41,6 +41,7 @@ class MainWindow(QMainWindow):
             edit_uc=container.edit_product,
             delete_uc=container.delete_product,
             list_uc=container.list_products,
+            list_categories_uc=container.list_product_categories,
         )
 
         self._recipe_ctrl = RecipeController(
@@ -50,6 +51,7 @@ class MainWindow(QMainWindow):
             delete_uc=container.delete_recipe,
             list_uc=container.list_recipes,
             list_products_uc=container.list_products,
+            list_categories_uc=container.list_recipe_categories,
         )
 
         self._shopping_ctrl = ShoppingListController(

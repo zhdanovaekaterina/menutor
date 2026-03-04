@@ -19,6 +19,7 @@ from src.application.use_cases.manage_product import (
     CreateProduct,
     DeleteProduct,
     EditProduct,
+    ListProductCategories,
     ListProducts,
     UpdateProductPrice,
 )
@@ -27,6 +28,7 @@ from src.application.use_cases.manage_recipe import (
     DeleteRecipe,
     EditRecipe,
     GetRecipe,
+    ListRecipeCategories,
     ListRecipes,
 )
 from src.application.use_cases.plan_menu import (
@@ -53,8 +55,14 @@ from src.infrastructure.repositories.sqlite_family_member_repository import (
     SqliteFamilyMemberRepository,
 )
 from src.infrastructure.repositories.sqlite_menu_repository import SqliteMenuRepository
+from src.infrastructure.repositories.sqlite_product_category_repository import (
+    SqliteProductCategoryRepository,
+)
 from src.infrastructure.repositories.sqlite_product_repository import (
     SqliteProductRepository,
+)
+from src.infrastructure.repositories.sqlite_recipe_category_repository import (
+    SqliteRecipeCategoryRepository,
 )
 from src.infrastructure.repositories.sqlite_recipe_repository import (
     SqliteRecipeRepository,
@@ -74,6 +82,8 @@ class ApplicationContainer:
         product_repo = SqliteProductRepository(conn)
         menu_repo = SqliteMenuRepository(conn)
         family_repo = SqliteFamilyMemberRepository(conn)
+        product_category_repo = SqliteProductCategoryRepository(conn)
+        recipe_category_repo = SqliteRecipeCategoryRepository(conn)
 
         text_exporter = ShoppingListTextExporter()
         csv_exporter = ShoppingListCsvExporter()
@@ -84,6 +94,7 @@ class ApplicationContainer:
         builder = ShoppingListBuilder(
             recipe_repo=recipe_repo,
             product_repo=product_repo,
+            product_category_repo=product_category_repo,
             portion_calc=portion_calc,
             unit_converter=unit_converter,
         )
@@ -94,6 +105,7 @@ class ApplicationContainer:
         self.delete_recipe = DeleteRecipe(recipe_repo)
         self.get_recipe = GetRecipe(recipe_repo)
         self.list_recipes = ListRecipes(recipe_repo)
+        self.list_recipe_categories = ListRecipeCategories(recipe_category_repo)
 
         # ── Application — Products ────────────────────────────────────
         self.create_product = CreateProduct(product_repo)
@@ -101,6 +113,7 @@ class ApplicationContainer:
         self.delete_product = DeleteProduct(product_repo)
         self.update_product_price = UpdateProductPrice(product_repo)
         self.list_products = ListProducts(product_repo)
+        self.list_product_categories = ListProductCategories(product_category_repo)
 
         # ── Application — Menu ────────────────────────────────────────
         self.create_menu = CreateMenu(menu_repo)

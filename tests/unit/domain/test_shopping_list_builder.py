@@ -11,7 +11,7 @@ from src.domain.services.unit_converter import UnitConverter
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import FamilyMemberId, MenuId, ProductId, RecipeId
+from src.domain.value_objects.types import FamilyMemberId, MenuId, ProductCategoryId, ProductId, RecipeId
 
 
 def _product(pid: int, recipe_unit: str = "g", purchase_unit: str = "kg",
@@ -19,7 +19,6 @@ def _product(pid: int, recipe_unit: str = "g", purchase_unit: str = "kg",
     return Product(
         id=ProductId(pid),
         name=f"Product{pid}",
-        category="dry",
         recipe_unit=recipe_unit,
         purchase_unit=purchase_unit,
         price_per_purchase_unit=Money(Decimal(str(price))),
@@ -32,16 +31,20 @@ def _recipe(rid: int, pid: int, amount: float = 200.0,
     return Recipe(
         id=RecipeId(rid),
         name=f"Recipe{rid}",
-        category="test",
         servings=base_servings,
         ingredients=[RecipeIngredient(ProductId(pid), Quantity(amount, recipe_unit))],
     )
 
 
-def _builder(recipe_repo: MagicMock, product_repo: MagicMock) -> ShoppingListBuilder:
+def _builder(recipe_repo: MagicMock, product_repo: MagicMock,
+             product_category_repo: MagicMock | None = None) -> ShoppingListBuilder:
+    if product_category_repo is None:
+        product_category_repo = MagicMock()
+        product_category_repo.find_active.return_value = []
     return ShoppingListBuilder(
         recipe_repo=recipe_repo,
         product_repo=product_repo,
+        product_category_repo=product_category_repo,
         portion_calc=PortionCalculator(),
         unit_converter=UnitConverter(),
     )
@@ -195,15 +198,25 @@ def test_total_cost() -> None:
 def test_items_by_category() -> None:
     r1 = _recipe(1, 1, amount=200.0, recipe_unit="g", base_servings=2)
     r2 = _recipe(2, 2, amount=100.0, recipe_unit="ml", base_servings=2)
-    p1 = Product(ProductId(1), "Flour", "dry", "g", "kg", Money(Decimal("80")),
-                 conversion_factor=0.001)
-    p2 = Product(ProductId(2), "Milk", "dairy", "ml", "l", Money(Decimal("90")),
-                 conversion_factor=0.001)
+    p1 = Product(
+        id=ProductId(1), name="Flour", recipe_unit="g", purchase_unit="kg",
+        price_per_purchase_unit=Money(Decimal("80")),
+        conversion_factor=0.001, category_id=ProductCategoryId(1),
+    )
+    p2 = Product(
+        id=ProductId(2), name="Milk", recipe_unit="ml", purchase_unit="l",
+        price_per_purchase_unit=Money(Decimal("90")),
+        conversion_factor=0.001, category_id=ProductCategoryId(2),
+    )
 
     recipe_repo = MagicMock()
     recipe_repo.get_by_id.side_effect = lambda rid: r1 if rid == RecipeId(1) else r2
     product_repo = MagicMock()
     product_repo.get_by_id.side_effect = lambda pid: p1 if pid == ProductId(1) else p2
+    product_category_repo = MagicMock()
+    product_category_repo.find_active.return_value = [
+        (ProductCategoryId(1), "dry"), (ProductCategoryId(2), "dairy"),
+    ]
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
@@ -212,7 +225,7 @@ def test_items_by_category() -> None:
             MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(2)),
         ],
     )
-    result = _builder(recipe_repo, product_repo).build(menu, [_member(1)])
+    result = _builder(recipe_repo, product_repo, product_category_repo).build(menu, [_member(1)])
     by_cat = result.items_by_category()
 
     assert "dry" in by_cat

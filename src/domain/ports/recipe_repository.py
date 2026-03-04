@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from src.domain.entities.recipe import Recipe
-from src.domain.value_objects.types import RecipeId
+from src.domain.value_objects.types import RecipeCategoryId, RecipeId
 
 
 class RecipeRepository(ABC):
@@ -9,7 +9,7 @@ class RecipeRepository(ABC):
     def get_by_id(self, id: RecipeId) -> Recipe | None: ...
 
     @abstractmethod
-    def find_by_category(self, category: str) -> list[Recipe]: ...
+    def find_by_category_id(self, category_id: RecipeCategoryId) -> list[Recipe]: ...
 
     @abstractmethod
     def find_all(self) -> list[Recipe]: ...

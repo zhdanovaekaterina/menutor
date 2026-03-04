@@ -11,6 +11,7 @@ class ProductTableModel(QAbstractTableModel):
     def __init__(self, products: list[Product] | None = None) -> None:
         super().__init__()
         self._products: list[Product] = products or []
+        self._category_map: dict[int, str] = {}
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self._products)
@@ -37,7 +38,7 @@ class ProductTableModel(QAbstractTableModel):
             if col == 0:
                 return product.name
             if col == 1:
-                return product.category
+                return self._category_map.get(product.category_id, "")
             if col == 2:
                 return product.brand
             if col == 3:
@@ -49,6 +50,9 @@ class ProductTableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.UserRole:
             return product.id
         return None
+
+    def set_category_map(self, category_map: dict[int, str]) -> None:
+        self._category_map = category_map
 
     def set_products(self, products: list[Product]) -> None:
         self.beginResetModel()

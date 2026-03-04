@@ -6,13 +6,15 @@ CREATE TABLE IF NOT EXISTS units (
 
 -- Recipe category catalog
 CREATE TABLE IF NOT EXISTS recipe_categories (
-    name   TEXT PRIMARY KEY,
+    id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    name   TEXT UNIQUE NOT NULL,
     active INTEGER NOT NULL DEFAULT 1
 );
 
 -- Product category catalog
 CREATE TABLE IF NOT EXISTS product_categories (
-    name   TEXT PRIMARY KEY,
+    id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    name   TEXT UNIQUE NOT NULL,
     active INTEGER NOT NULL DEFAULT 1
 );
 
@@ -20,7 +22,7 @@ CREATE TABLE IF NOT EXISTS product_categories (
 CREATE TABLE IF NOT EXISTS products (
     id                      INTEGER PRIMARY KEY AUTOINCREMENT,
     name                    TEXT    NOT NULL,
-    category                TEXT    NOT NULL REFERENCES product_categories(name),
+    category_id             INTEGER NOT NULL REFERENCES product_categories(id),
     brand                   TEXT    NOT NULL DEFAULT '',
     recipe_unit             TEXT    NOT NULL REFERENCES units(name),
     purchase_unit           TEXT    NOT NULL REFERENCES units(name),
@@ -33,7 +35,7 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS recipes (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     name         TEXT    NOT NULL,
-    category     TEXT    NOT NULL REFERENCES recipe_categories(name),
+    category_id  INTEGER NOT NULL REFERENCES recipe_categories(id),
     dietary_tags TEXT    NOT NULL DEFAULT '[]',
     servings     INTEGER NOT NULL DEFAULT 1
 );

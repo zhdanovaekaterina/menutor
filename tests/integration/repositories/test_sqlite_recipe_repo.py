@@ -8,7 +8,7 @@ from src.domain.value_objects.cooking_step import CookingStep
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import ProductId, RecipeId
+from src.domain.value_objects.types import ProductCategoryId, ProductId, RecipeCategoryId, RecipeId
 from src.infrastructure.repositories.sqlite_product_repository import SqliteProductRepository
 from src.infrastructure.repositories.sqlite_recipe_repository import SqliteRecipeRepository
 
@@ -26,10 +26,11 @@ def recipe_repo(conn: object) -> SqliteRecipeRepository:
 @pytest.fixture
 def flour(product_repo: SqliteProductRepository) -> Product:
     return product_repo.save(Product(
-        id=ProductId(0), name="Мука", category="Сыпучие",
+        id=ProductId(0), name="Мука",
         recipe_unit="g", purchase_unit="kg",
         price_per_purchase_unit=Money(Decimal("80")),
         conversion_factor=0.001,
+        category_id=ProductCategoryId(1),
     ))
 
 
@@ -37,11 +38,11 @@ def _pancake_recipe(flour_id: ProductId) -> Recipe:
     return Recipe(
         id=RecipeId(0),
         name="Блины",
-        category="Завтраки",
         servings=4,
         ingredients=[RecipeIngredient(flour_id, Quantity(200.0, "g"))],
         steps=[CookingStep(1, "Смешать"), CookingStep(2, "Пожарить")],
         dietary_tags=["vegetarian"],
+        category_id=RecipeCategoryId(1),  # Завтраки
     )
 
 
@@ -58,7 +59,7 @@ def test_save_and_get_by_id_full_roundtrip(recipe_repo: SqliteRecipeRepository,
 
     assert retrieved is not None
     assert retrieved.name == "Блины"
-    assert retrieved.category == "Завтраки"
+    assert retrieved.category_id == RecipeCategoryId(1)
     assert retrieved.servings == 4
     assert retrieved.dietary_tags == ["vegetarian"]
 
@@ -101,12 +102,13 @@ def test_delete_cascades_to_ingredients_and_steps(recipe_repo: SqliteRecipeRepos
     assert step_count == 0
 
 
-def test_find_by_category(recipe_repo: SqliteRecipeRepository,
-                           flour: Product) -> None:
+def test_find_by_category_id(recipe_repo: SqliteRecipeRepository,
+                              flour: Product) -> None:
     recipe_repo.save(_pancake_recipe(flour.id))
-    recipe_repo.save(Recipe(RecipeId(0), "Котлеты", "Основные", 4))
+    recipe_repo.save(Recipe(id=RecipeId(0), name="Котлеты", servings=4,
+                            category_id=RecipeCategoryId(2)))
 
-    breakfast = recipe_repo.find_by_category("Завтраки")
+    breakfast = recipe_repo.find_by_category_id(RecipeCategoryId(1))
     assert len(breakfast) == 1
     assert breakfast[0].name == "Блины"
 
@@ -114,7 +116,8 @@ def test_find_by_category(recipe_repo: SqliteRecipeRepository,
 def test_find_all(recipe_repo: SqliteRecipeRepository,
                   flour: Product) -> None:
     recipe_repo.save(_pancake_recipe(flour.id))
-    recipe_repo.save(Recipe(RecipeId(0), "Котлеты", "Основные", 4))
+    recipe_repo.save(Recipe(id=RecipeId(0), name="Котлеты", servings=4,
+                            category_id=RecipeCategoryId(2)))
     assert len(recipe_repo.find_all()) == 2
 
 
@@ -124,10 +127,10 @@ def test_update_replaces_ingredients_and_steps(recipe_repo: SqliteRecipeReposito
     updated = Recipe(
         id=saved.id,
         name="Оладьи",
-        category="Завтраки",
         servings=6,
         ingredients=[RecipeIngredient(flour.id, Quantity(300.0, "g"))],
         steps=[CookingStep(1, "Только смешать")],
+        category_id=RecipeCategoryId(1),
     )
     result = recipe_repo.save(updated)
 

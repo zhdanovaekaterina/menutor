@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from src.domain.entities.product import Product
-from src.domain.value_objects.types import ProductId
+from src.domain.value_objects.types import ProductCategoryId, ProductId
 
 
 class ProductRepository(ABC):
@@ -9,7 +9,7 @@ class ProductRepository(ABC):
     def get_by_id(self, id: ProductId) -> Product | None: ...
 
     @abstractmethod
-    def find_by_category(self, category: str) -> list[Product]: ...
+    def find_by_category_id(self, category_id: ProductCategoryId) -> list[Product]: ...
 
     @abstractmethod
     def find_all(self) -> list[Product]: ...

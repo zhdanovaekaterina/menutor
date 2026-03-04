@@ -11,6 +11,7 @@ class RecipeTableModel(QAbstractTableModel):
     def __init__(self, recipes: list[Recipe] | None = None) -> None:
         super().__init__()
         self._recipes: list[Recipe] = recipes or []
+        self._category_map: dict[int, str] = {}
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self._recipes)
@@ -37,7 +38,7 @@ class RecipeTableModel(QAbstractTableModel):
             if col == 0:
                 return recipe.name
             if col == 1:
-                return recipe.category
+                return self._category_map.get(recipe.category_id, "")
             if col == 2:
                 return ", ".join(recipe.dietary_tags)
             if col == 3:
@@ -45,6 +46,9 @@ class RecipeTableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.UserRole:
             return recipe.id
         return None
+
+    def set_category_map(self, category_map: dict[int, str]) -> None:
+        self._category_map = category_map
 
     def set_recipes(self, recipes: list[Recipe]) -> None:
         self.beginResetModel()

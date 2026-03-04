@@ -21,10 +21,10 @@ from PySide6.QtWidgets import (
 from src.application.use_cases.manage_product import ProductData
 from src.domain.entities.product import Product
 from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import ProductId
+from src.domain.value_objects.types import ProductCategoryId, ProductId
 from src.presentation.models.product_table_model import ProductTableModel
 
-UNIT_OPTIONS = ["г", "кг", "мл", "л", "шт", "упак", "кор"]
+UNIT_OPTIONS = ["g", "kg", "ml", "l", "pcs", "box", "pack"]
 
 
 class ProductListView(QWidget):
@@ -57,7 +57,7 @@ class ProductListView(QWidget):
         form_layout = QVBoxLayout(form_container)
 
         self._name_edit = QLineEdit()
-        self._category_edit = QLineEdit()
+        self._category_combo = QComboBox()
         self._brand_edit = QLineEdit()
 
         self._recipe_unit_combo = QComboBox()
@@ -94,7 +94,7 @@ class ProductListView(QWidget):
 
         form = QFormLayout()
         form.addRow("Название:*", self._name_edit)
-        form.addRow("Категория:", self._category_edit)
+        form.addRow("Категория:", self._category_combo)
         form.addRow("Бренд:", self._brand_edit)
         form.addRow("Ед. в рецепте:", self._recipe_unit_combo)
         form.addRow("Ед. покупки:", self._purchase_unit_combo)
@@ -126,6 +126,17 @@ class ProductListView(QWidget):
 
     def set_products(self, products: list[Product]) -> None:
         self._model.set_products(products)
+
+    def set_categories(self, categories: list[tuple[int, str]]) -> None:
+        current_id = self._category_combo.currentData()
+        self._category_combo.clear()
+        for cat_id, cat_name in categories:
+            self._category_combo.addItem(cat_name, cat_id)
+        if current_id is not None:
+            for i in range(self._category_combo.count()):
+                if self._category_combo.itemData(i) == current_id:
+                    self._category_combo.setCurrentIndex(i)
+                    break
 
     def show_error(self, message: str) -> None:
         QMessageBox.critical(self, "Ошибка", message)
@@ -170,7 +181,10 @@ class ProductListView(QWidget):
 
     def _populate_form(self, product: Product) -> None:
         self._name_edit.setText(product.name)
-        self._category_edit.setText(product.category)
+        for i in range(self._category_combo.count()):
+            if self._category_combo.itemData(i) == product.category_id:
+                self._category_combo.setCurrentIndex(i)
+                break
         self._brand_edit.setText(product.brand)
 
         idx = self._recipe_unit_combo.findText(product.recipe_unit)
@@ -196,7 +210,7 @@ class ProductListView(QWidget):
     def _clear_form(self) -> None:
         self._selected_product = None
         self._name_edit.clear()
-        self._category_edit.clear()
+        self._category_combo.setCurrentIndex(0)
         self._brand_edit.clear()
         self._recipe_unit_combo.setCurrentIndex(0)
         self._purchase_unit_combo.setCurrentIndex(0)
@@ -210,10 +224,13 @@ class ProductListView(QWidget):
         if not name:
             QMessageBox.warning(self, "Ошибка", "Введите название продукта.")
             return None
-        category = self._category_edit.text().strip() or "Без категории"
+        category_id = self._category_combo.currentData()
+        if category_id is None:
+            QMessageBox.warning(self, "Ошибка", "Выберите категорию продукта.")
+            return None
         brand = self._brand_edit.text().strip()
-        recipe_unit = self._recipe_unit_combo.currentText().strip() or "г"
-        purchase_unit = self._purchase_unit_combo.currentText().strip() or "г"
+        recipe_unit = self._recipe_unit_combo.currentText().strip() or "g"
+        purchase_unit = self._purchase_unit_combo.currentText().strip() or "g"
         price = Money(Decimal(str(self._price_spin.value())))
         conversion_factor = self._conversion_spin.value()
         weight = (
@@ -224,7 +241,7 @@ class ProductListView(QWidget):
 
         return ProductData(
             name=name,
-            category=category,
+            category_id=ProductCategoryId(category_id),
             brand=brand,
             recipe_unit=recipe_unit,
             purchase_unit=purchase_unit,

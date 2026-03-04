@@ -6,7 +6,7 @@ from src.domain.ports.recipe_repository import RecipeRepository
 from src.domain.value_objects.cooking_step import CookingStep
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import ProductId, RecipeId
+from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 
 
 class SqliteRecipeRepository(RecipeRepository):
@@ -17,23 +17,18 @@ class SqliteRecipeRepository(RecipeRepository):
 
     def get_by_id(self, id: RecipeId) -> Recipe | None:
         row = self._conn.execute(
-            "SELECT id, name, category, dietary_tags, servings FROM recipes WHERE id = ?",
-            (id,),
+            "SELECT * FROM recipes WHERE id = ?", (id,),
         ).fetchone()
         return self._row_to_entity(row) if row else None
 
-    def find_by_category(self, category: str) -> list[Recipe]:
+    def find_by_category_id(self, category_id: RecipeCategoryId) -> list[Recipe]:
         rows = self._conn.execute(
-            "SELECT id, name, category, dietary_tags, servings "
-            "FROM recipes WHERE category = ?",
-            (category,),
+            "SELECT * FROM recipes WHERE category_id = ?", (category_id,),
         ).fetchall()
         return [self._row_to_entity(r) for r in rows]
 
     def find_all(self) -> list[Recipe]:
-        rows = self._conn.execute(
-            "SELECT id, name, category, dietary_tags, servings FROM recipes"
-        ).fetchall()
+        rows = self._conn.execute("SELECT * FROM recipes").fetchall()
         return [self._row_to_entity(r) for r in rows]
 
     # ---- write ----
@@ -43,11 +38,11 @@ class SqliteRecipeRepository(RecipeRepository):
         with self._conn:
             if recipe.id == 0:
                 cursor = self._conn.execute(
-                    "INSERT INTO recipes (name, category, dietary_tags, servings) "
+                    "INSERT INTO recipes (name, category_id, dietary_tags, servings) "
                     "VALUES (?, ?, ?, ?)",
                     (
                         recipe.name,
-                        recipe.category,
+                        recipe.category_id,
                         json.dumps(recipe.dietary_tags, ensure_ascii=False),
                         recipe.servings,
                     ),
@@ -58,11 +53,11 @@ class SqliteRecipeRepository(RecipeRepository):
                 recipe_id = RecipeId(last_id)
             else:
                 self._conn.execute(
-                    "UPDATE recipes SET name=?, category=?, dietary_tags=?, servings=? "
+                    "UPDATE recipes SET name=?, category_id=?, dietary_tags=?, servings=? "
                     "WHERE id=?",
                     (
                         recipe.name,
-                        recipe.category,
+                        recipe.category_id,
                         json.dumps(recipe.dietary_tags, ensure_ascii=False),
                         recipe.servings,
                         recipe.id,
@@ -117,7 +112,6 @@ class SqliteRecipeRepository(RecipeRepository):
         return Recipe(
             id=rid,
             name=row["name"],
-            category=row["category"],
             servings=row["servings"],
             dietary_tags=json.loads(row["dietary_tags"]) if row["dietary_tags"] else [],
             ingredients=[
@@ -131,4 +125,5 @@ class SqliteRecipeRepository(RecipeRepository):
                 CookingStep(order=r["step_order"], description=r["description"])
                 for r in step_rows
             ],
+            category_id=RecipeCategoryId(row["category_id"]),
         )
