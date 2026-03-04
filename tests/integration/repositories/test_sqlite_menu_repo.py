@@ -1,0 +1,114 @@
+import sqlite3
+from decimal import Decimal
+
+import pytest
+
+from src.domain.entities.menu import MenuSlot, WeeklyMenu
+from src.domain.entities.product import Product
+from src.domain.entities.recipe import Recipe
+from src.domain.value_objects.money import Money
+from src.domain.value_objects.types import MenuId, ProductId, RecipeId
+from src.infrastructure.repositories.sqlite_menu_repository import SqliteMenuRepository
+from src.infrastructure.repositories.sqlite_product_repository import SqliteProductRepository
+from src.infrastructure.repositories.sqlite_recipe_repository import SqliteRecipeRepository
+
+
+@pytest.fixture
+def menu_repo(conn: object) -> SqliteMenuRepository:
+    return SqliteMenuRepository(conn)  # type: ignore[arg-type]
+
+
+@pytest.fixture
+def seeded_recipe(conn: object) -> Recipe:
+    """Insert product + recipe directly; returns recipe with real DB id."""
+    c: sqlite3.Connection = conn  # type: ignore[assignment]
+    product_repo = SqliteProductRepository(c)
+    recipe_repo = SqliteRecipeRepository(c)
+    p = product_repo.save(Product(
+        id=ProductId(0), name="Мука", category="Сыпучие",
+        recipe_unit="g", purchase_unit="kg",
+        price_per_purchase_unit=Money(Decimal("80")), conversion_factor=0.001,
+    ))
+    return recipe_repo.save(Recipe(RecipeId(0), "Блины", "Завтраки", 4))
+
+
+def _empty_menu(name: str = "Неделя") -> WeeklyMenu:
+    return WeeklyMenu(MenuId(0), name, slots=[])
+
+
+def test_save_assigns_id(menu_repo: SqliteMenuRepository) -> None:
+    saved = menu_repo.save(_empty_menu())
+    assert saved.id != MenuId(0)
+
+
+def test_save_and_get_by_id_empty_menu(menu_repo: SqliteMenuRepository) -> None:
+    saved = menu_repo.save(_empty_menu("Моё меню"))
+    retrieved = menu_repo.get_by_id(saved.id)
+
+    assert retrieved is not None
+    assert retrieved.name == "Моё меню"
+    assert retrieved.slots == []
+
+
+def test_save_and_get_with_slots(menu_repo: SqliteMenuRepository,
+                                  seeded_recipe: Recipe) -> None:
+    menu = WeeklyMenu(MenuId(0), "С блюдами", slots=[
+        MenuSlot(day=0, meal_type="завтрак", recipe_id=seeded_recipe.id),
+        MenuSlot(day=1, meal_type="обед",    recipe_id=seeded_recipe.id,
+                 servings_override=3.0),
+    ])
+    saved = menu_repo.save(menu)
+    retrieved = menu_repo.get_by_id(saved.id)
+
+    assert retrieved is not None
+    assert len(retrieved.slots) == 2
+    slot_map = {s.meal_type: s for s in retrieved.slots}
+    assert slot_map["завтрак"].day == 0
+    assert slot_map["обед"].servings_override == pytest.approx(3.0)
+
+
+def test_get_by_id_returns_none_when_absent(menu_repo: SqliteMenuRepository) -> None:
+    assert menu_repo.get_by_id(MenuId(9999)) is None
+
+
+def test_delete_removes_menu(menu_repo: SqliteMenuRepository) -> None:
+    saved = menu_repo.save(_empty_menu())
+    menu_repo.delete(saved.id)
+    assert menu_repo.get_by_id(saved.id) is None
+
+
+def test_delete_cascades_to_slots(menu_repo: SqliteMenuRepository,
+                                   seeded_recipe: Recipe,
+                                   conn: object) -> None:
+    c: sqlite3.Connection = conn  # type: ignore[assignment]
+    menu = WeeklyMenu(MenuId(0), "Тест", slots=[
+        MenuSlot(0, "завтрак", seeded_recipe.id)
+    ])
+    saved = menu_repo.save(menu)
+    menu_repo.delete(saved.id)
+
+    count = c.execute(
+        "SELECT COUNT(*) FROM menu_slots WHERE menu_id = ?", (saved.id,)
+    ).fetchone()[0]
+    assert count == 0
+
+
+def test_find_all(menu_repo: SqliteMenuRepository) -> None:
+    menu_repo.save(_empty_menu("Неделя 1"))
+    menu_repo.save(_empty_menu("Неделя 2"))
+    assert len(menu_repo.find_all()) == 2
+
+
+def test_save_updates_existing_menu_and_replaces_slots(
+    menu_repo: SqliteMenuRepository, seeded_recipe: Recipe
+) -> None:
+    saved = menu_repo.save(WeeklyMenu(MenuId(0), "Исходное", slots=[
+        MenuSlot(0, "завтрак", seeded_recipe.id),
+    ]))
+    # Update: rename + change slots
+    updated = menu_repo.save(WeeklyMenu(saved.id, "Обновлённое", slots=[
+        MenuSlot(3, "ужин", seeded_recipe.id),
+    ]))
+    assert updated.name == "Обновлённое"
+    assert len(updated.slots) == 1
+    assert updated.slots[0].day == 3
