@@ -10,7 +10,8 @@ class RecipeTableModel(QAbstractTableModel):
 
     def __init__(self, recipes: list[Recipe] | None = None) -> None:
         super().__init__()
-        self._recipes: list[Recipe] = recipes or []
+        self._all_recipes: list[Recipe] = recipes or []
+        self._recipes: list[Recipe] = list(self._all_recipes)
         self._category_map: dict[int, str] = {}
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
@@ -52,7 +53,18 @@ class RecipeTableModel(QAbstractTableModel):
 
     def set_recipes(self, recipes: list[Recipe]) -> None:
         self.beginResetModel()
+        self._all_recipes = list(recipes)
         self._recipes = list(recipes)
+        self.endResetModel()
+
+    def filter(self, query: str) -> None:
+        q = query.strip().lower()
+        self.beginResetModel()
+        self._recipes = (
+            self._all_recipes
+            if not q
+            else [r for r in self._all_recipes if q in r.name.lower()]
+        )
         self.endResetModel()
 
     def recipe_at(self, row: int) -> Recipe | None:

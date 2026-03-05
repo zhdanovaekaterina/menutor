@@ -10,7 +10,8 @@ class ProductTableModel(QAbstractTableModel):
 
     def __init__(self, products: list[Product] | None = None) -> None:
         super().__init__()
-        self._products: list[Product] = products or []
+        self._all_products: list[Product] = products or []
+        self._products: list[Product] = list(self._all_products)
         self._category_map: dict[int, str] = {}
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
@@ -56,7 +57,18 @@ class ProductTableModel(QAbstractTableModel):
 
     def set_products(self, products: list[Product]) -> None:
         self.beginResetModel()
+        self._all_products = list(products)
         self._products = list(products)
+        self.endResetModel()
+
+    def filter(self, query: str) -> None:
+        q = query.strip().lower()
+        self.beginResetModel()
+        self._products = (
+            self._all_products
+            if not q
+            else [p for p in self._all_products if q in p.name.lower()]
+        )
         self.endResetModel()
 
     def product_at(self, row: int) -> Product | None:

@@ -40,6 +40,10 @@ class ProductListView(QWidget):
 
         self._model = ProductTableModel()
 
+        self._search_edit = QLineEdit()
+        self._search_edit.setPlaceholderText("Поиск по названию...")
+        self._search_edit.textChanged.connect(self._model.filter)
+
         self._table = QTableView()
         self._table.setModel(self._model)
         self._table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
@@ -48,6 +52,14 @@ class ProductListView(QWidget):
             QHeaderView.ResizeMode.Stretch
         )
         self._table.selectionModel().currentRowChanged.connect(self._on_row_selected)
+
+        table_layout = QVBoxLayout()
+        table_layout.setContentsMargins(0, 0, 0, 0)
+        table_layout.addWidget(self._search_edit)
+        table_layout.addWidget(self._table)
+
+        table_panel = QWidget()
+        table_panel.setLayout(table_layout)
 
         # --- Form ---
         form_scroll = QScrollArea()
@@ -117,7 +129,7 @@ class ProductListView(QWidget):
         form_layout.addStretch()
 
         main_layout = QHBoxLayout(self)
-        main_layout.addWidget(self._table, 2)
+        main_layout.addWidget(table_panel, 2)
         main_layout.addWidget(form_scroll, 1)
 
     # ------------------------------------------------------------------
