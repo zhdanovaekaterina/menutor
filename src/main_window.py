@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
             delete_menu_uc=container.delete_menu,
             list_menus_uc=container.list_menus,
             add_dish_uc=container.add_dish_to_slot,
-            remove_dish_uc=container.remove_dish_from_slot,
+            remove_item_uc=container.remove_item_from_slot,
             clear_menu_uc=container.clear_menu,
             list_recipes_uc=container.list_recipes,
             list_products_uc=container.list_products,

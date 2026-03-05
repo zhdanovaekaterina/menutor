@@ -23,7 +23,8 @@ class MenuPlannerView(QWidget):
     """Экран «Планировщик» (Screen 1)."""
 
     menu_selected = Signal(object)           # MenuId
-    slot_updated = Signal(int, str, object, float)  # day, meal_type, recipe_id (None=remove), servings
+    # day, meal_type, item_type, item_id, servings_or_qty, unit
+    slot_updated = Signal(int, str, str, int, float, str)
     save_menu_requested = Signal(str)        # menu name
     clear_menu_requested = Signal()
     generate_shopping_list_requested = Signal()
@@ -65,8 +66,12 @@ class MenuPlannerView(QWidget):
         family_box_layout.addWidget(self._family_label)
 
         # --- Right bottom: Dishes / Ingredients tabs ---
-        self._recipe_source = SearchableList(drag_enabled=True)
-        self._product_source = SearchableList(drag_enabled=True)
+        self._recipe_source = SearchableList(
+            drag_enabled=True, mime_type="application/x-menutor-recipe-id"
+        )
+        self._product_source = SearchableList(
+            drag_enabled=True, mime_type="application/x-menutor-product-id"
+        )
 
         source_tabs = QTabWidget()
         source_tabs.addTab(self._recipe_source, "Блюда")
@@ -121,13 +126,24 @@ class MenuPlannerView(QWidget):
         self._grid.clear_all()
         if menu is None:
             return
-        # Grid requires recipe names — those must be injected via set_grid_slot
-        # The controller will call set_grid_slot per slot after loading.
+        # Grid requires item names — those must be injected via add_grid_slot_item
+        # The controller will call add_grid_slot_item per slot after loading.
 
-    def set_grid_slot(
-        self, day: int, meal_type: str, recipe_id: object, recipe_name: str, servings: float
+    def add_grid_slot_item(
+        self,
+        day: int,
+        meal_type: str,
+        item_type: str,
+        item_id: int,
+        name: str,
+        servings: float = 1.0,
+        quantity: float = 0.0,
+        unit: str = "",
     ) -> None:
-        self._grid.set_slot(day, meal_type, recipe_id, recipe_name, servings)
+        self._grid.add_slot_item(day, meal_type, item_type, item_id, name, servings, quantity, unit)
+
+    def clear_grid_slot_item(self, day: int, meal_type: str, item_type: str, item_id: int) -> None:
+        self._grid.clear_slot_item(day, meal_type, item_type, item_id)
 
     def set_recipes(self, recipes: list[Recipe]) -> None:
         self._recipe_source.set_items([(r.id, r.name) for r in recipes])
@@ -147,7 +163,7 @@ class MenuPlannerView(QWidget):
     def get_current_menu_id(self) -> object:
         return self._current_menu_id
 
-    def get_grid_slots(self) -> list[tuple[int, str, object, float]]:
+    def get_grid_slots(self) -> list[dict]:
         return self._grid.get_slots()
 
     def show_error(self, message: str) -> None:

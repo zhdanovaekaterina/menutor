@@ -11,7 +11,13 @@ from src.domain.services.unit_converter import UnitConverter
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import FamilyMemberId, MenuId, ProductCategoryId, ProductId, RecipeId
+from src.domain.value_objects.types import (
+    FamilyMemberId,
+    MenuId,
+    ProductCategoryId,
+    ProductId,
+    RecipeId,
+)
 
 
 def _product(pid: int, recipe_unit: str = "g", purchase_unit: str = "kg",
@@ -232,3 +238,62 @@ def test_items_by_category() -> None:
     assert "dairy" in by_cat
     assert len(by_cat["dry"]) == 1
     assert len(by_cat["dairy"]) == 1
+
+
+# ---- standalone product slots ----
+
+def test_standalone_product_slot_adds_quantity_directly() -> None:
+    recipe_repo = MagicMock()
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = _product(1, "g", "kg", 0.001, 100.0)
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", product_id=ProductId(1),
+                        quantity=500.0, unit="g")],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu, [_member(1)])
+
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(0.5, "kg")
+
+
+def test_standalone_product_no_family_scaling() -> None:
+    """Standalone products specify exact amounts — no portion scaling."""
+    recipe_repo = MagicMock()
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = _product(1, "g", "g", 1.0, 10.0)
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", product_id=ProductId(1),
+                        quantity=200.0, unit="g")],
+    )
+    # Two family members shouldn't affect standalone product quantity
+    result = _builder(recipe_repo, product_repo).build(
+        menu, [_member(1, 1.0), _member(2, 1.0)]
+    )
+
+    assert result.items[0].quantity == Quantity(200.0, "g")
+
+
+def test_product_slot_aggregates_with_recipe_ingredient() -> None:
+    """A standalone product and a recipe using the same product should aggregate."""
+    recipe_repo = MagicMock()
+    product_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = _recipe(1, 1, amount=200.0, base_servings=2)
+    product_repo.get_by_id.return_value = _product(1, "g", "kg", 0.001, 100.0)
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[
+            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),
+            MenuSlot(day=1, meal_type="lunch", product_id=ProductId(1),
+                     quantity=300.0, unit="g"),
+        ],
+    )
+    # Recipe: 200g (1 member, base 2 → scale 1.0) + standalone: 300g = 500g → 0.5 kg
+    result = _builder(recipe_repo, product_repo).build(menu, [_member(1, 1.0)])
+
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(0.5, "kg")

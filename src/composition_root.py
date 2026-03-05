@@ -38,7 +38,7 @@ from src.application.use_cases.plan_menu import (
     DeleteMenu,
     ListMenus,
     LoadMenu,
-    RemoveDishFromSlot,
+    RemoveItemFromSlot,
     SaveMenu,
 )
 from src.domain.services.portion_calculator import PortionCalculator
@@ -122,7 +122,7 @@ class ApplicationContainer:
         self.delete_menu = DeleteMenu(menu_repo)
         self.list_menus = ListMenus(menu_repo)
         self.add_dish_to_slot = AddDishToSlot(menu_repo)
-        self.remove_dish_from_slot = RemoveDishFromSlot(menu_repo)
+        self.remove_item_from_slot = RemoveItemFromSlot(menu_repo)
         self.clear_menu = ClearMenu(menu_repo)
 
         # ── Application — Family ──────────────────────────────────────

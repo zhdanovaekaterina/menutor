@@ -2,7 +2,7 @@ import sqlite3
 
 from src.domain.entities.menu import MenuSlot, WeeklyMenu
 from src.domain.ports.menu_repository import MenuRepository
-from src.domain.value_objects.types import MenuId, RecipeId
+from src.domain.value_objects.types import MenuId, ProductId, RecipeId
 
 
 class SqliteMenuRepository(MenuRepository):
@@ -45,10 +45,11 @@ class SqliteMenuRepository(MenuRepository):
             )
             self._conn.executemany(
                 "INSERT INTO menu_slots "
-                "(menu_id, day, meal_type, recipe_id, servings_override) "
-                "VALUES (?, ?, ?, ?, ?)",
+                "(menu_id, day, meal_type, recipe_id, product_id, quantity, unit, servings_override) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 [
-                    (menu_id, s.day, s.meal_type, s.recipe_id, s.servings_override)
+                    (menu_id, s.day, s.meal_type, s.recipe_id, s.product_id,
+                     s.quantity, s.unit, s.servings_override)
                     for s in menu.slots
                 ],
             )
@@ -67,7 +68,7 @@ class SqliteMenuRepository(MenuRepository):
     def _row_to_entity(self, row: sqlite3.Row) -> WeeklyMenu:
         mid = MenuId(row["id"])
         slot_rows = self._conn.execute(
-            "SELECT day, meal_type, recipe_id, servings_override "
+            "SELECT day, meal_type, recipe_id, product_id, quantity, unit, servings_override "
             "FROM menu_slots WHERE menu_id = ?",
             (mid,),
         ).fetchall()
@@ -78,7 +79,10 @@ class SqliteMenuRepository(MenuRepository):
                 MenuSlot(
                     day=r["day"],
                     meal_type=r["meal_type"],
-                    recipe_id=RecipeId(r["recipe_id"]),
+                    recipe_id=RecipeId(r["recipe_id"]) if r["recipe_id"] is not None else None,
+                    product_id=ProductId(r["product_id"]) if r["product_id"] is not None else None,
+                    quantity=r["quantity"],
+                    unit=r["unit"],
                     servings_override=r["servings_override"],
                 )
                 for r in slot_rows

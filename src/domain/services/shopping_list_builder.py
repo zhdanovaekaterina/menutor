@@ -29,21 +29,29 @@ class ShoppingListBuilder:
         aggregated: dict[ProductId, Quantity] = {}
 
         for slot in menu.slots:
-            recipe = self._recipe_repo.get_by_id(slot.recipe_id)
-            if recipe is None:
-                continue
+            if slot.recipe_id is not None:
+                recipe = self._recipe_repo.get_by_id(slot.recipe_id)
+                if recipe is None:
+                    continue
 
-            base = float(slot.servings_override if slot.servings_override is not None
-                         else recipe.servings)
-            total = self._portion_calc.total_servings(base, members) if members else base
-            scaled = recipe.scale_to(total)
+                base = float(slot.servings_override if slot.servings_override is not None
+                             else recipe.servings)
+                total = self._portion_calc.total_servings(base, members) if members else base
+                scaled = recipe.scale_to(total)
 
-            for ing in scaled.ingredients:
-                pid = ing.product_id
+                for ing in scaled.ingredients:
+                    pid = ing.product_id
+                    if pid in aggregated:
+                        aggregated[pid] = aggregated[pid] + ing.quantity
+                    else:
+                        aggregated[pid] = ing.quantity
+            elif slot.product_id is not None and slot.quantity is not None and slot.unit is not None:
+                pid = slot.product_id
+                qty = Quantity(slot.quantity, slot.unit)
                 if pid in aggregated:
-                    aggregated[pid] = aggregated[pid] + ing.quantity
+                    aggregated[pid] = aggregated[pid] + qty
                 else:
-                    aggregated[pid] = ing.quantity
+                    aggregated[pid] = qty
 
         category_map = dict(self._product_category_repo.find_active())
 

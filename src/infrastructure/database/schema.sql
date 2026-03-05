@@ -72,12 +72,17 @@ CREATE TABLE IF NOT EXISTS menus (
     name TEXT NOT NULL
 );
 
--- Menu grid: one row per (menu, day, meal_type) cell
+-- Menu grid: one row per item in a (menu, day, meal_type) cell
 CREATE TABLE IF NOT EXISTS menu_slots (
-    menu_id          INTEGER NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
-    day              INTEGER NOT NULL,
-    meal_type        TEXT    NOT NULL,
-    recipe_id        INTEGER NOT NULL REFERENCES recipes(id),
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    menu_id           INTEGER NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
+    day               INTEGER NOT NULL,
+    meal_type         TEXT    NOT NULL,
+    recipe_id         INTEGER REFERENCES recipes(id),
+    product_id        INTEGER REFERENCES products(id),
+    quantity          REAL,
+    unit              TEXT,
     servings_override REAL,
-    PRIMARY KEY (menu_id, day, meal_type)
+    CHECK ((recipe_id IS NOT NULL AND product_id IS NULL) OR
+           (recipe_id IS NULL AND product_id IS NOT NULL))
 );

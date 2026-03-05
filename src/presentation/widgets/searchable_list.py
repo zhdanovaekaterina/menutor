@@ -4,17 +4,19 @@ from PySide6.QtWidgets import QLineEdit, QListView, QVBoxLayout, QWidget
 
 
 class _DraggableListView(QListView):
-    """QListView с поддержкой drag для рецептов."""
+    """QListView с поддержкой drag для элементов с настраиваемым MIME типом."""
 
     def __init__(
         self,
         source_model: QStandardItemModel,
         proxy_model: QSortFilterProxyModel,
+        mime_type: str = "application/x-menutor-recipe-id",
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._source = source_model
         self._proxy = proxy_model
+        self._mime_type = mime_type
         self.setModel(proxy_model)
 
     def startDrag(self, supported_actions: Qt.DropAction) -> None:
@@ -30,7 +32,7 @@ class _DraggableListView(QListView):
 
         mime = QMimeData()
         mime.setData(
-            "application/x-menutor-recipe-id", str(item_id).encode()
+            self._mime_type, str(item_id).encode()
         )
         mime.setText(display)
 
@@ -47,6 +49,7 @@ class SearchableList(QWidget):
     def __init__(
         self,
         drag_enabled: bool = False,
+        mime_type: str = "application/x-menutor-recipe-id",
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -63,7 +66,7 @@ class SearchableList(QWidget):
 
         if drag_enabled:
             self._list_view: QListView = _DraggableListView(
-                self._source_model, self._proxy
+                self._source_model, self._proxy, mime_type=mime_type
             )
             self._list_view.setDragEnabled(True)
         else:

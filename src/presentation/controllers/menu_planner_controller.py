@@ -11,12 +11,12 @@ from src.application.use_cases.plan_menu import (
     DeleteMenu,
     ListMenus,
     LoadMenu,
-    RemoveDishFromSlot,
+    RemoveItemFromSlot,
     SaveMenu,
 )
 from src.domain.entities.menu import MenuSlot, WeeklyMenu
 from src.domain.entities.shopping_list import ShoppingList
-from src.domain.value_objects.types import MenuId, RecipeId
+from src.domain.value_objects.types import MenuId, ProductId, RecipeId
 from src.presentation.views.menu_planner_view import MenuPlannerView
 
 
@@ -32,7 +32,7 @@ class MenuPlannerController:
         delete_menu_uc: DeleteMenu,
         list_menus_uc: ListMenus,
         add_dish_uc: AddDishToSlot,
-        remove_dish_uc: RemoveDishFromSlot,
+        remove_item_uc: RemoveItemFromSlot,
         clear_menu_uc: ClearMenu,
         list_recipes_uc: ListRecipes,
         list_products_uc: ListProducts,
@@ -47,7 +47,7 @@ class MenuPlannerController:
         self._delete_menu_uc = delete_menu_uc
         self._list_menus_uc = list_menus_uc
         self._add_dish_uc = add_dish_uc
-        self._remove_dish_uc = remove_dish_uc
+        self._remove_item_uc = remove_item_uc
         self._clear_menu_uc = clear_menu_uc
         self._list_recipes_uc = list_recipes_uc
         self._list_products_uc = list_products_uc
@@ -57,6 +57,7 @@ class MenuPlannerController:
 
         self._current_menu: WeeklyMenu | None = None
         self._recipe_map: dict[object, str] = {}  # recipe_id -> name
+        self._product_map: dict[object, str] = {}  # product_id -> name
 
         view.menu_selected.connect(self._on_menu_selected)
         view.slot_updated.connect(self._on_slot_updated)
@@ -81,6 +82,7 @@ class MenuPlannerController:
             self._view.set_recipes(recipes)
 
             products = self._list_products_uc.execute()
+            self._product_map = {p.id: p.name for p in products}
             self._view.set_products(products)
 
             members = self._list_family_uc.execute()
@@ -95,30 +97,54 @@ class MenuPlannerController:
             self._view.set_current_menu(menu)
             if menu:
                 for slot in menu.slots:
-                    name = self._recipe_map.get(slot.recipe_id, f"#{slot.recipe_id}")
-                    servings = slot.servings_override if slot.servings_override is not None else 1.0
-                    self._view.set_grid_slot(slot.day, slot.meal_type, slot.recipe_id, name, servings)
+                    if slot.recipe_id is not None:
+                        name = self._recipe_map.get(slot.recipe_id, f"#{slot.recipe_id}")
+                        servings = slot.servings_override if slot.servings_override is not None else 1.0
+                        self._view.add_grid_slot_item(
+                            slot.day, slot.meal_type, "recipe", slot.recipe_id, name,
+                            servings=servings,
+                        )
+                    elif slot.product_id is not None:
+                        name = self._product_map.get(slot.product_id, f"#{slot.product_id}")
+                        self._view.add_grid_slot_item(
+                            slot.day, slot.meal_type, "product", slot.product_id, name,
+                            quantity=slot.quantity or 0.0,
+                            unit=slot.unit or "",
+                        )
         except Exception as exc:
             self._view.show_error(str(exc))
 
     def _on_slot_updated(
-        self, day: int, meal_type: str, recipe_id: object, servings: float
+        self, day: int, meal_type: str, item_type: str, item_id: int,
+        servings_or_qty: float, unit: str,
     ) -> None:
         if self._current_menu is None:
             self._view.show_info("Сначала создайте или выберите меню.")
             return
         try:
-            if recipe_id is None:
-                self._current_menu = self._remove_dish_uc.execute(
-                    self._current_menu.id, day, meal_type
+            if servings_or_qty == 0.0:
+                # Removal
+                self._current_menu = self._remove_item_uc.execute(
+                    self._current_menu.id, day, meal_type,
+                    recipe_id=RecipeId(item_id) if item_type == "recipe" else None,
+                    product_id=ProductId(item_id) if item_type == "product" else None,
                 )
             else:
-                slot = MenuSlot(
-                    day=day,
-                    meal_type=meal_type,
-                    recipe_id=RecipeId(cast(int, recipe_id)),
-                    servings_override=servings if servings > 0 else None,
-                )
+                if item_type == "recipe":
+                    slot = MenuSlot(
+                        day=day,
+                        meal_type=meal_type,
+                        recipe_id=RecipeId(item_id),
+                        servings_override=servings_or_qty if servings_or_qty > 0 else None,
+                    )
+                else:
+                    slot = MenuSlot(
+                        day=day,
+                        meal_type=meal_type,
+                        product_id=ProductId(item_id),
+                        quantity=servings_or_qty,
+                        unit=unit,
+                    )
                 self._current_menu = self._add_dish_uc.execute(
                     self._current_menu.id, slot
                 )
@@ -132,13 +158,22 @@ class MenuPlannerController:
                     return
                 self._current_menu = self._create_menu_uc.execute(name)
                 # Re-add all current grid slots
-                for day, meal_type, recipe_id, servings in self._view.get_grid_slots():
-                    slot = MenuSlot(
-                        day=day,
-                        meal_type=meal_type,
-                        recipe_id=RecipeId(cast(int, recipe_id)),
-                        servings_override=servings if servings > 0 else None,
-                    )
+                for slot_data in self._view.get_grid_slots():
+                    if slot_data["type"] == "recipe":
+                        slot = MenuSlot(
+                            day=slot_data["day"],
+                            meal_type=slot_data["meal_type"],
+                            recipe_id=RecipeId(cast(int, slot_data["id"])),
+                            servings_override=slot_data["servings"] if slot_data["servings"] > 0 else None,
+                        )
+                    else:
+                        slot = MenuSlot(
+                            day=slot_data["day"],
+                            meal_type=slot_data["meal_type"],
+                            product_id=ProductId(cast(int, slot_data["id"])),
+                            quantity=slot_data["quantity"],
+                            unit=slot_data["unit"],
+                        )
                     self._current_menu = self._add_dish_uc.execute(
                         self._current_menu.id, slot
                     )
