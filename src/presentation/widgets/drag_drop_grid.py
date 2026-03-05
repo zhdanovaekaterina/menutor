@@ -61,6 +61,7 @@ class _GridCell(QFrame):
         super().__init__(parent)
         self.day = day
         self.meal_type = meal_type
+        self._default_servings: float = 1.0
         # Each item: {"type": "recipe"|"product", "id": int, "name": str,
         #             "servings": float, "quantity": float, "unit": str}
         self._items: list[dict] = []
@@ -83,7 +84,7 @@ class _GridCell(QFrame):
 
         for item in self._items:
             if item["type"] == "recipe":
-                text = f"{item['name']} ({item['servings']:.0f} п.)"
+                text = f"{item['name']} ({item['servings']:.1f} п.)"
             else:
                 text = f"{item['name']} ({item['quantity']:.1f} {item['unit']})"
 
@@ -175,7 +176,7 @@ class _GridCell(QFrame):
                 if not self._ask_merge(display_name):
                     event.ignore()
                     return
-                new_servings = existing["servings"] + 1.0
+                new_servings = existing["servings"] + self._default_servings
                 existing["servings"] = new_servings
                 self._rebuild_ui()
                 event.acceptProposedAction()
@@ -183,10 +184,10 @@ class _GridCell(QFrame):
                     self.day, self.meal_type, "recipe", recipe_id_val, new_servings, ""
                 )
             else:
-                self.add_item("recipe", recipe_id_val, display_name, servings=1.0)
+                self.add_item("recipe", recipe_id_val, display_name, servings=self._default_servings)
                 event.acceptProposedAction()
                 self.item_added.emit(
-                    self.day, self.meal_type, "recipe", recipe_id_val, 1.0, ""
+                    self.day, self.meal_type, "recipe", recipe_id_val, self._default_servings, ""
                 )
         elif md.hasFormat(_MIME_PRODUCT):
             raw = md.data(_MIME_PRODUCT)
@@ -203,7 +204,7 @@ class _GridCell(QFrame):
                 return
             unit, ok2 = QInputDialog.getText(
                 self, "Единица измерения",
-                f"Единица для «{display_name}» (г, кг, мл, л, шт):",
+                f"Единица для «{display_name}» (g, kg, ml, l, pcs, box, pack):",  # todo: russian here, eng in db
             )
             if not ok2 or not unit.strip():
                 event.ignore()
@@ -231,6 +232,9 @@ class _GridCell(QFrame):
                 )
         else:
             event.ignore()
+
+    def set_default_servings(self, n: float) -> None:
+        self._default_servings = max(1.0, n)
 
     def add_item(
         self,
@@ -330,6 +334,10 @@ class DragDropGrid(QWidget):
             cell.remove_item(item_type, item_id)
             # Emit with 0.0 servings/qty to signal removal
             self.slot_changed.emit(day, meal_type, item_type, item_id, 0.0, "")
+
+    def set_default_recipe_servings(self, n: float) -> None:
+        for cell in self._cells.values():
+            cell.set_default_servings(n)
 
     def add_slot_item(
         self,

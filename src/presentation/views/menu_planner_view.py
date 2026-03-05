@@ -155,6 +155,8 @@ class MenuPlannerView(QWidget):
         if not members:
             self._family_label.setText("Члены семьи:\n—")
             return
+        total = sum(m.portion_multiplier for m in members)
+        self._grid.set_default_recipe_servings(total)
         lines = "\n".join(
             f"• {m.name} (×{m.portion_multiplier:.1f})" for m in members
         )
