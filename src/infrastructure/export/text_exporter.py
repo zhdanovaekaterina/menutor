@@ -1,4 +1,5 @@
 from src.domain.entities.shopping_list import ShoppingList
+from src.presentation.units import to_display
 
 
 class ShoppingListTextExporter:
@@ -10,7 +11,7 @@ class ShoppingListTextExporter:
         for category, items in sorted(shopping_list.items_by_category().items()):
             lines.append(f"{category}:")
             for item in items:
-                qty_str = f"{item.quantity.amount:g} {item.quantity.unit}"
+                qty_str = f"{item.quantity.amount:g} {to_display(item.quantity.unit)}"
                 cost_str = f"{item.cost.amount:.2f} руб"
                 lines.append(f"• {item.product_name} — {qty_str} — {cost_str}")
             lines.append("")

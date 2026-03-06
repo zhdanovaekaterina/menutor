@@ -29,6 +29,7 @@ from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
 from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 from src.presentation.models.recipe_table_model import RecipeTableModel
+from src.presentation.units import to_display, to_code
 
 
 class RecipeListView(QWidget):
@@ -283,7 +284,7 @@ class RecipeListView(QWidget):
             ingredients.append(
                 RecipeIngredient(
                     product_id=ProductId(int(product_id)),
-                    quantity=Quantity(spin.value(), unit_label.text()),
+                    quantity=Quantity(spin.value(), to_code(unit_label.text())),
                 )
             )
 
@@ -333,7 +334,7 @@ class RecipeListView(QWidget):
     def _refresh_unit_label(self, combo: QComboBox, label: QLabel) -> None:
         product_id = combo.currentData()
         unit = next((p.recipe_unit for p in self._products if p.id == product_id), "")
-        label.setText(unit)
+        label.setText(to_display(unit))
 
     def _populate_product_combo(self, combo: QComboBox) -> None:
         current_id = combo.currentData()

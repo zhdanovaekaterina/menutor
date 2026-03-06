@@ -1,7 +1,7 @@
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QComboBox, QDoubleSpinBox, QHBoxLayout, QWidget
 
-UNIT_OPTIONS = ["г", "кг", "мл", "л", "шт", "упак", "кор"]
+from src.presentation.units import UNIT_DISPLAY_OPTIONS
 
 
 class QuantityEditor(QWidget):
@@ -18,7 +18,7 @@ class QuantityEditor(QWidget):
         self._spin.setSingleStep(1.0)
 
         self._unit_combo = QComboBox()
-        self._unit_combo.addItems(UNIT_OPTIONS)
+        self._unit_combo.addItems(UNIT_DISPLAY_OPTIONS)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)

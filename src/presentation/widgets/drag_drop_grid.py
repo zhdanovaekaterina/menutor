@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.presentation.units import to_display
+
 DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
 DEFAULT_MEAL_TYPES = ["Завтрак", "Обед", "Ужин"]
 
@@ -93,7 +95,7 @@ class _GridCell(QFrame):
             if item["type"] == "recipe":
                 text = f"{item['name']} ({item['servings']:.1f} п.)"
             else:
-                text = f"{item['name']} ({item['quantity']:.1f} {item['unit']})"
+                text = f"{item['name']} ({item['quantity']:.1f} {to_display(item['unit'])})"
 
             row = _ItemRow(text)
             item_type = item["type"]
@@ -160,7 +162,7 @@ class _GridCell(QFrame):
         else:
             new_qty, ok = QInputDialog.getDouble(
                 self, "Количество",
-                f"Количество для «{item['name']}» ({item['unit']}):",
+                f"Количество для «{item['name']}» ({to_display(item['unit'])}):",
                 item["quantity"], 0.01, 99999.0, 2,
             )
             if not ok:

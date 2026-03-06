@@ -48,12 +48,12 @@ def test_export_total_cost_sum() -> None:
 def test_export_quantity_without_trailing_zeros() -> None:
     sl = ShoppingList(items=[_item("Мука", "Сыпучие", 1.0, "kg", 80)])
     result = ShoppingListTextExporter().export(sl)
-    assert "1 kg" in result   # not "1.0 kg"
+    assert "1 кг" in result   # not "1.0 кг"
 
 
 def test_export_fractional_quantity() -> None:
     sl = ShoppingList(items=[_item("Масло", "Молочные", 0.5, "kg", 90)])
-    assert "0.5 kg" in ShoppingListTextExporter().export(sl)
+    assert "0.5 кг" in ShoppingListTextExporter().export(sl)
 
 
 def test_export_empty_list_shows_zero_total() -> None:

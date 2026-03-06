@@ -23,8 +23,7 @@ from src.domain.entities.product import Product
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.types import ProductCategoryId, ProductId
 from src.presentation.models.product_table_model import ProductTableModel
-
-UNIT_OPTIONS = ["g", "kg", "ml", "l", "pcs", "box", "pack"]
+from src.presentation.units import UNIT_DISPLAY_OPTIONS, to_code, to_display
 
 
 class ProductListView(QWidget):
@@ -74,11 +73,11 @@ class ProductListView(QWidget):
         self._supplier_edit = QLineEdit()
 
         self._recipe_unit_combo = QComboBox()
-        self._recipe_unit_combo.addItems(UNIT_OPTIONS)
+        self._recipe_unit_combo.addItems(UNIT_DISPLAY_OPTIONS)
         self._recipe_unit_combo.setEditable(True)
 
         self._purchase_unit_combo = QComboBox()
-        self._purchase_unit_combo.addItems(UNIT_OPTIONS)
+        self._purchase_unit_combo.addItems(UNIT_DISPLAY_OPTIONS)
         self._purchase_unit_combo.setEditable(True)
 
         self._price_spin = QDoubleSpinBox()
@@ -202,15 +201,17 @@ class ProductListView(QWidget):
         self._brand_edit.setText(product.brand)
         self._supplier_edit.setText(product.supplier)
 
-        idx = self._recipe_unit_combo.findText(product.recipe_unit)
+        recipe_unit_display = to_display(product.recipe_unit)
+        idx = self._recipe_unit_combo.findText(recipe_unit_display)
         self._recipe_unit_combo.setCurrentIndex(idx if idx >= 0 else 0)
         if idx < 0:
-            self._recipe_unit_combo.setCurrentText(product.recipe_unit)
+            self._recipe_unit_combo.setCurrentText(recipe_unit_display)
 
-        idx = self._purchase_unit_combo.findText(product.purchase_unit)
+        purchase_unit_display = to_display(product.purchase_unit)
+        idx = self._purchase_unit_combo.findText(purchase_unit_display)
         self._purchase_unit_combo.setCurrentIndex(idx if idx >= 0 else 0)
         if idx < 0:
-            self._purchase_unit_combo.setCurrentText(product.purchase_unit)
+            self._purchase_unit_combo.setCurrentText(purchase_unit_display)
 
         self._price_spin.setValue(float(product.price_per_purchase_unit.amount))
         self._conversion_spin.setValue(product.conversion_factor)
@@ -246,8 +247,8 @@ class ProductListView(QWidget):
             return None
         brand = self._brand_edit.text().strip()
         supplier = self._supplier_edit.text().strip()
-        recipe_unit = self._recipe_unit_combo.currentText().strip() or "g"
-        purchase_unit = self._purchase_unit_combo.currentText().strip() or "g"
+        recipe_unit = to_code(self._recipe_unit_combo.currentText().strip()) or "g"
+        purchase_unit = to_code(self._purchase_unit_combo.currentText().strip()) or "g"
         price = Money(Decimal(str(self._price_spin.value())))
         conversion_factor = self._conversion_spin.value()
         weight = (

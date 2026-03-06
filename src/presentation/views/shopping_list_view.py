@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from src.domain.entities.product import Product
 from src.domain.entities.shopping_list import ShoppingList
+from src.presentation.units import to_display
 
 
 class ShoppingListView(QWidget):
@@ -153,7 +154,7 @@ class ShoppingListView(QWidget):
                 name_item = QTableWidgetItem(item.product_name)
                 name_item.setData(Qt.ItemDataRole.UserRole, int(item.product_id))
                 self._table.setItem(row, 1, name_item)
-                qty_text = f"{item.quantity.amount:.2f} {item.quantity.unit}"
+                qty_text = f"{item.quantity.amount:.2f} {to_display(item.quantity.unit)}"
                 self._table.setItem(row, 2, QTableWidgetItem(qty_text))
                 cost_text = f"{item.cost.amount:.2f}"
                 self._table.setItem(row, 3, QTableWidgetItem(cost_text))
@@ -206,7 +207,7 @@ class ShoppingListView(QWidget):
             unit = next(
                 (p.recipe_unit for p in self._products if p.id == product_id), ""
             )
-        self._add_unit_label.setText(unit)
+        self._add_unit_label.setText(to_display(unit))
 
     def _on_add_product(self) -> None:
         if self._shopping_list is None:
