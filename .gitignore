@@ -6,3 +6,8 @@ CLAUDE.md
 .pytest_cache
 .coverage
 pyproject.toml
+.mypy_cache
+.claude
+AGENT_PLAN.md
+__pycache__
+data

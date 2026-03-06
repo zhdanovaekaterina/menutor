@@ -1,0 +1,9 @@
+#!/bin/sh
+
+source .venv3-14/bin/activate
+
+pytest -v
+isort src
+mypy src
+
+deactivate

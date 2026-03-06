@@ -15,8 +15,12 @@ platformdirs==4.9.2
 pluggy==1.6.0
 Pygments==2.19.2
 pylint==4.0.5
+PySide6==6.10.2
+PySide6_Addons==6.10.2
+PySide6_Essentials==6.10.2
 pytest==9.0.2
 pytest-cov==7.0.0
 pytokens==0.4.1
+shiboken6==6.10.2
 tomlkit==0.14.0
 typing_extensions==4.15.0
