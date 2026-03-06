@@ -1,7 +1,6 @@
 from decimal import Decimal
 from unittest.mock import MagicMock
 
-from src.domain.entities.family_member import FamilyMember
 from src.domain.entities.menu import MenuSlot, WeeklyMenu
 from src.domain.entities.product import Product
 from src.domain.entities.recipe import Recipe
@@ -12,7 +11,6 @@ from src.domain.value_objects.money import Money
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
 from src.domain.value_objects.types import (
-    FamilyMemberId,
     MenuId,
     ProductCategoryId,
     ProductId,
@@ -56,10 +54,6 @@ def _builder(recipe_repo: MagicMock, product_repo: MagicMock,
     )
 
 
-def _member(mid: int, multiplier: float = 1.0) -> FamilyMember:
-    return FamilyMember(FamilyMemberId(mid), f"M{mid}", portion_multiplier=multiplier)
-
-
 # ---- single slot ----
 
 def test_single_slot_quantity_and_cost() -> None:
@@ -72,8 +66,8 @@ def test_single_slot_quantity_and_cost() -> None:
         id=MenuId(1), name="Week",
         slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
     )
-    # 1 adult (1.0), base=2 → total=2.0 → scale factor 1.0 → 200g → 0.2 kg → 20 RUB
-    result = _builder(recipe_repo, product_repo).build(menu, [_member(1, 1.0)])
+    # base=2 servings → 200g → 0.2 kg → 20 RUB
+    result = _builder(recipe_repo, product_repo).build(menu)
 
     assert len(result.items) == 1
     item = result.items[0]
@@ -91,8 +85,8 @@ def test_single_slot_no_members_uses_base_servings() -> None:
         id=MenuId(1), name="Week",
         slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
     )
-    # No members → base_servings=2 used directly → 200g → 0.2 kg
-    result = _builder(recipe_repo, product_repo).build(menu, [])
+    # base_servings=2 used directly → 200g → 0.2 kg
+    result = _builder(recipe_repo, product_repo).build(menu)
 
     assert result.items[0].quantity == Quantity(0.2, "kg")
 
@@ -116,8 +110,8 @@ def test_two_slots_same_ingredient_aggregated() -> None:
             MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(2)),
         ],
     )
-    # 1 adult, both recipes scaled 1:1 → 200g + 300g = 500g → 0.5 kg
-    result = _builder(recipe_repo, product_repo).build(menu, [_member(1, 1.0)])
+    # 200g + 300g = 500g → 0.5 kg
+    result = _builder(recipe_repo, product_repo).build(menu)
 
     assert len(result.items) == 1
     assert result.items[0].quantity == Quantity(0.5, "kg")
@@ -141,28 +135,9 @@ def test_two_different_products_two_items() -> None:
             MenuSlot(day=1, meal_type="dinner", recipe_id=RecipeId(2)),
         ],
     )
-    result = _builder(recipe_repo, product_repo).build(menu, [_member(1, 1.0)])
+    result = _builder(recipe_repo, product_repo).build(menu)
 
     assert len(result.items) == 2
-
-
-# ---- family portion scaling ----
-
-def test_family_portion_scaling() -> None:
-    recipe_repo = MagicMock()
-    product_repo = MagicMock()
-    recipe_repo.get_by_id.return_value = _recipe(1, 1, amount=100.0, base_servings=2)
-    product_repo.get_by_id.return_value = _product(1, "g", "g", 1.0, 10.0)
-
-    menu = WeeklyMenu(
-        id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="dinner", recipe_id=RecipeId(1))],
-    )
-    members = [_member(1, 1.0), _member(2, 1.0), _member(3, 0.5)]
-    # total = (1+1+0.5)*2 = 5.0 servings, scale 100g → 250g, factor 1.0 → 250g
-    result = _builder(recipe_repo, product_repo).build(menu, members)
-
-    assert result.items[0].quantity == Quantity(250.0, "g")
 
 
 # ---- servings_override ----
@@ -178,10 +153,93 @@ def test_slot_servings_override_used_instead_of_base() -> None:
         slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
                         servings_override=4.0)],
     )
-    # override=4.0, members=[1.0] → total=(4*1.0)=4.0 → scale 100g*(4/2)=200g
-    result = _builder(recipe_repo, product_repo).build(menu, [_member(1, 1.0)])
+    # override=4.0 → scale_to(4.0) → 100g*(4/2)=200g
+    result = _builder(recipe_repo, product_repo).build(menu)
 
     assert result.items[0].quantity == Quantity(200.0, "g")
+
+
+def test_slot_servings_override_scales_down() -> None:
+    recipe_repo = MagicMock()
+    product_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = _recipe(1, 1, amount=200.0, base_servings=4)
+    product_repo.get_by_id.return_value = _product(1, "g", "g", 1.0, 5.0)
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+                        servings_override=1.0)],
+    )
+    # override=1.0, base=4 → factor=0.25 → 200g*0.25=50g
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert result.items[0].quantity == Quantity(50.0, "g")
+
+
+def test_slot_servings_override_fractional() -> None:
+    recipe_repo = MagicMock()
+    product_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = _recipe(1, 1, amount=200.0, base_servings=2)
+    product_repo.get_by_id.return_value = _product(1, "g", "g", 1.0, 5.0)
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+                        servings_override=3.0)],
+    )
+    # override=3.0, base=2 → factor=1.5 → 200g*1.5=300g
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert result.items[0].quantity == Quantity(300.0, "g")
+
+
+def test_slot_no_override_uses_base_servings_factor_one() -> None:
+    """When servings_override is absent, scale_to(base_servings) → factor=1, amounts unchanged."""
+    recipe_repo = MagicMock()
+    product_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = _recipe(1, 1, amount=350.0, base_servings=4)
+    product_repo.get_by_id.return_value = _product(1, "g", "g", 1.0, 5.0)
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+    )
+    # no override → scale_to(4) → factor=1.0 → 350g unchanged
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert result.items[0].quantity == Quantity(350.0, "g")
+
+
+def test_slot_override_scales_all_ingredients_proportionally() -> None:
+    """All ingredients in a recipe are scaled by the same factor."""
+    pid1, pid2 = ProductId(1), ProductId(2)
+    p1 = _product(1, "g", "g", 1.0, 5.0)
+    p2 = _product(2, "ml", "ml", 1.0, 3.0)
+
+    recipe = Recipe(
+        id=RecipeId(1), name="R", servings=2,
+        ingredients=[
+            RecipeIngredient(pid1, Quantity(100.0, "g")),
+            RecipeIngredient(pid2, Quantity(50.0, "ml")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = recipe
+    product_repo = MagicMock()
+    product_repo.get_by_id.side_effect = lambda pid: p1 if pid == pid1 else p2
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+                        servings_override=6.0)],
+    )
+    # override=6, base=2 → factor=3 → 100g→300g, 50ml→150ml
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    by_product = {item.product_id: item.quantity for item in result.items}
+    assert by_product[pid1] == Quantity(300.0, "g")
+    assert by_product[pid2] == Quantity(150.0, "ml")
 
 
 # ---- shopping list helpers ----
@@ -196,7 +254,7 @@ def test_total_cost() -> None:
         id=MenuId(1), name="Week",
         slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
     )
-    result = _builder(recipe_repo, product_repo).build(menu, [_member(1)])
+    result = _builder(recipe_repo, product_repo).build(menu)
 
     assert result.total_cost() == Money(Decimal("20.0"))
 
@@ -231,7 +289,7 @@ def test_items_by_category() -> None:
             MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(2)),
         ],
     )
-    result = _builder(recipe_repo, product_repo, product_category_repo).build(menu, [_member(1)])
+    result = _builder(recipe_repo, product_repo, product_category_repo).build(menu)
     by_cat = result.items_by_category()
 
     assert "dry" in by_cat
@@ -252,7 +310,7 @@ def test_standalone_product_slot_adds_quantity_directly() -> None:
         slots=[MenuSlot(day=0, meal_type="lunch", product_id=ProductId(1),
                         quantity=500.0, unit="g")],
     )
-    result = _builder(recipe_repo, product_repo).build(menu, [_member(1)])
+    result = _builder(recipe_repo, product_repo).build(menu)
 
     assert len(result.items) == 1
     assert result.items[0].quantity == Quantity(0.5, "kg")
@@ -269,10 +327,7 @@ def test_standalone_product_no_family_scaling() -> None:
         slots=[MenuSlot(day=0, meal_type="lunch", product_id=ProductId(1),
                         quantity=200.0, unit="g")],
     )
-    # Two family members shouldn't affect standalone product quantity
-    result = _builder(recipe_repo, product_repo).build(
-        menu, [_member(1, 1.0), _member(2, 1.0)]
-    )
+    result = _builder(recipe_repo, product_repo).build(menu)
 
     assert result.items[0].quantity == Quantity(200.0, "g")
 
@@ -292,8 +347,8 @@ def test_product_slot_aggregates_with_recipe_ingredient() -> None:
                      quantity=300.0, unit="g"),
         ],
     )
-    # Recipe: 200g (1 member, base 2 → scale 1.0) + standalone: 300g = 500g → 0.5 kg
-    result = _builder(recipe_repo, product_repo).build(menu, [_member(1, 1.0)])
+    # Recipe: 200g (base 2 → scale 1.0) + standalone: 300g = 500g → 0.5 kg
+    result = _builder(recipe_repo, product_repo).build(menu)
 
     assert len(result.items) == 1
     assert result.items[0].quantity == Quantity(0.5, "kg")

@@ -25,7 +25,7 @@ class ShoppingListBuilder:
         self._portion_calc = portion_calc
         self._unit_converter = unit_converter
 
-    def build(self, menu: WeeklyMenu, members: list[FamilyMember]) -> ShoppingList:
+    def build(self, menu: WeeklyMenu) -> ShoppingList:
         aggregated: dict[ProductId, Quantity] = {}
 
         for slot in menu.slots:
@@ -36,8 +36,7 @@ class ShoppingListBuilder:
 
                 base = float(slot.servings_override if slot.servings_override is not None
                              else recipe.servings)
-                total = self._portion_calc.total_servings(base, members) if members else base
-                scaled = recipe.scale_to(total)
+                scaled = recipe.scale_to(base)
 
                 for ing in scaled.ingredients:
                     pid = ing.product_id

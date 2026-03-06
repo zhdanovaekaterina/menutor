@@ -134,7 +134,6 @@ class ApplicationContainer:
         # ── Application — Shopping List ───────────────────────────────
         self.generate_shopping_list = GenerateShoppingList(
             menu_repo=menu_repo,
-            family_repo=family_repo,
             builder=builder,
         )
         self.export_shopping_list_as_text = ExportShoppingListAsText(text_exporter)
