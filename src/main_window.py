@@ -24,8 +24,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self, container: ApplicationContainer) -> None:
         super().__init__()
-        self.setWindowTitle("Планировщик меню")
-        self.setMinimumSize(1200, 768)
+        self.setWindowTitle("Menutor")
+        self.showMaximized()
 
         # --- Views ---
         self._menu_view = MenuPlannerView()
