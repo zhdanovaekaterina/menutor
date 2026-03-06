@@ -1,10 +1,13 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QComboBox,
+    QDoubleSpinBox,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
+    QInputDialog,
     QLabel,
     QMessageBox,
     QProgressBar,
@@ -15,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.domain.entities.product import Product
 from src.domain.entities.shopping_list import ShoppingList
 
 
@@ -23,6 +27,8 @@ class ShoppingListView(QWidget):
 
     export_text_requested = Signal()
     export_csv_requested = Signal(str)  # filepath
+    add_product_requested = Signal(int, float)  # product_id, quantity (in recipe_unit)
+    quantity_edited = Signal(int, float)  # product_id, new purchase quantity
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -66,15 +72,54 @@ class ShoppingListView(QWidget):
         summary_layout.addWidget(export_btn_text)
         summary_layout.addWidget(export_btn_csv)
 
+        # --- Add product panel ---
+        add_box = QGroupBox("Добавить продукт")
+        add_layout = QVBoxLayout(add_box)
+
+        self._add_product_combo = QComboBox()
+        add_layout.addWidget(self._add_product_combo)
+
+        qty_row = QHBoxLayout()
+        self._add_qty_spin = QDoubleSpinBox()
+        self._add_qty_spin.setMinimum(0.01)
+        self._add_qty_spin.setMaximum(99999.0)
+        self._add_qty_spin.setDecimals(2)
+        self._add_qty_spin.setValue(1.0)
+        self._add_unit_label = QLabel()
+        qty_row.addWidget(self._add_qty_spin, 1)
+        qty_row.addWidget(self._add_unit_label)
+        add_layout.addLayout(qty_row)
+
+        self._add_product_combo.currentIndexChanged.connect(self._on_add_combo_changed)
+
+        add_btn = QPushButton("Добавить в список")
+        add_btn.clicked.connect(self._on_add_product)
+        add_layout.addWidget(add_btn)
+
+        summary_layout.addWidget(add_box)
+
         main_layout = QHBoxLayout(self)
         main_layout.addWidget(self._table, 2)
         main_layout.addWidget(summary_box, 1)
 
         self._table.itemChanged.connect(self._on_item_changed)
+        self._table.cellDoubleClicked.connect(self._on_cell_double_clicked)
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    def set_products(self, products: list[Product]) -> None:
+        self._products = products
+        current_id = self._add_product_combo.currentData()
+        self._add_product_combo.clear()
+        for p in products:
+            self._add_product_combo.addItem(p.name, p.id)
+        if current_id is not None:
+            for i in range(self._add_product_combo.count()):
+                if self._add_product_combo.itemData(i) == current_id:
+                    self._add_product_combo.setCurrentIndex(i)
+                    break
 
     def set_shopping_list(self, shopping_list: ShoppingList) -> None:
         self._shopping_list = shopping_list
@@ -92,7 +137,9 @@ class ShoppingListView(QWidget):
                 )
                 self._table.setItem(row, 0, check_item)
                 self._table.setItem(row, 1, QTableWidgetItem(category))
-                self._table.setItem(row, 2, QTableWidgetItem(item.product_name))
+                name_item = QTableWidgetItem(item.product_name)
+                name_item.setData(Qt.ItemDataRole.UserRole, int(item.product_id))
+                self._table.setItem(row, 2, name_item)
                 qty_text = f"{item.quantity.amount:.2f} {item.quantity.unit}"
                 self._table.setItem(row, 3, QTableWidgetItem(qty_text))
                 cost_text = f"{item.cost.amount:.2f}"
@@ -138,6 +185,63 @@ class ShoppingListView(QWidget):
         )
         if filepath:
             self.export_csv_requested.emit(filepath)
+
+    def _on_add_combo_changed(self) -> None:
+        product_id = self._add_product_combo.currentData()
+        unit = ""
+        if hasattr(self, "_products"):
+            unit = next(
+                (p.recipe_unit for p in self._products if p.id == product_id), ""
+            )
+        self._add_unit_label.setText(unit)
+
+    def _on_add_product(self) -> None:
+        if self._shopping_list is None:
+            QMessageBox.information(self, "Добавление", "Сначала сформируйте список покупок.")
+            return
+        product_id = self._add_product_combo.currentData()
+        if product_id is None:
+            return
+        # Check for duplicate
+        for existing in self._shopping_list.items:
+            if existing.product_id == product_id:
+                name = self._add_product_combo.currentText()
+                QMessageBox.information(
+                    self, "Продукт уже в списке",
+                    f"«{name}» уже есть в списке покупок, отредактируйте количество.",
+                )
+                return
+        qty = self._add_qty_spin.value()
+        self.add_product_requested.emit(int(product_id), qty)
+
+    def _on_cell_double_clicked(self, row: int, column: int) -> None:
+        if column != 3 or self._shopping_list is None:
+            return
+        name_item = self._table.item(row, 2)
+        if name_item is None:
+            return
+        product_id = name_item.data(Qt.ItemDataRole.UserRole)
+        if product_id is None:
+            return
+        product_name = name_item.text()
+        # Find current item to get unit and amount
+        item = next(
+            (i for i in self._shopping_list.items if int(i.product_id) == product_id),
+            None,
+        )
+        if item is None:
+            return
+        new_qty, ok = QInputDialog.getDouble(
+            self,
+            "Изменить количество",
+            f"Количество для «{product_name}» ({item.quantity.unit}):",
+            item.quantity.amount,
+            0.01,
+            99999.0,
+            2,
+        )
+        if ok and new_qty != item.quantity.amount:
+            self.quantity_edited.emit(product_id, new_qty)
 
     def _on_item_changed(self, item: QTableWidgetItem) -> None:
         if item.column() != 0:

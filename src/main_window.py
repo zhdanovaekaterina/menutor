@@ -58,6 +58,8 @@ class MainWindow(QMainWindow):
             view=self._shopping_view,
             export_text_uc=container.export_shopping_list_as_text,
             export_csv_uc=container.export_shopping_list_as_csv,
+            list_products_uc=container.list_products,
+            list_product_categories_uc=container.list_product_categories,
         )
 
         self._settings_ctrl = SettingsController(
@@ -108,8 +110,10 @@ class MainWindow(QMainWindow):
         self._tabs.setCurrentIndex(1)
 
     def _on_tab_changed(self, index: int) -> None:
-        # index 0 = Planner, 2 = Recipes, 3 = Products, 4 = Settings
-        if index == 0:
+        # index 0 = Planner, 1 = Shopping list, 2 = Recipes, 3 = Products, 4 = Settings
+        if index == 1:
+            self._shopping_ctrl.refresh()
+        elif index == 0:
             self._menu_ctrl.refresh()
         elif index == 2:
             self._recipe_ctrl.refresh()
