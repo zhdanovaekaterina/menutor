@@ -70,6 +70,16 @@ class MainWindow(QMainWindow):
             list_members_uc=container.list_family_members,
             export_text_uc=container.export_shopping_list_as_text,
             export_csv_uc=container.export_shopping_list_as_csv,
+            list_product_categories_uc=container.list_all_product_categories,
+            create_product_category_uc=container.create_product_category,
+            edit_product_category_uc=container.edit_product_category,
+            delete_product_category_uc=container.delete_product_category,
+            check_product_category_used_uc=container.check_product_category_used,
+            list_recipe_categories_uc=container.list_all_recipe_categories,
+            create_recipe_category_uc=container.create_recipe_category,
+            edit_recipe_category_uc=container.edit_recipe_category,
+            delete_recipe_category_uc=container.delete_recipe_category,
+            check_recipe_category_used_uc=container.check_recipe_category_used,
         )
 
         self._menu_ctrl = MenuPlannerController(

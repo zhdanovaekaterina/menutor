@@ -15,6 +15,18 @@ from src.application.use_cases.manage_family import (
     EditFamilyMember,
     ListFamilyMembers,
 )
+from src.application.use_cases.manage_category import (
+    CheckProductCategoryUsed,
+    CheckRecipeCategoryUsed,
+    CreateProductCategory,
+    CreateRecipeCategory,
+    DeleteProductCategory,
+    DeleteRecipeCategory,
+    EditProductCategory,
+    EditRecipeCategory,
+    ListAllProductCategories,
+    ListAllRecipeCategories,
+)
 from src.application.use_cases.manage_product import (
     CreateProduct,
     DeleteProduct,
@@ -124,6 +136,27 @@ class ApplicationContainer:
         self.add_dish_to_slot = AddDishToSlot(menu_repo)
         self.remove_item_from_slot = RemoveItemFromSlot(menu_repo)
         self.clear_menu = ClearMenu(menu_repo)
+
+        # ── Application — Categories ──────────────────────────────────
+        self.list_all_product_categories = ListAllProductCategories(
+            product_category_repo
+        )
+        self.create_product_category = CreateProductCategory(product_category_repo)
+        self.edit_product_category = EditProductCategory(product_category_repo)
+        self.delete_product_category = DeleteProductCategory(product_category_repo)
+        self.check_product_category_used = CheckProductCategoryUsed(
+            product_category_repo
+        )
+
+        self.list_all_recipe_categories = ListAllRecipeCategories(
+            recipe_category_repo
+        )
+        self.create_recipe_category = CreateRecipeCategory(recipe_category_repo)
+        self.edit_recipe_category = EditRecipeCategory(recipe_category_repo)
+        self.delete_recipe_category = DeleteRecipeCategory(recipe_category_repo)
+        self.check_recipe_category_used = CheckRecipeCategoryUsed(
+            recipe_category_repo
+        )
 
         # ── Application — Family ──────────────────────────────────────
         self.create_family_member = CreateFamilyMember(family_repo)
