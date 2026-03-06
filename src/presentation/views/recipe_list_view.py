@@ -82,10 +82,17 @@ class RecipeListView(QWidget):
         self._servings_spin.setMaximum(100)
         self._servings_spin.setValue(4)
 
+        self._weight_spin = QSpinBox()
+        self._weight_spin.setMinimum(0)
+        self._weight_spin.setMaximum(99999)
+        self._weight_spin.setValue(0)
+        self._weight_spin.setSuffix(" г")
+
         form = QFormLayout()
         form.addRow("Название:", self._name_edit)
         form.addRow("Категория:", self._category_combo)
         form.addRow("Порций:", self._servings_spin)
+        form.addRow("Вес:", self._weight_spin)
         form_layout.addLayout(form)
 
         # Ingredients table
@@ -223,6 +230,7 @@ class RecipeListView(QWidget):
                 self._category_combo.setCurrentIndex(i)
                 break
         self._servings_spin.setValue(recipe.servings)
+        self._weight_spin.setValue(recipe.weight)
 
         # Ingredients
         self._ingredients_table.setRowCount(0)
@@ -247,6 +255,7 @@ class RecipeListView(QWidget):
         self._name_edit.clear()
         self._category_combo.setCurrentIndex(0)
         self._servings_spin.setValue(4)
+        self._weight_spin.setValue(0)
         self._ingredients_table.setRowCount(0)
         self._steps_list.clear()
         self._step_input.clear()
@@ -261,6 +270,7 @@ class RecipeListView(QWidget):
             QMessageBox.warning(self, "Ошибка", "Выберите категорию рецепта.")
             return None
         servings = self._servings_spin.value()
+        weight = self._weight_spin.value()
 
         ingredients: list[RecipeIngredient] = []
         for row in range(self._ingredients_table.rowCount()):
@@ -289,6 +299,7 @@ class RecipeListView(QWidget):
             servings=servings,
             ingredients=ingredients,
             steps=steps,
+            weight=weight,
         )
 
     def _add_ingredient_row(self) -> None:

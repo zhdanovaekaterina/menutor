@@ -15,6 +15,7 @@ class RecipeData:
     servings: int
     ingredients: list[RecipeIngredient] = field(default_factory=list)
     steps: list[CookingStep] = field(default_factory=list)
+    weight: int = 0
 
 
 class CreateRecipe:
@@ -29,6 +30,7 @@ class CreateRecipe:
             ingredients=list(data.ingredients),
             steps=list(data.steps),
             category_id=data.category_id,
+            weight=data.weight,
         )
         return self._repo.save(recipe)
 
@@ -47,6 +49,7 @@ class EditRecipe:
             ingredients=list(data.ingredients),
             steps=list(data.steps),
             category_id=data.category_id,
+            weight=data.weight,
         )
         return self._repo.save(recipe)
 

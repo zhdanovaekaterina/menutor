@@ -14,6 +14,7 @@ class Recipe:
     ingredients: list[RecipeIngredient] = field(default_factory=list)
     steps: list[CookingStep] = field(default_factory=list)
     category_id: RecipeCategoryId = field(default=RecipeCategoryId(0))
+    weight: int = 0
 
     def scale_to(self, target_servings: float) -> "Recipe":
         factor = target_servings / self.servings
@@ -31,4 +32,5 @@ class Recipe:
             ingredients=scaled_ingredients,
             steps=list(self.steps),
             category_id=self.category_id,
+            weight=self.weight,
         )

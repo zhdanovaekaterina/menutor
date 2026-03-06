@@ -37,12 +37,13 @@ class SqliteRecipeRepository(RecipeRepository):
         with self._conn:
             if recipe.id == 0:
                 cursor = self._conn.execute(
-                    "INSERT INTO recipes (name, category_id, servings) "
-                    "VALUES (?, ?, ?)",
+                    "INSERT INTO recipes (name, category_id, servings, weight) "
+                    "VALUES (?, ?, ?, ?)",
                     (
                         recipe.name,
                         recipe.category_id,
                         recipe.servings,
+                        recipe.weight,
                     ),
                 )
                 last_id = cursor.lastrowid
@@ -51,12 +52,13 @@ class SqliteRecipeRepository(RecipeRepository):
                 recipe_id = RecipeId(last_id)
             else:
                 self._conn.execute(
-                    "UPDATE recipes SET name=?, category_id=?, servings=? "
+                    "UPDATE recipes SET name=?, category_id=?, servings=?, weight=? "
                     "WHERE id=?",
                     (
                         recipe.name,
                         recipe.category_id,
                         recipe.servings,
+                        recipe.weight,
                         recipe.id,
                     ),
                 )
@@ -122,4 +124,5 @@ class SqliteRecipeRepository(RecipeRepository):
                 for r in step_rows
             ],
             category_id=RecipeCategoryId(row["category_id"]),
+            weight=row["weight"],
         )

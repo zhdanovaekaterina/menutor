@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS recipes (
     name         TEXT    NOT NULL,
     category_id  INTEGER NOT NULL REFERENCES recipe_categories(id),
     dietary_tags TEXT    NOT NULL DEFAULT '[]',
-    servings     INTEGER NOT NULL DEFAULT 1
+    servings     INTEGER NOT NULL DEFAULT 1,
+    weight       INTEGER NOT NULL DEFAULT 0
 );
 
 -- Recipe ↔ product join (one row per ingredient per recipe)

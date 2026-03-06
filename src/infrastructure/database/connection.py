@@ -40,6 +40,15 @@ def _migrate_products_supplier(conn: sqlite3.Connection) -> None:
         conn.commit()
 
 
+def _migrate_recipes_weight(conn: sqlite3.Connection) -> None:
+    """Add weight column to recipes if missing."""
+    info = conn.execute("PRAGMA table_info(recipes)").fetchall()
+    columns = {row[1] for row in info}
+    if "weight" not in columns:
+        conn.execute("ALTER TABLE recipes ADD COLUMN weight INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+
+
 def apply_schema(conn: sqlite3.Connection) -> None:
     """Create all tables (idempotent). Enables foreign-key enforcement afterwards."""
     # Migrate old menu_slots if it exists
@@ -50,6 +59,8 @@ def apply_schema(conn: sqlite3.Connection) -> None:
         _migrate_menu_slots(conn)
     if "products" in tables:
         _migrate_products_supplier(conn)
+    if "recipes" in tables:
+        _migrate_recipes_weight(conn)
 
     conn.executescript(_SCHEMA_PATH.read_text(encoding="utf-8"))
 
