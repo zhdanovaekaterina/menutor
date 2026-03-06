@@ -71,6 +71,7 @@ class ProductListView(QWidget):
         self._name_edit = QLineEdit()
         self._category_combo = QComboBox()
         self._brand_edit = QLineEdit()
+        self._supplier_edit = QLineEdit()
 
         self._recipe_unit_combo = QComboBox()
         self._recipe_unit_combo.addItems(UNIT_OPTIONS)
@@ -108,6 +109,7 @@ class ProductListView(QWidget):
         form.addRow("Название:*", self._name_edit)
         form.addRow("Категория:", self._category_combo)
         form.addRow("Бренд:", self._brand_edit)
+        form.addRow("Поставщик:", self._supplier_edit)
         form.addRow("Ед. в рецепте:", self._recipe_unit_combo)
         form.addRow("Ед. покупки:", self._purchase_unit_combo)
         form.addRow("Цена:", self._price_spin)
@@ -198,6 +200,7 @@ class ProductListView(QWidget):
                 self._category_combo.setCurrentIndex(i)
                 break
         self._brand_edit.setText(product.brand)
+        self._supplier_edit.setText(product.supplier)
 
         idx = self._recipe_unit_combo.findText(product.recipe_unit)
         self._recipe_unit_combo.setCurrentIndex(idx if idx >= 0 else 0)
@@ -224,6 +227,7 @@ class ProductListView(QWidget):
         self._name_edit.clear()
         self._category_combo.setCurrentIndex(0)
         self._brand_edit.clear()
+        self._supplier_edit.clear()
         self._recipe_unit_combo.setCurrentIndex(0)
         self._purchase_unit_combo.setCurrentIndex(0)
         self._price_spin.setValue(0.0)
@@ -241,6 +245,7 @@ class ProductListView(QWidget):
             QMessageBox.warning(self, "Ошибка", "Выберите категорию продукта.")
             return None
         brand = self._brand_edit.text().strip()
+        supplier = self._supplier_edit.text().strip()
         recipe_unit = self._recipe_unit_combo.currentText().strip() or "g"
         purchase_unit = self._purchase_unit_combo.currentText().strip() or "g"
         price = Money(Decimal(str(self._price_spin.value())))
@@ -255,6 +260,7 @@ class ProductListView(QWidget):
             name=name,
             category_id=ProductCategoryId(category_id),
             brand=brand,
+            supplier=supplier,
             recipe_unit=recipe_unit,
             purchase_unit=purchase_unit,
             price=price,

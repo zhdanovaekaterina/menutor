@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS products (
     name                    TEXT    NOT NULL,
     category_id             INTEGER NOT NULL REFERENCES product_categories(id),
     brand                   TEXT    NOT NULL DEFAULT '',
+    supplier                TEXT    NOT NULL DEFAULT '',
     recipe_unit             TEXT    NOT NULL REFERENCES units(name),
     purchase_unit           TEXT    NOT NULL REFERENCES units(name),
     price_per_purchase_unit REAL    NOT NULL DEFAULT 0,

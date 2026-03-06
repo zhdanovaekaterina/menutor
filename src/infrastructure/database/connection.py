@@ -31,6 +31,15 @@ def _migrate_menu_slots(conn: sqlite3.Connection) -> None:
     """)
 
 
+def _migrate_products_supplier(conn: sqlite3.Connection) -> None:
+    """Add supplier column to products if missing."""
+    info = conn.execute("PRAGMA table_info(products)").fetchall()
+    columns = {row[1] for row in info}
+    if "supplier" not in columns:
+        conn.execute("ALTER TABLE products ADD COLUMN supplier TEXT NOT NULL DEFAULT ''")
+        conn.commit()
+
+
 def apply_schema(conn: sqlite3.Connection) -> None:
     """Create all tables (idempotent). Enables foreign-key enforcement afterwards."""
     # Migrate old menu_slots if it exists
@@ -39,6 +48,8 @@ def apply_schema(conn: sqlite3.Connection) -> None:
     ).fetchall()}
     if "menu_slots" in tables:
         _migrate_menu_slots(conn)
+    if "products" in tables:
+        _migrate_products_supplier(conn)
 
     conn.executescript(_SCHEMA_PATH.read_text(encoding="utf-8"))
 

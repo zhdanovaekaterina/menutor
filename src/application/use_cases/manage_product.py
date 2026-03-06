@@ -15,6 +15,7 @@ class ProductData:
     purchase_unit: str
     price: Money
     brand: str = field(default="")
+    supplier: str = field(default="")
     weight_per_piece_g: float | None = field(default=None)
     conversion_factor: float = field(default=1.0)
 
@@ -31,6 +32,7 @@ class CreateProduct:
             purchase_unit=data.purchase_unit,
             price_per_purchase_unit=data.price,
             brand=data.brand,
+            supplier=data.supplier,
             weight_per_piece_g=data.weight_per_piece_g,
             conversion_factor=data.conversion_factor,
             category_id=data.category_id,
@@ -52,6 +54,7 @@ class EditProduct:
             purchase_unit=data.purchase_unit,
             price_per_purchase_unit=data.price,
             brand=data.brand,
+            supplier=data.supplier,
             weight_per_piece_g=data.weight_per_piece_g,
             conversion_factor=data.conversion_factor,
             category_id=data.category_id,

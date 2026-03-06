@@ -37,12 +37,12 @@ class SqliteProductRepository(ProductRepository):
             if product.id == 0:
                 cursor = self._conn.execute(
                     "INSERT INTO products "
-                    "(name, category_id, brand, recipe_unit, purchase_unit, "
+                    "(name, category_id, brand, supplier, recipe_unit, purchase_unit, "
                     "price_per_purchase_unit, weight_per_piece_g, conversion_factor) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         product.name, product.category_id, product.brand,
-                        product.recipe_unit, product.purchase_unit,
+                        product.supplier, product.recipe_unit, product.purchase_unit,
                         float(product.price_per_purchase_unit.amount),
                         product.weight_per_piece_g,
                         product.conversion_factor,
@@ -54,12 +54,12 @@ class SqliteProductRepository(ProductRepository):
                 product_id = ProductId(last_id)
             else:
                 self._conn.execute(
-                    "UPDATE products SET name=?, category_id=?, brand=?, recipe_unit=?, "
-                    "purchase_unit=?, price_per_purchase_unit=?, weight_per_piece_g=?, "
-                    "conversion_factor=? WHERE id=?",
+                    "UPDATE products SET name=?, category_id=?, brand=?, supplier=?, "
+                    "recipe_unit=?, purchase_unit=?, price_per_purchase_unit=?, "
+                    "weight_per_piece_g=?, conversion_factor=? WHERE id=?",
                     (
                         product.name, product.category_id, product.brand,
-                        product.recipe_unit, product.purchase_unit,
+                        product.supplier, product.recipe_unit, product.purchase_unit,
                         float(product.price_per_purchase_unit.amount),
                         product.weight_per_piece_g,
                         product.conversion_factor,
@@ -89,6 +89,7 @@ class SqliteProductRepository(ProductRepository):
                 Decimal(str(row["price_per_purchase_unit"]))
             ),
             brand=row["brand"] or "",
+            supplier=row["supplier"] or "",
             weight_per_piece_g=row["weight_per_piece_g"],
             conversion_factor=row["conversion_factor"],
             category_id=ProductCategoryId(row["category_id"]),

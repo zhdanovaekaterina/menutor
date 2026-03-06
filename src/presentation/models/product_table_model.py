@@ -2,7 +2,7 @@ from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
 
 from src.domain.entities.product import Product
 
-COLUMNS = ["Название", "Категория", "Бренд", "Ед.рецепта", "Ед.покупки", "Цена, руб."]
+COLUMNS = ["Название", "Категория", "Бренд", "Поставщик", "Ед.рецепта", "Ед.покупки", "Цена, руб."]
 
 
 class ProductTableModel(QAbstractTableModel):
@@ -43,10 +43,12 @@ class ProductTableModel(QAbstractTableModel):
             if col == 2:
                 return product.brand
             if col == 3:
-                return product.recipe_unit
+                return product.supplier
             if col == 4:
-                return product.purchase_unit
+                return product.recipe_unit
             if col == 5:
+                return product.purchase_unit
+            if col == 6:
                 return f"{product.price_per_purchase_unit.amount:.2f}"
         if role == Qt.ItemDataRole.UserRole:
             return product.id
