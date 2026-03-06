@@ -57,10 +57,17 @@ class _GridCell(QFrame):
     item_added = Signal(int, str, str, int, float, str)  # day, meal_type, item_type, item_id, servings_or_qty, unit
     item_removed = Signal(int, str, str, int)  # day, meal_type, item_type, item_id
 
-    def __init__(self, day: int, meal_type: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        day: int,
+        meal_type: str,
+        product_units: dict,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.day = day
         self.meal_type = meal_type
+        self._product_units = product_units  # shared reference: product_id -> recipe_unit
         self._default_servings: float = 1.0
         # Each item: {"type": "recipe"|"product", "id": int, "name": str,
         #             "servings": float, "quantity": float, "unit": str}
@@ -194,22 +201,16 @@ class _GridCell(QFrame):
             product_id_val = int(raw.data().decode())
             display_name = md.text()
 
-            # Ask user for quantity and unit
+            unit = self._product_units.get(product_id_val, "")
+            unit_suffix = f" ({unit})" if unit else ""
             qty, ok = QInputDialog.getDouble(
-                self, "Количество", f"Количество для «{display_name}»:",
+                self, "Количество",
+                f"Количество для «{display_name}»{unit_suffix}:",
                 1.0, 0.01, 99999.0, 2,
             )
             if not ok:
                 event.ignore()
                 return
-            unit, ok2 = QInputDialog.getText(
-                self, "Единица измерения",
-                f"Единица для «{display_name}» (g, kg, ml, l, pcs, box, pack):",  # todo: russian here, eng in db
-            )
-            if not ok2 or not unit.strip():
-                event.ignore()
-                return
-            unit = unit.strip()
 
             existing = self._find_item("product", product_id_val)
             if existing is not None:
@@ -284,6 +285,7 @@ class DragDropGrid(QWidget):
         super().__init__(parent)
         self._meal_types = meal_types or list(DEFAULT_MEAL_TYPES)
         self._cells: dict[tuple[int, str], _GridCell] = {}
+        self._product_units: dict[int, str] = {}  # product_id -> recipe_unit
 
         self._grid_widget = QWidget()
         grid = QGridLayout(self._grid_widget)
@@ -312,7 +314,7 @@ class DragDropGrid(QWidget):
             grid.addWidget(lbl, row, 0)
 
             for col, day_idx in enumerate(range(7), start=1):
-                cell = _GridCell(day_idx, meal_type)
+                cell = _GridCell(day_idx, meal_type, self._product_units)
                 cell.item_added.connect(self.slot_changed)
                 cell.item_removed.connect(self._on_item_removed)
                 grid.addWidget(cell, row, col)
@@ -334,6 +336,11 @@ class DragDropGrid(QWidget):
             cell.remove_item(item_type, item_id)
             # Emit with 0.0 servings/qty to signal removal
             self.slot_changed.emit(day, meal_type, item_type, item_id, 0.0, "")
+
+    def set_product_units(self, units: dict[int, str]) -> None:
+        """Обновить справочник единиц измерения продуктов (product_id -> recipe_unit)."""
+        self._product_units.clear()
+        self._product_units.update(units)
 
     def set_default_recipe_servings(self, n: float) -> None:
         for cell in self._cells.values():

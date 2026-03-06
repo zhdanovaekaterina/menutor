@@ -150,6 +150,7 @@ class MenuPlannerView(QWidget):
 
     def set_products(self, products: list[Product]) -> None:
         self._product_source.set_items([(p.id, p.name) for p in products])
+        self._grid.set_product_units({p.id: p.recipe_unit for p in products})
 
     def set_family_members(self, members: list[FamilyMember]) -> None:
         if not members:
