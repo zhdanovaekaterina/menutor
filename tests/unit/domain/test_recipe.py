@@ -15,7 +15,6 @@ def _make_recipe(servings: int = 2) -> Recipe:
             RecipeIngredient(ProductId(2), Quantity(200.0, "ml")),
         ],
         steps=[CookingStep(order=1, description="Mix")],
-        dietary_tags=["vegetarian"],
     )
 
 
@@ -55,7 +54,6 @@ def test_scale_to_preserves_metadata() -> None:
     assert scaled.id == recipe.id
     assert scaled.name == recipe.name
     assert scaled.category_id == recipe.category_id
-    assert scaled.dietary_tags == recipe.dietary_tags
     assert scaled.steps == recipe.steps
 
 

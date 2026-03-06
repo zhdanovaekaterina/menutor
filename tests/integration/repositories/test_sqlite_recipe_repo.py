@@ -41,7 +41,6 @@ def _pancake_recipe(flour_id: ProductId) -> Recipe:
         servings=4,
         ingredients=[RecipeIngredient(flour_id, Quantity(200.0, "g"))],
         steps=[CookingStep(1, "Смешать"), CookingStep(2, "Пожарить")],
-        dietary_tags=["vegetarian"],
         category_id=RecipeCategoryId(1),  # Завтраки
     )
 
@@ -61,8 +60,6 @@ def test_save_and_get_by_id_full_roundtrip(recipe_repo: SqliteRecipeRepository,
     assert retrieved.name == "Блины"
     assert retrieved.category_id == RecipeCategoryId(1)
     assert retrieved.servings == 4
-    assert retrieved.dietary_tags == ["vegetarian"]
-
     assert len(retrieved.ingredients) == 1
     assert retrieved.ingredients[0].product_id == flour.id
     assert retrieved.ingredients[0].quantity == Quantity(200.0, "g")

@@ -1,4 +1,3 @@
-import json
 import sqlite3
 
 from src.domain.entities.recipe import Recipe
@@ -38,12 +37,11 @@ class SqliteRecipeRepository(RecipeRepository):
         with self._conn:
             if recipe.id == 0:
                 cursor = self._conn.execute(
-                    "INSERT INTO recipes (name, category_id, dietary_tags, servings) "
-                    "VALUES (?, ?, ?, ?)",
+                    "INSERT INTO recipes (name, category_id, servings) "
+                    "VALUES (?, ?, ?)",
                     (
                         recipe.name,
                         recipe.category_id,
-                        json.dumps(recipe.dietary_tags, ensure_ascii=False),
                         recipe.servings,
                     ),
                 )
@@ -53,12 +51,11 @@ class SqliteRecipeRepository(RecipeRepository):
                 recipe_id = RecipeId(last_id)
             else:
                 self._conn.execute(
-                    "UPDATE recipes SET name=?, category_id=?, dietary_tags=?, servings=? "
+                    "UPDATE recipes SET name=?, category_id=?, servings=? "
                     "WHERE id=?",
                     (
                         recipe.name,
                         recipe.category_id,
-                        json.dumps(recipe.dietary_tags, ensure_ascii=False),
                         recipe.servings,
                         recipe.id,
                     ),
@@ -113,7 +110,6 @@ class SqliteRecipeRepository(RecipeRepository):
             id=rid,
             name=row["name"],
             servings=row["servings"],
-            dietary_tags=json.loads(row["dietary_tags"]) if row["dietary_tags"] else [],
             ingredients=[
                 RecipeIngredient(
                     product_id=ProductId(r["product_id"]),

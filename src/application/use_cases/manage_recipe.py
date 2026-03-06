@@ -15,7 +15,6 @@ class RecipeData:
     servings: int
     ingredients: list[RecipeIngredient] = field(default_factory=list)
     steps: list[CookingStep] = field(default_factory=list)
-    dietary_tags: list[str] = field(default_factory=list)
 
 
 class CreateRecipe:
@@ -29,7 +28,6 @@ class CreateRecipe:
             servings=data.servings,
             ingredients=list(data.ingredients),
             steps=list(data.steps),
-            dietary_tags=list(data.dietary_tags),
             category_id=data.category_id,
         )
         return self._repo.save(recipe)
@@ -48,7 +46,6 @@ class EditRecipe:
             servings=data.servings,
             ingredients=list(data.ingredients),
             steps=list(data.steps),
-            dietary_tags=list(data.dietary_tags),
             category_id=data.category_id,
         )
         return self._repo.save(recipe)

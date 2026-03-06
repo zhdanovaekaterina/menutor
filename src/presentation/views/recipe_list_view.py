@@ -2,26 +2,20 @@ from decimal import Decimal
 
 from PySide6.QtCore import QModelIndex, Signal
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
-    QDialog,
-    QDialogButtonBox,
     QDoubleSpinBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
-    QLabel,
     QLineEdit,
     QListWidget,
-    QListWidgetItem,
     QMessageBox,
     QPushButton,
     QScrollArea,
     QSpinBox,
     QTableView,
     QTableWidget,
-    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -34,14 +28,6 @@ from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
 from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 from src.presentation.models.recipe_table_model import RecipeTableModel
-
-DIETARY_TAG_OPTIONS = [
-    ("вегетарианское", "vegetarian"),
-    ("веганское", "vegan"),
-    ("без глютена", "gluten-free"),
-    ("без лактозы", "lactose-free"),
-    ("диетическое", "diet"),
-]
 
 UNIT_OPTIONS = ["g", "kg", "ml", "l", "pcs", "box", "pack"]
 
@@ -57,7 +43,6 @@ class RecipeListView(QWidget):
         super().__init__(parent)
         self._selected_recipe: Recipe | None = None
         self._products: list[Product] = []
-
         self._model = RecipeTableModel()
 
         self._search_edit = QLineEdit()
@@ -103,16 +88,6 @@ class RecipeListView(QWidget):
         form.addRow("Категория:", self._category_combo)
         form.addRow("Порций:", self._servings_spin)
         form_layout.addLayout(form)
-
-        # Dietary tags
-        tags_box = QGroupBox("Теги")
-        tags_layout = QVBoxLayout(tags_box)
-        self._tag_checkboxes: list[tuple[QCheckBox, str]] = []
-        for label, value in DIETARY_TAG_OPTIONS:
-            cb = QCheckBox(label)
-            self._tag_checkboxes.append((cb, value))
-            tags_layout.addWidget(cb)
-        form_layout.addWidget(tags_box)
 
         # Ingredients table
         ingredients_box = QGroupBox("Ингредиенты")
@@ -250,9 +225,6 @@ class RecipeListView(QWidget):
                 break
         self._servings_spin.setValue(recipe.servings)
 
-        for cb, value in self._tag_checkboxes:
-            cb.setChecked(value in recipe.dietary_tags)
-
         # Ingredients
         self._ingredients_table.setRowCount(0)
         for ing in recipe.ingredients:
@@ -280,8 +252,6 @@ class RecipeListView(QWidget):
         self._name_edit.clear()
         self._category_combo.setCurrentIndex(0)
         self._servings_spin.setValue(4)
-        for cb, _ in self._tag_checkboxes:
-            cb.setChecked(False)
         self._ingredients_table.setRowCount(0)
         self._steps_list.clear()
         self._step_input.clear()
@@ -296,7 +266,6 @@ class RecipeListView(QWidget):
             QMessageBox.warning(self, "Ошибка", "Выберите категорию рецепта.")
             return None
         servings = self._servings_spin.value()
-        tags = [value for cb, value in self._tag_checkboxes if cb.isChecked()]
 
         ingredients: list[RecipeIngredient] = []
         for row in range(self._ingredients_table.rowCount()):
@@ -323,7 +292,6 @@ class RecipeListView(QWidget):
             name=name,
             category_id=RecipeCategoryId(category_id),
             servings=servings,
-            dietary_tags=tags,
             ingredients=ingredients,
             steps=steps,
         )

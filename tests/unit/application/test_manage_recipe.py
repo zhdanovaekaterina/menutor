@@ -23,7 +23,6 @@ def _data(**kwargs) -> RecipeData:
         servings=4,
         ingredients=[RecipeIngredient(ProductId(1), Quantity(200.0, "g"))],
         steps=[CookingStep(1, "Варить")],
-        dietary_tags=["vegetarian"],
     )
     defaults.update(kwargs)
     return RecipeData(**defaults)

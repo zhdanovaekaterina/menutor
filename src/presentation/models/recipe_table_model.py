@@ -2,7 +2,7 @@ from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
 
 from src.domain.entities.recipe import Recipe
 
-COLUMNS = ["Название", "Категория", "Теги", "Порций"]
+COLUMNS = ["Название", "Категория", "Порций"]
 
 
 class RecipeTableModel(QAbstractTableModel):
@@ -41,8 +41,6 @@ class RecipeTableModel(QAbstractTableModel):
             if col == 1:
                 return self._category_map.get(recipe.category_id, "")
             if col == 2:
-                return ", ".join(recipe.dietary_tags)
-            if col == 3:
                 return str(recipe.servings)
         if role == Qt.ItemDataRole.UserRole:
             return recipe.id

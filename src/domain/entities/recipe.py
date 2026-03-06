@@ -13,7 +13,6 @@ class Recipe:
     servings: int
     ingredients: list[RecipeIngredient] = field(default_factory=list)
     steps: list[CookingStep] = field(default_factory=list)
-    dietary_tags: list[str] = field(default_factory=list)
     category_id: RecipeCategoryId = field(default=RecipeCategoryId(0))
 
     def scale_to(self, target_servings: float) -> "Recipe":
@@ -31,6 +30,5 @@ class Recipe:
             servings=round(target_servings),
             ingredients=scaled_ingredients,
             steps=list(self.steps),
-            dietary_tags=list(self.dietary_tags),
             category_id=self.category_id,
         )

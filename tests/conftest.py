@@ -67,6 +67,5 @@ def pancake_recipe(flour: Product, milk: Product) -> Recipe:
             RecipeIngredient(flour.id, Quantity(200.0, "g")),
             RecipeIngredient(milk.id, Quantity(500.0, "ml")),
         ],
-        dietary_tags=["vegetarian"],
         category_id=RecipeCategoryId(1),
     )
