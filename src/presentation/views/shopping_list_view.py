@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QBrush, QColor, QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -35,12 +36,12 @@ class ShoppingListView(QWidget):
         self._shopping_list: ShoppingList | None = None
 
         # --- Shopping list table ---
-        self._table = QTableWidget(0, 5)
+        self._table = QTableWidget(0, 4)
         self._table.setHorizontalHeaderLabels(
-            ["", "Категория", "Продукт", "Количество", "Сумма, руб."]
+            ["", "Продукт", "Количество", "Сумма, руб."]
         )
         self._table.horizontalHeader().setSectionResizeMode(
-            2, QHeaderView.ResizeMode.Stretch
+            1, QHeaderView.ResizeMode.Stretch
         )
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._table.setColumnWidth(0, 30)  # checkbox column
@@ -127,6 +128,19 @@ class ShoppingListView(QWidget):
         self._table.setRowCount(0)
 
         for category, items in shopping_list.items_by_category().items():
+            # --- Category header row ---
+            header_row = self._table.rowCount()
+            self._table.insertRow(header_row)
+            self._table.setSpan(header_row, 0, 1, 4)
+            header_item = QTableWidgetItem(f"  {category}")
+            header_item.setFlags(Qt.ItemFlag.NoItemFlags)
+            header_font = QFont()
+            header_font.setBold(True)
+            header_item.setFont(header_font)
+            header_item.setBackground(QBrush(QColor("#d0d8e8")))
+            header_item.setForeground(QBrush(QColor("#1a2a4a")))
+            self._table.setItem(header_row, 0, header_item)
+
             for item in items:
                 row = self._table.rowCount()
                 self._table.insertRow(row)
@@ -136,14 +150,13 @@ class ShoppingListView(QWidget):
                     Qt.CheckState.Checked if item.purchased else Qt.CheckState.Unchecked
                 )
                 self._table.setItem(row, 0, check_item)
-                self._table.setItem(row, 1, QTableWidgetItem(category))
                 name_item = QTableWidgetItem(item.product_name)
                 name_item.setData(Qt.ItemDataRole.UserRole, int(item.product_id))
-                self._table.setItem(row, 2, name_item)
+                self._table.setItem(row, 1, name_item)
                 qty_text = f"{item.quantity.amount:.2f} {item.quantity.unit}"
-                self._table.setItem(row, 3, QTableWidgetItem(qty_text))
+                self._table.setItem(row, 2, QTableWidgetItem(qty_text))
                 cost_text = f"{item.cost.amount:.2f}"
-                self._table.setItem(row, 4, QTableWidgetItem(cost_text))
+                self._table.setItem(row, 3, QTableWidgetItem(cost_text))
 
         self._table.blockSignals(False)
         self._update_summary()
@@ -215,9 +228,9 @@ class ShoppingListView(QWidget):
         self.add_product_requested.emit(int(product_id), qty)
 
     def _on_cell_double_clicked(self, row: int, column: int) -> None:
-        if column != 3 or self._shopping_list is None:
+        if column != 2 or self._shopping_list is None:
             return
-        name_item = self._table.item(row, 2)
+        name_item = self._table.item(row, 1)
         if name_item is None:
             return
         product_id = name_item.data(Qt.ItemDataRole.UserRole)
@@ -246,6 +259,8 @@ class ShoppingListView(QWidget):
     def _on_item_changed(self, item: QTableWidgetItem) -> None:
         if item.column() != 0:
             return
+        if not (item.flags() & Qt.ItemFlag.ItemIsUserCheckable):
+            return
         self._update_summary()
 
     # ------------------------------------------------------------------
@@ -256,12 +271,15 @@ class ShoppingListView(QWidget):
         if self._shopping_list is None:
             return
         total = self._shopping_list.total_cost()
-        total_items = self._table.rowCount()
-        checked = sum(
-            1
-            for row in range(total_items)
+        data_items = [
+            self._table.item(row, 0)
+            for row in range(self._table.rowCount())
             if self._table.item(row, 0)
-            and self._table.item(row, 0).checkState() == Qt.CheckState.Checked
+            and (self._table.item(row, 0).flags() & Qt.ItemFlag.ItemIsUserCheckable)
+        ]
+        total_items = len(data_items)
+        checked = sum(
+            1 for it in data_items if it.checkState() == Qt.CheckState.Checked
         )
         self._total_label.setText(f"{total.amount:.2f} руб.")
         self._items_label.setText(f"Позиций: {total_items}")
