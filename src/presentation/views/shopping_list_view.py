@@ -31,6 +31,7 @@ class ShoppingListView(QWidget):
     export_csv_requested = Signal(str)  # filepath
     add_product_requested = Signal(int, float)  # product_id, quantity (in recipe_unit)
     quantity_edited = Signal(int, float)  # product_id, new purchase quantity
+    remove_product_requested = Signal(int)  # product_id
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -66,6 +67,10 @@ class ShoppingListView(QWidget):
         summary_layout.addWidget(QLabel("Прогресс покупок:"))
         summary_layout.addWidget(self._progress_bar)
         summary_layout.addStretch()
+
+        self._remove_btn = QPushButton("Удалить из списка")
+        self._remove_btn.clicked.connect(self._on_remove_product)
+        summary_layout.addWidget(self._remove_btn)
 
         export_btn_text = QPushButton("Экспорт (текст)")
         export_btn_csv = QPushButton("Экспорт (CSV)")
@@ -228,6 +233,22 @@ class ShoppingListView(QWidget):
         qty = self._add_qty_spin.value()
         self.add_product_requested.emit(int(product_id), qty)
 
+    def _on_remove_product(self) -> None:
+        if self._shopping_list is None:
+            QMessageBox.information(self, "Удаление", "Список покупок пуст.")
+            return
+        product_id = self._selected_product_id()
+        if product_id is None:
+            QMessageBox.information(self, "Удаление", "Выберите продукт для удаления.")
+            return
+        name_item = self._table.item(self._table.currentRow(), 1)
+        name = name_item.text() if name_item else ""
+        reply = QMessageBox.question(
+            self, "Подтверждение", f"Удалить «{name}» из списка покупок?"
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.remove_product_requested.emit(product_id)
+
     def _on_cell_double_clicked(self, row: int, column: int) -> None:
         if column != 2 or self._shopping_list is None:
             return
@@ -248,7 +269,7 @@ class ShoppingListView(QWidget):
         new_qty, ok = QInputDialog.getDouble(
             self,
             "Изменить количество",
-            f"Количество для «{product_name}» ({item.quantity.unit}):",
+            f"Количество для «{product_name}» ({to_display(item.quantity.unit)}):",
             item.quantity.amount,
             0.01,
             99999.0,
@@ -267,6 +288,15 @@ class ShoppingListView(QWidget):
     # ------------------------------------------------------------------
     # Private
     # ------------------------------------------------------------------
+
+    def _selected_product_id(self) -> int | None:
+        row = self._table.currentRow()
+        if row < 0:
+            return None
+        name_item = self._table.item(row, 1)
+        if name_item is None:
+            return None
+        return name_item.data(Qt.ItemDataRole.UserRole)
 
     def _update_summary(self) -> None:
         if self._shopping_list is None:

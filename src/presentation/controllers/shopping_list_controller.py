@@ -32,6 +32,7 @@ class ShoppingListController:
         view.export_csv_requested.connect(self._on_export_csv)
         view.add_product_requested.connect(self._on_add_product)
         view.quantity_edited.connect(self._on_quantity_edited)
+        view.remove_product_requested.connect(self._on_remove_product)
 
         self._refresh_products()
 
@@ -94,6 +95,15 @@ class ShoppingListController:
             self._view.set_shopping_list(self._shopping_list)
         except Exception as exc:
             self._view.show_error(str(exc))
+
+    def _on_remove_product(self, product_id: int) -> None:
+        if self._shopping_list is None:
+            return
+        pid = ProductId(product_id)
+        self._shopping_list.items = [
+            i for i in self._shopping_list.items if i.product_id != pid
+        ]
+        self._view.set_shopping_list(self._shopping_list)
 
     def _on_quantity_edited(self, product_id: int, new_purchase_qty: float) -> None:
         if self._shopping_list is None:
