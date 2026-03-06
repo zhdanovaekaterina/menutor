@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from PySide6.QtCore import QModelIndex, Signal
+from PySide6.QtCore import QModelIndex, Qt, Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
+    QLabel,
     QLineEdit,
     QListWidget,
     QMessageBox,
@@ -28,8 +29,6 @@ from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
 from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 from src.presentation.models.recipe_table_model import RecipeTableModel
-
-UNIT_OPTIONS = ["g", "kg", "ml", "l", "pcs", "box", "pack"]
 
 
 class RecipeListView(QWidget):
@@ -233,14 +232,10 @@ class RecipeListView(QWidget):
             combo: QComboBox = self._ingredients_table.cellWidget(row, 0)  # type: ignore[assignment]
             for i in range(combo.count()):
                 if combo.itemData(i) == ing.product_id:
-                    combo.setCurrentIndex(i)
+                    combo.setCurrentIndex(i)  # triggers unit label update via signal
                     break
             spin: QDoubleSpinBox = self._ingredients_table.cellWidget(row, 1)  # type: ignore[assignment]
             spin.setValue(ing.quantity.amount)
-            unit_combo: QComboBox = self._ingredients_table.cellWidget(row, 2)  # type: ignore[assignment]
-            idx = unit_combo.findText(ing.quantity.unit)
-            if idx >= 0:
-                unit_combo.setCurrentIndex(idx)
 
         # Steps
         self._steps_list.clear()
@@ -271,14 +266,14 @@ class RecipeListView(QWidget):
         for row in range(self._ingredients_table.rowCount()):
             combo: QComboBox = self._ingredients_table.cellWidget(row, 0)  # type: ignore[assignment]
             spin: QDoubleSpinBox = self._ingredients_table.cellWidget(row, 1)  # type: ignore[assignment]
-            unit_combo: QComboBox = self._ingredients_table.cellWidget(row, 2)  # type: ignore[assignment]
+            unit_label: QLabel = self._ingredients_table.cellWidget(row, 2)  # type: ignore[assignment]
             product_id = combo.currentData()
             if product_id is None:
                 continue
             ingredients.append(
                 RecipeIngredient(
                     product_id=ProductId(int(product_id)),
-                    quantity=Quantity(spin.value(), unit_combo.currentText()),
+                    quantity=Quantity(spin.value(), unit_label.text()),
                 )
             )
 
@@ -311,14 +306,23 @@ class RecipeListView(QWidget):
         amount_spin.setValue(100.0)
         self._ingredients_table.setCellWidget(row, 1, amount_spin)
 
-        unit_combo = QComboBox()
-        unit_combo.addItems(UNIT_OPTIONS)
-        self._ingredients_table.setCellWidget(row, 2, unit_combo)
+        unit_label = QLabel()
+        unit_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._refresh_unit_label(product_combo, unit_label)
+        product_combo.currentIndexChanged.connect(
+            lambda _: self._refresh_unit_label(product_combo, unit_label)
+        )
+        self._ingredients_table.setCellWidget(row, 2, unit_label)
 
     def _remove_ingredient_row(self) -> None:
         row = self._ingredients_table.currentRow()
         if row >= 0:
             self._ingredients_table.removeRow(row)
+
+    def _refresh_unit_label(self, combo: QComboBox, label: QLabel) -> None:
+        product_id = combo.currentData()
+        unit = next((p.recipe_unit for p in self._products if p.id == product_id), "")
+        label.setText(unit)
 
     def _populate_product_combo(self, combo: QComboBox) -> None:
         current_id = combo.currentData()
