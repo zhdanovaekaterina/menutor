@@ -14,9 +14,7 @@ from src.presentation.controllers.product_controller import ProductController
 
 @pytest.fixture
 def view() -> MagicMock:
-    v = MagicMock()
-    v._model = MagicMock()
-    return v
+    return MagicMock()
 
 
 @pytest.fixture

@@ -47,7 +47,7 @@ class RecipeController:
         try:
             recipes = self._list_uc.execute()
             categories = self._list_categories_uc.execute()
-            self._view._model.set_category_map(dict(categories))
+            self._view.set_category_map(dict(categories))
             self._view.set_recipes(recipes)
             products = self._list_products_uc.execute()
             self._view.set_products(products)

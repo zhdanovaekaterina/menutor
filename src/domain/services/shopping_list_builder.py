@@ -60,11 +60,9 @@ class ShoppingListBuilder:
             if product is None:
                 continue
 
-            # Normalize to product's recipe_unit, then apply conversion_factor
+            # Normalize to product's recipe_unit, then convert to purchase unit
             recipe_qty = qty.convert_to(product.recipe_unit)
-            purchase_amount = recipe_qty.amount * product.conversion_factor
-            purchase_qty = Quantity(purchase_amount, product.purchase_unit)
-            cost = product.price_per_purchase_unit * purchase_amount
+            purchase_qty, cost = product.compute_purchase(recipe_qty.amount)
 
             items.append(ShoppingListItem(
                 product_id=product_id,

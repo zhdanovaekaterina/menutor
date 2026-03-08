@@ -1,12 +1,13 @@
 from src.domain.ports.product_category_repository import ProductCategoryRepository
 from src.domain.ports.recipe_category_repository import RecipeCategoryRepository
+from src.domain.value_objects.category import Category
 
 
 class ListAllProductCategories:
     def __init__(self, repo: ProductCategoryRepository) -> None:
         self._repo = repo
 
-    def execute(self) -> list[tuple[int, str, bool]]:
+    def execute(self) -> list[Category]:
         return self._repo.find_all()
 
 
@@ -46,7 +47,7 @@ class ListAllRecipeCategories:
     def __init__(self, repo: RecipeCategoryRepository) -> None:
         self._repo = repo
 
-    def execute(self) -> list[tuple[int, str, bool]]:
+    def execute(self) -> list[Category]:
         return self._repo.find_all()
 
 

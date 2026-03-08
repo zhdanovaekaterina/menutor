@@ -4,7 +4,6 @@ from src.application.use_cases.import_export import (
 )
 from src.application.use_cases.manage_product import ListProductCategories, ListProducts
 from src.domain.entities.shopping_list import ShoppingList, ShoppingListItem
-from src.domain.value_objects.money import Money
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.types import ProductId
 from src.presentation.views.shopping_list_view import ShoppingListView
@@ -79,10 +78,7 @@ class ShoppingListController:
 
             category_map = dict(self._list_product_categories_uc.execute())
 
-            recipe_qty = Quantity(qty_in_recipe_unit, product.recipe_unit)
-            purchase_amount = recipe_qty.amount * product.conversion_factor
-            purchase_qty = Quantity(purchase_amount, product.purchase_unit)
-            cost = product.price_per_purchase_unit * purchase_amount
+            purchase_qty, cost = product.compute_purchase(qty_in_recipe_unit)
 
             item = ShoppingListItem(
                 product_id=ProductId(product_id),
@@ -120,7 +116,7 @@ class ShoppingListController:
                 return
 
             item.quantity = Quantity(new_purchase_qty, item.quantity.unit)
-            item.cost = product.price_per_purchase_unit * new_purchase_qty
+            item.cost = product.purchase_cost(new_purchase_qty)
             self._view.set_shopping_list(self._shopping_list)
         except Exception as exc:
             self._view.show_error(str(exc))

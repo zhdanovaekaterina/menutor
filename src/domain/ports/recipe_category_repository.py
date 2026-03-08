@@ -1,12 +1,14 @@
 from abc import ABC, abstractmethod
 
+from src.domain.value_objects.category import ActiveCategory, Category
+
 
 class RecipeCategoryRepository(ABC):
     @abstractmethod
-    def find_active(self) -> list[tuple[int, str]]: ...
+    def find_active(self) -> list[ActiveCategory]: ...
 
     @abstractmethod
-    def find_all(self) -> list[tuple[int, str, bool]]: ...
+    def find_all(self) -> list[Category]: ...
 
     @abstractmethod
     def save(self, name: str, category_id: int | None = None) -> int: ...

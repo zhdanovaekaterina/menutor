@@ -15,9 +15,7 @@ from src.presentation.controllers.recipe_controller import RecipeController
 
 @pytest.fixture
 def view() -> MagicMock:
-    v = MagicMock()
-    v._model = MagicMock()
-    return v
+    return MagicMock()
 
 
 @pytest.fixture

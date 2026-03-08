@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from src.domain.entities.product import Product
 from src.domain.ports.product_category_repository import ProductCategoryRepository
 from src.domain.ports.product_repository import ProductRepository
+from src.domain.value_objects.category import ActiveCategory
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.types import ProductCategoryId, ProductId
 
@@ -102,5 +103,5 @@ class ListProductCategories:
     def __init__(self, repo: ProductCategoryRepository) -> None:
         self._repo = repo
 
-    def execute(self) -> list[tuple[int, str]]:
+    def execute(self) -> list[ActiveCategory]:
         return self._repo.find_active()

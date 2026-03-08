@@ -1,23 +1,24 @@
 import sqlite3
 
 from src.domain.ports.recipe_category_repository import RecipeCategoryRepository
+from src.domain.value_objects.category import ActiveCategory, Category
 
 
 class SqliteRecipeCategoryRepository(RecipeCategoryRepository):
     def __init__(self, conn: sqlite3.Connection) -> None:
         self._conn = conn
 
-    def find_active(self) -> list[tuple[int, str]]:
+    def find_active(self) -> list[ActiveCategory]:
         rows = self._conn.execute(
             "SELECT id, name FROM recipe_categories WHERE active = 1 ORDER BY name"
         ).fetchall()
-        return [(row[0], row[1]) for row in rows]
+        return [ActiveCategory(row[0], row[1]) for row in rows]
 
-    def find_all(self) -> list[tuple[int, str, bool]]:
+    def find_all(self) -> list[Category]:
         rows = self._conn.execute(
             "SELECT id, name, active FROM recipe_categories ORDER BY name"
         ).fetchall()
-        return [(row[0], row[1], bool(row[2])) for row in rows]
+        return [Category(row[0], row[1], bool(row[2])) for row in rows]
 
     def save(self, name: str, category_id: int | None = None) -> int:
         if category_id is None:

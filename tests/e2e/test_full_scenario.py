@@ -282,7 +282,6 @@ class TestFullUserScenario:
     def test_controller_with_real_use_cases(self, db, repos) -> None:
         """Verify ProductController works with real use cases (mocked view only)."""
         view = MagicMock()
-        view._model = MagicMock()
 
         product_cats = repos["product_cat"].find_active()
         cat_id = ProductCategoryId(product_cats[0][0])

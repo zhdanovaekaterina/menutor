@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from src.domain.entities.recipe import Recipe
 from src.domain.ports.recipe_category_repository import RecipeCategoryRepository
 from src.domain.ports.recipe_repository import RecipeRepository
+from src.domain.value_objects.category import ActiveCategory
 from src.domain.value_objects.cooking_step import CookingStep
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
 from src.domain.value_objects.types import RecipeCategoryId, RecipeId
@@ -82,5 +83,5 @@ class ListRecipeCategories:
     def __init__(self, repo: RecipeCategoryRepository) -> None:
         self._repo = repo
 
-    def execute(self) -> list[tuple[int, str]]:
+    def execute(self) -> list[ActiveCategory]:
         return self._repo.find_active()

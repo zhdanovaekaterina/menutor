@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 
 from src.application.use_cases.manage_family import FamilyMemberData
 from src.domain.entities.family_member import FamilyMember
+from src.domain.value_objects.category import Category
 from src.domain.value_objects.types import FamilyMemberId
 
 
@@ -33,7 +34,7 @@ class _CategoryPanel(QWidget):
     def __init__(self, title: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._selected_id: int | None = None
-        self._categories: list[tuple[int, str, bool]] = []
+        self._categories: list[Category] = []
 
         self._table = QTableWidget(0, 2)
         self._table.setHorizontalHeaderLabels(["Название", "Статус"])
@@ -67,7 +68,7 @@ class _CategoryPanel(QWidget):
         layout.addWidget(self._table)
         layout.addWidget(form_box)
 
-    def set_categories(self, categories: list[tuple[int, str, bool]]) -> None:
+    def set_categories(self, categories: list[Category]) -> None:
         self._categories = categories
         self._table.setRowCount(0)
         for cat_id, name, active in categories:
@@ -342,12 +343,12 @@ class SettingsView(QWidget):
         self._family_panel.set_members(members)
 
     def set_product_categories(
-        self, categories: list[tuple[int, str, bool]]
+        self, categories: list[Category],
     ) -> None:
         self._product_cat_panel.set_categories(categories)
 
     def set_recipe_categories(
-        self, categories: list[tuple[int, str, bool]]
+        self, categories: list[Category],
     ) -> None:
         self._recipe_cat_panel.set_categories(categories)
 
