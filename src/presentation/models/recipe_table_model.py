@@ -1,4 +1,4 @@
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPersistentModelIndex, Qt
 
 from src.domain.entities.recipe import Recipe
 
@@ -14,10 +14,10 @@ class RecipeTableModel(QAbstractTableModel):
         self._recipes: list[Recipe] = list(self._all_recipes)
         self._category_map: dict[int, str] = {}
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def rowCount(self, parent: QModelIndex | QPersistentModelIndex = QModelIndex()) -> int:
         return len(self._recipes)
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def columnCount(self, parent: QModelIndex | QPersistentModelIndex = QModelIndex()) -> int:
         return len(COLUMNS)
 
     def headerData(
@@ -30,7 +30,7 @@ class RecipeTableModel(QAbstractTableModel):
             return COLUMNS[section]
         return None
 
-    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> object:
+    def data(self, index: QModelIndex | QPersistentModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> object:
         if not index.isValid() or not (0 <= index.row() < len(self._recipes)):
             return None
         recipe = self._recipes[index.row()]

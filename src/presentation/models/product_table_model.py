@@ -1,4 +1,4 @@
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPersistentModelIndex, Qt
 
 from src.domain.entities.product import Product
 from src.presentation.units import to_display
@@ -15,10 +15,10 @@ class ProductTableModel(QAbstractTableModel):
         self._products: list[Product] = list(self._all_products)
         self._category_map: dict[int, str] = {}
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def rowCount(self, parent: QModelIndex | QPersistentModelIndex = QModelIndex()) -> int:
         return len(self._products)
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def columnCount(self, parent: QModelIndex | QPersistentModelIndex = QModelIndex()) -> int:
         return len(COLUMNS)
 
     def headerData(
@@ -31,7 +31,7 @@ class ProductTableModel(QAbstractTableModel):
             return COLUMNS[section]
         return None
 
-    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> object:
+    def data(self, index: QModelIndex | QPersistentModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> object:
         if not index.isValid() or not (0 <= index.row() < len(self._products)):
             return None
         product = self._products[index.row()]

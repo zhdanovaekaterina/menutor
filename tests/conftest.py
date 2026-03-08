@@ -8,7 +8,13 @@ from src.domain.entities.recipe import Recipe
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import FamilyMemberId, ProductCategoryId, ProductId, RecipeCategoryId, RecipeId
+from src.domain.value_objects.types import (
+    FamilyMemberId,
+    ProductCategoryId,
+    ProductId,
+    RecipeCategoryId,
+    RecipeId,
+)
 
 
 @pytest.fixture

@@ -302,12 +302,11 @@ class ShoppingListView(QWidget):
         if self._shopping_list is None:
             return
         total = self._shopping_list.total_cost()
-        data_items = [
-            self._table.item(row, 0)
-            for row in range(self._table.rowCount())
-            if self._table.item(row, 0)
-            and (self._table.item(row, 0).flags() & Qt.ItemFlag.ItemIsUserCheckable)
-        ]
+        data_items: list[QTableWidgetItem] = []
+        for row in range(self._table.rowCount()):
+            item = self._table.item(row, 0)
+            if item is not None and (item.flags() & Qt.ItemFlag.ItemIsUserCheckable):
+                data_items.append(item)
         total_items = len(data_items)
         checked = sum(
             1 for it in data_items if it.checkState() == Qt.CheckState.Checked

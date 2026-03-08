@@ -1,10 +1,11 @@
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
+from src.application.use_cases.generate_shopping_list import GenerateShoppingList
 from src.domain.entities.menu import WeeklyMenu
 from src.domain.entities.shopping_list import ShoppingList
 from src.domain.value_objects.types import MenuId
-from src.application.use_cases.generate_shopping_list import GenerateShoppingList
 
 
 def _uc(menu_repo: MagicMock, builder: MagicMock) -> GenerateShoppingList:

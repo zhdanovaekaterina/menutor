@@ -8,9 +8,18 @@ from src.domain.value_objects.cooking_step import CookingStep
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import ProductCategoryId, ProductId, RecipeCategoryId, RecipeId
-from src.infrastructure.repositories.sqlite_product_repository import SqliteProductRepository
-from src.infrastructure.repositories.sqlite_recipe_repository import SqliteRecipeRepository
+from src.domain.value_objects.types import (
+    ProductCategoryId,
+    ProductId,
+    RecipeCategoryId,
+    RecipeId,
+)
+from src.infrastructure.repositories.sqlite_product_repository import (
+    SqliteProductRepository,
+)
+from src.infrastructure.repositories.sqlite_recipe_repository import (
+    SqliteRecipeRepository,
+)
 
 
 @pytest.fixture

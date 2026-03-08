@@ -7,10 +7,20 @@ from src.domain.entities.menu import MenuSlot, WeeklyMenu
 from src.domain.entities.product import Product
 from src.domain.entities.recipe import Recipe
 from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import MenuId, ProductCategoryId, ProductId, RecipeCategoryId, RecipeId
+from src.domain.value_objects.types import (
+    MenuId,
+    ProductCategoryId,
+    ProductId,
+    RecipeCategoryId,
+    RecipeId,
+)
 from src.infrastructure.repositories.sqlite_menu_repository import SqliteMenuRepository
-from src.infrastructure.repositories.sqlite_product_repository import SqliteProductRepository
-from src.infrastructure.repositories.sqlite_recipe_repository import SqliteRecipeRepository
+from src.infrastructure.repositories.sqlite_product_repository import (
+    SqliteProductRepository,
+)
+from src.infrastructure.repositories.sqlite_recipe_repository import (
+    SqliteRecipeRepository,
+)
 
 
 @pytest.fixture

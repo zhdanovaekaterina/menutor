@@ -1,10 +1,8 @@
-import pytest
 from decimal import Decimal
 from unittest.mock import MagicMock
 
-from src.domain.entities.product import Product
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import ProductCategoryId, ProductId
+import pytest
+
 from src.application.use_cases.manage_product import (
     CreateProduct,
     DeleteProduct,
@@ -14,6 +12,9 @@ from src.application.use_cases.manage_product import (
     ProductData,
     UpdateProductPrice,
 )
+from src.domain.entities.product import Product
+from src.domain.value_objects.money import Money
+from src.domain.value_objects.types import ProductCategoryId, ProductId
 
 
 def _data(**kwargs) -> ProductData:

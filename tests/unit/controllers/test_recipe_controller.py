@@ -9,7 +9,12 @@ from src.application.use_cases.manage_recipe import RecipeData
 from src.domain.entities.product import Product
 from src.domain.entities.recipe import Recipe
 from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import ProductCategoryId, ProductId, RecipeCategoryId, RecipeId
+from src.domain.value_objects.types import (
+    ProductCategoryId,
+    ProductId,
+    RecipeCategoryId,
+    RecipeId,
+)
 from src.presentation.controllers.recipe_controller import RecipeController
 
 

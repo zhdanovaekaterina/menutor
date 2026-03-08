@@ -5,7 +5,9 @@ import pytest
 from src.domain.entities.product import Product
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.types import ProductCategoryId, ProductId
-from src.infrastructure.repositories.sqlite_product_repository import SqliteProductRepository
+from src.infrastructure.repositories.sqlite_product_repository import (
+    SqliteProductRepository,
+)
 
 
 @pytest.fixture

@@ -59,7 +59,11 @@ from src.domain.value_objects.money import Money
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
 from src.domain.value_objects.types import ProductCategoryId, RecipeCategoryId, RecipeId
-from src.infrastructure.database.connection import apply_schema, get_connection, seed_defaults
+from src.infrastructure.database.connection import (
+    apply_schema,
+    get_connection,
+    seed_defaults,
+)
 from src.infrastructure.export.text_exporter import ShoppingListTextExporter
 from src.infrastructure.repositories.sqlite_family_member_repository import (
     SqliteFamilyMemberRepository,
@@ -68,11 +72,15 @@ from src.infrastructure.repositories.sqlite_menu_repository import SqliteMenuRep
 from src.infrastructure.repositories.sqlite_product_category_repository import (
     SqliteProductCategoryRepository,
 )
-from src.infrastructure.repositories.sqlite_product_repository import SqliteProductRepository
+from src.infrastructure.repositories.sqlite_product_repository import (
+    SqliteProductRepository,
+)
 from src.infrastructure.repositories.sqlite_recipe_category_repository import (
     SqliteRecipeCategoryRepository,
 )
-from src.infrastructure.repositories.sqlite_recipe_repository import SqliteRecipeRepository
+from src.infrastructure.repositories.sqlite_recipe_repository import (
+    SqliteRecipeRepository,
+)
 from src.presentation.controllers.menu_planner_controller import MenuPlannerController
 from src.presentation.controllers.product_controller import ProductController
 from src.presentation.controllers.recipe_controller import RecipeController

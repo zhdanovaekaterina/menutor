@@ -30,7 +30,7 @@ from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
 from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 from src.presentation.models.recipe_table_model import RecipeTableModel
-from src.presentation.units import to_display, to_code
+from src.presentation.units import to_code, to_display
 
 
 class RecipeListView(QWidget):

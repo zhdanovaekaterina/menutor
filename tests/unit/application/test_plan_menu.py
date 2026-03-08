@@ -1,8 +1,7 @@
-import pytest
 from unittest.mock import MagicMock
 
-from src.domain.entities.menu import MenuSlot, WeeklyMenu
-from src.domain.value_objects.types import MenuId, ProductId, RecipeId
+import pytest
+
 from src.application.use_cases.plan_menu import (
     AddDishToSlot,
     ClearMenu,
@@ -14,6 +13,8 @@ from src.application.use_cases.plan_menu import (
     RemoveItemFromSlot,
     SaveMenu,
 )
+from src.domain.entities.menu import MenuSlot, WeeklyMenu
+from src.domain.value_objects.types import MenuId, ProductId, RecipeId
 
 
 def _menu(id: int = 1, slots: list[MenuSlot] | None = None) -> WeeklyMenu:
