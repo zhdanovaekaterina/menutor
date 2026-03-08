@@ -89,18 +89,24 @@ def controller(
 
 
 class TestSettingsControllerInit:
-    def test_connects_all_signals(self, view: MagicMock, controller: SettingsController) -> None:
+    def test_connects_family_and_export_signals(
+        self, view: MagicMock, controller: SettingsController,
+    ) -> None:
         view.create_member_requested.connect.assert_called_once()
         view.edit_member_requested.connect.assert_called_once()
         view.delete_member_requested.connect.assert_called_once()
         view.export_text_requested.connect.assert_called_once()
         view.export_csv_requested.connect.assert_called_once()
-        view.create_product_category_requested.connect.assert_called_once()
-        view.edit_product_category_requested.connect.assert_called_once()
-        view.delete_product_category_requested.connect.assert_called_once()
-        view.create_recipe_category_requested.connect.assert_called_once()
-        view.edit_recipe_category_requested.connect.assert_called_once()
-        view.delete_recipe_category_requested.connect.assert_called_once()
+
+    def test_connects_category_panel_signals(
+        self, view: MagicMock, controller: SettingsController,
+    ) -> None:
+        view.product_cat_panel.create_requested.connect.assert_called_once()
+        view.product_cat_panel.edit_requested.connect.assert_called_once()
+        view.product_cat_panel.delete_requested.connect.assert_called_once()
+        view.recipe_cat_panel.create_requested.connect.assert_called_once()
+        view.recipe_cat_panel.edit_requested.connect.assert_called_once()
+        view.recipe_cat_panel.delete_requested.connect.assert_called_once()
 
     def test_loads_data_on_init(
         self,
@@ -150,19 +156,19 @@ class TestSettingsControllerProductCategories:
     def test_create_product_category(
         self, product_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
-        controller._on_create_product_cat("Овощи")
+        controller._product_cat_handler._on_create("Овощи")
         product_cat_uc["create"].execute.assert_called_once_with("Овощи")
 
     def test_edit_product_category(
         self, product_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
-        controller._on_edit_product_cat(1, "Бакалея (ред.)")
+        controller._product_cat_handler._on_edit(1, "Бакалея (ред.)")
         product_cat_uc["edit"].execute.assert_called_once_with(1, "Бакалея (ред.)")
 
     def test_delete_product_category(
         self, product_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
-        controller._on_delete_product_cat(1)
+        controller._product_cat_handler._on_delete(1)
         product_cat_uc["delete"].execute.assert_called_once_with(1)
 
     def test_create_error_shows_message(
@@ -172,7 +178,7 @@ class TestSettingsControllerProductCategories:
         controller: SettingsController,
     ) -> None:
         product_cat_uc["create"].execute.side_effect = ValueError("Duplicate")
-        controller._on_create_product_cat("Бакалея")
+        controller._product_cat_handler._on_create("Бакалея")
         view.show_error.assert_called_with("Duplicate")
 
 
@@ -180,19 +186,19 @@ class TestSettingsControllerRecipeCategories:
     def test_create_recipe_category(
         self, recipe_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
-        controller._on_create_recipe_cat("Десерты")
+        controller._recipe_cat_handler._on_create("Десерты")
         recipe_cat_uc["create"].execute.assert_called_once_with("Десерты")
 
     def test_edit_recipe_category(
         self, recipe_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
-        controller._on_edit_recipe_cat(1, "Завтраки (ред.)")
+        controller._recipe_cat_handler._on_edit(1, "Завтраки (ред.)")
         recipe_cat_uc["edit"].execute.assert_called_once_with(1, "Завтраки (ред.)")
 
     def test_delete_recipe_category(
         self, recipe_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
-        controller._on_delete_recipe_cat(1)
+        controller._recipe_cat_handler._on_delete(1)
         recipe_cat_uc["delete"].execute.assert_called_once_with(1)
 
 

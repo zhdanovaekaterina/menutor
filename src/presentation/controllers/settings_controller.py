@@ -1,20 +1,15 @@
-from typing import cast
+from typing import Callable, cast
 
 from src.application.use_cases.import_export import (
     ExportShoppingListAsCsv,
     ExportShoppingListAsText,
 )
 from src.application.use_cases.manage_category import (
-    CheckProductCategoryUsed,
-    CheckRecipeCategoryUsed,
-    CreateProductCategory,
-    CreateRecipeCategory,
-    DeleteProductCategory,
-    DeleteRecipeCategory,
-    EditProductCategory,
-    EditRecipeCategory,
-    ListAllProductCategories,
-    ListAllRecipeCategories,
+    CheckCategoryUsed,
+    CreateCategory,
+    DeleteCategory,
+    EditCategory,
+    ListAllCategories,
 )
 from src.application.use_cases.manage_family import (
     CreateFamilyMember,
@@ -24,8 +19,65 @@ from src.application.use_cases.manage_family import (
     ListFamilyMembers,
 )
 from src.domain.entities.shopping_list import ShoppingList
+from src.domain.value_objects.category import Category
 from src.domain.value_objects.types import FamilyMemberId
 from src.presentation.views.settings_view import SettingsView
+from src.presentation.widgets.category_panel import CategoryPanel
+
+
+class _CategoryHandler:
+    """Handles CRUD signals for one CategoryPanel."""
+
+    def __init__(
+        self,
+        panel: CategoryPanel,
+        list_uc: ListAllCategories,
+        create_uc: CreateCategory,
+        edit_uc: EditCategory,
+        delete_uc: DeleteCategory,
+        check_uc: CheckCategoryUsed,
+        set_categories: Callable[[list[Category]], None],
+        show_error: Callable[[str], None],
+    ) -> None:
+        self._list_uc = list_uc
+        self._create_uc = create_uc
+        self._edit_uc = edit_uc
+        self._delete_uc = delete_uc
+        self._check_uc = check_uc
+        self._set_categories = set_categories
+        self._show_error = show_error
+
+        panel.create_requested.connect(self._on_create)
+        panel.edit_requested.connect(self._on_edit)
+        panel.delete_requested.connect(self._on_delete)
+
+    def refresh(self) -> None:
+        try:
+            categories = self._list_uc.execute()
+            self._set_categories(categories)
+        except Exception as exc:
+            self._show_error(str(exc))
+
+    def _on_create(self, name: str) -> None:
+        try:
+            self._create_uc.execute(name)
+            self.refresh()
+        except Exception as exc:
+            self._show_error(str(exc))
+
+    def _on_edit(self, category_id: int, name: str) -> None:
+        try:
+            self._edit_uc.execute(category_id, name)
+            self.refresh()
+        except Exception as exc:
+            self._show_error(str(exc))
+
+    def _on_delete(self, category_id: int) -> None:
+        try:
+            self._delete_uc.execute(category_id)
+            self.refresh()
+        except Exception as exc:
+            self._show_error(str(exc))
 
 
 class SettingsController:
@@ -41,17 +93,17 @@ class SettingsController:
         export_text_uc: ExportShoppingListAsText,
         export_csv_uc: ExportShoppingListAsCsv,
         # Product categories
-        list_product_categories_uc: ListAllProductCategories,
-        create_product_category_uc: CreateProductCategory,
-        edit_product_category_uc: EditProductCategory,
-        delete_product_category_uc: DeleteProductCategory,
-        check_product_category_used_uc: CheckProductCategoryUsed,
+        list_product_categories_uc: ListAllCategories,
+        create_product_category_uc: CreateCategory,
+        edit_product_category_uc: EditCategory,
+        delete_product_category_uc: DeleteCategory,
+        check_product_category_used_uc: CheckCategoryUsed,
         # Recipe categories
-        list_recipe_categories_uc: ListAllRecipeCategories,
-        create_recipe_category_uc: CreateRecipeCategory,
-        edit_recipe_category_uc: EditRecipeCategory,
-        delete_recipe_category_uc: DeleteRecipeCategory,
-        check_recipe_category_used_uc: CheckRecipeCategoryUsed,
+        list_recipe_categories_uc: ListAllCategories,
+        create_recipe_category_uc: CreateCategory,
+        edit_recipe_category_uc: EditCategory,
+        delete_recipe_category_uc: DeleteCategory,
+        check_recipe_category_used_uc: CheckCategoryUsed,
     ) -> None:
         self._view = view
         self._create_uc = create_member_uc
@@ -62,19 +114,27 @@ class SettingsController:
         self._export_csv_uc = export_csv_uc
         self._last_shopping_list: ShoppingList | None = None
 
-        # Product category use cases
-        self._list_product_cat_uc = list_product_categories_uc
-        self._create_product_cat_uc = create_product_category_uc
-        self._edit_product_cat_uc = edit_product_category_uc
-        self._delete_product_cat_uc = delete_product_category_uc
-        self._check_product_cat_used_uc = check_product_category_used_uc
-
-        # Recipe category use cases
-        self._list_recipe_cat_uc = list_recipe_categories_uc
-        self._create_recipe_cat_uc = create_recipe_category_uc
-        self._edit_recipe_cat_uc = edit_recipe_category_uc
-        self._delete_recipe_cat_uc = delete_recipe_category_uc
-        self._check_recipe_cat_used_uc = check_recipe_category_used_uc
+        # Category handlers (replaces duplicate product/recipe category methods)
+        self._product_cat_handler = _CategoryHandler(
+            panel=view.product_cat_panel,
+            list_uc=list_product_categories_uc,
+            create_uc=create_product_category_uc,
+            edit_uc=edit_product_category_uc,
+            delete_uc=delete_product_category_uc,
+            check_uc=check_product_category_used_uc,
+            set_categories=view.set_product_categories,
+            show_error=view.show_error,
+        )
+        self._recipe_cat_handler = _CategoryHandler(
+            panel=view.recipe_cat_panel,
+            list_uc=list_recipe_categories_uc,
+            create_uc=create_recipe_category_uc,
+            edit_uc=edit_recipe_category_uc,
+            delete_uc=delete_recipe_category_uc,
+            check_uc=check_recipe_category_used_uc,
+            set_categories=view.set_recipe_categories,
+            show_error=view.show_error,
+        )
 
         # Family member signals
         view.create_member_requested.connect(self._on_create)
@@ -84,16 +144,6 @@ class SettingsController:
         # Export signals
         view.export_text_requested.connect(self._on_export_text)
         view.export_csv_requested.connect(self._on_export_csv)
-
-        # Product category signals
-        view.create_product_category_requested.connect(self._on_create_product_cat)
-        view.edit_product_category_requested.connect(self._on_edit_product_cat)
-        view.delete_product_category_requested.connect(self._on_delete_product_cat)
-
-        # Recipe category signals
-        view.create_recipe_category_requested.connect(self._on_create_recipe_cat)
-        view.edit_recipe_category_requested.connect(self._on_edit_recipe_cat)
-        view.delete_recipe_category_requested.connect(self._on_delete_recipe_cat)
 
         self._refresh()
 
@@ -110,8 +160,8 @@ class SettingsController:
             self._view.set_family_members(members)
         except Exception as exc:
             self._view.show_error(str(exc))
-        self._refresh_product_categories()
-        self._refresh_recipe_categories()
+        self._product_cat_handler.refresh()
+        self._recipe_cat_handler.refresh()
 
     # ------------------------------------------------------------------
     # Family members
@@ -135,70 +185,6 @@ class SettingsController:
         try:
             self._delete_uc.execute(FamilyMemberId(cast(int, member_id)))
             self._refresh()
-        except Exception as exc:
-            self._view.show_error(str(exc))
-
-    # ------------------------------------------------------------------
-    # Product categories
-    # ------------------------------------------------------------------
-
-    def _refresh_product_categories(self) -> None:
-        try:
-            categories = self._list_product_cat_uc.execute()
-            self._view.set_product_categories(categories)
-        except Exception as exc:
-            self._view.show_error(str(exc))
-
-    def _on_create_product_cat(self, name: str) -> None:
-        try:
-            self._create_product_cat_uc.execute(name)
-            self._refresh_product_categories()
-        except Exception as exc:
-            self._view.show_error(str(exc))
-
-    def _on_edit_product_cat(self, category_id: int, name: str) -> None:
-        try:
-            self._edit_product_cat_uc.execute(category_id, name)
-            self._refresh_product_categories()
-        except Exception as exc:
-            self._view.show_error(str(exc))
-
-    def _on_delete_product_cat(self, category_id: int) -> None:
-        try:
-            self._delete_product_cat_uc.execute(category_id)
-            self._refresh_product_categories()
-        except Exception as exc:
-            self._view.show_error(str(exc))
-
-    # ------------------------------------------------------------------
-    # Recipe categories
-    # ------------------------------------------------------------------
-
-    def _refresh_recipe_categories(self) -> None:
-        try:
-            categories = self._list_recipe_cat_uc.execute()
-            self._view.set_recipe_categories(categories)
-        except Exception as exc:
-            self._view.show_error(str(exc))
-
-    def _on_create_recipe_cat(self, name: str) -> None:
-        try:
-            self._create_recipe_cat_uc.execute(name)
-            self._refresh_recipe_categories()
-        except Exception as exc:
-            self._view.show_error(str(exc))
-
-    def _on_edit_recipe_cat(self, category_id: int, name: str) -> None:
-        try:
-            self._edit_recipe_cat_uc.execute(category_id, name)
-            self._refresh_recipe_categories()
-        except Exception as exc:
-            self._view.show_error(str(exc))
-
-    def _on_delete_recipe_cat(self, category_id: int) -> None:
-        try:
-            self._delete_recipe_cat_uc.execute(category_id)
-            self._refresh_recipe_categories()
         except Exception as exc:
             self._view.show_error(str(exc))
 
