@@ -1,83 +1,56 @@
-from src.domain.ports.product_category_repository import ProductCategoryRepository
-from src.domain.ports.recipe_category_repository import RecipeCategoryRepository
+from src.domain.ports.category_repository import CategoryRepository
 from src.domain.value_objects.category import Category
 
 
-class ListAllProductCategories:
-    def __init__(self, repo: ProductCategoryRepository) -> None:
+class ListAllCategories:
+    def __init__(self, repo: CategoryRepository) -> None:
         self._repo = repo
 
     def execute(self) -> list[Category]:
         return self._repo.find_all()
 
 
-class CreateProductCategory:
-    def __init__(self, repo: ProductCategoryRepository) -> None:
+class CreateCategory:
+    def __init__(self, repo: CategoryRepository) -> None:
         self._repo = repo
 
     def execute(self, name: str) -> int:
         return self._repo.save(name)
 
 
-class EditProductCategory:
-    def __init__(self, repo: ProductCategoryRepository) -> None:
+class EditCategory:
+    def __init__(self, repo: CategoryRepository) -> None:
         self._repo = repo
 
     def execute(self, category_id: int, name: str) -> int:
         return self._repo.save(name, category_id)
 
 
-class DeleteProductCategory:
-    def __init__(self, repo: ProductCategoryRepository) -> None:
+class DeleteCategory:
+    def __init__(self, repo: CategoryRepository) -> None:
         self._repo = repo
 
     def execute(self, category_id: int) -> None:
         self._repo.delete(category_id)
 
 
-class CheckProductCategoryUsed:
-    def __init__(self, repo: ProductCategoryRepository) -> None:
+class CheckCategoryUsed:
+    def __init__(self, repo: CategoryRepository) -> None:
         self._repo = repo
 
     def execute(self, category_id: int) -> bool:
-        return self._repo.has_products(category_id)
+        return self._repo.is_used(category_id)
 
 
-class ListAllRecipeCategories:
-    def __init__(self, repo: RecipeCategoryRepository) -> None:
-        self._repo = repo
+# Backwards-compatible aliases
+ListAllProductCategories = ListAllCategories
+CreateProductCategory = CreateCategory
+EditProductCategory = EditCategory
+DeleteProductCategory = DeleteCategory
+CheckProductCategoryUsed = CheckCategoryUsed
 
-    def execute(self) -> list[Category]:
-        return self._repo.find_all()
-
-
-class CreateRecipeCategory:
-    def __init__(self, repo: RecipeCategoryRepository) -> None:
-        self._repo = repo
-
-    def execute(self, name: str) -> int:
-        return self._repo.save(name)
-
-
-class EditRecipeCategory:
-    def __init__(self, repo: RecipeCategoryRepository) -> None:
-        self._repo = repo
-
-    def execute(self, category_id: int, name: str) -> int:
-        return self._repo.save(name, category_id)
-
-
-class DeleteRecipeCategory:
-    def __init__(self, repo: RecipeCategoryRepository) -> None:
-        self._repo = repo
-
-    def execute(self, category_id: int) -> None:
-        self._repo.delete(category_id)
-
-
-class CheckRecipeCategoryUsed:
-    def __init__(self, repo: RecipeCategoryRepository) -> None:
-        self._repo = repo
-
-    def execute(self, category_id: int) -> bool:
-        return self._repo.has_recipes(category_id)
+ListAllRecipeCategories = ListAllCategories
+CreateRecipeCategory = CreateCategory
+EditRecipeCategory = EditCategory
+DeleteRecipeCategory = DeleteCategory
+CheckRecipeCategoryUsed = CheckCategoryUsed

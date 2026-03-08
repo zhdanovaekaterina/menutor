@@ -3,67 +3,49 @@ import sqlite3
 from src.domain.entities.menu import MenuSlot, WeeklyMenu
 from src.domain.ports.menu_repository import MenuRepository
 from src.domain.value_objects.types import MenuId, ProductId, RecipeId
+from src.infrastructure.repositories.base import BaseSqliteRepository
 
 
-class SqliteMenuRepository(MenuRepository):
-    def __init__(self, conn: sqlite3.Connection) -> None:
-        self._conn = conn
+class SqliteMenuRepository(
+    BaseSqliteRepository[WeeklyMenu, MenuId],
+    MenuRepository,
+):
+    _table_name = "menus"
 
-    # ---- read ----
+    def _get_entity_id(self, entity: WeeklyMenu) -> int:
+        return entity.id
 
-    def get_by_id(self, id: MenuId) -> WeeklyMenu | None:
-        row = self._conn.execute(
-            "SELECT id, name FROM menus WHERE id = ?", (id,)
-        ).fetchone()
-        return self._row_to_entity(row) if row else None
+    def _wrap_id(self, raw_id: int) -> MenuId:
+        return MenuId(raw_id)
 
-    def find_all(self) -> list[WeeklyMenu]:
-        rows = self._conn.execute("SELECT id, name FROM menus").fetchall()
-        return [self._row_to_entity(r) for r in rows]
+    def _insert(self, entity: WeeklyMenu) -> int:
+        cursor = self._conn.execute(
+            "INSERT INTO menus (name) VALUES (?)", (entity.name,)
+        )
+        last_id = cursor.lastrowid
+        if last_id is None:
+            raise RuntimeError("INSERT menus did not return lastrowid")
+        return last_id
 
-    # ---- write ----
+    def _update(self, entity: WeeklyMenu) -> None:
+        self._conn.execute(
+            "UPDATE menus SET name=? WHERE id=?", (entity.name, entity.id)
+        )
 
-    def save(self, menu: WeeklyMenu) -> WeeklyMenu:
-        menu_id: MenuId
-        with self._conn:
-            if menu.id == 0:
-                cursor = self._conn.execute(
-                    "INSERT INTO menus (name) VALUES (?)", (menu.name,)
-                )
-                last_id = cursor.lastrowid
-                if last_id is None:
-                    raise RuntimeError("INSERT menus did not return lastrowid")
-                menu_id = MenuId(last_id)
-            else:
-                self._conn.execute(
-                    "UPDATE menus SET name=? WHERE id=?", (menu.name, menu.id)
-                )
-                menu_id = menu.id
-
-            self._conn.execute(
-                "DELETE FROM menu_slots WHERE menu_id = ?", (menu_id,)
-            )
-            self._conn.executemany(
-                "INSERT INTO menu_slots "
-                "(menu_id, day, meal_type, recipe_id, product_id, quantity, unit, servings_override) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                [
-                    (menu_id, s.day, s.meal_type, s.recipe_id, s.product_id,
-                     s.quantity, s.unit, s.servings_override)
-                    for s in menu.slots
-                ],
-            )
-
-        result = self.get_by_id(menu_id)
-        if result is None:
-            raise RuntimeError(f"Failed to retrieve menu {menu_id} after save")
-        return result
-
-    def delete(self, id: MenuId) -> None:
-        with self._conn:
-            self._conn.execute("DELETE FROM menus WHERE id = ?", (id,))
-
-    # ---- mapping ----
+    def _save_children(self, entity_id: MenuId, entity: WeeklyMenu) -> None:
+        self._conn.execute(
+            "DELETE FROM menu_slots WHERE menu_id = ?", (entity_id,)
+        )
+        self._conn.executemany(
+            "INSERT INTO menu_slots "
+            "(menu_id, day, meal_type, recipe_id, product_id, quantity, unit, servings_override) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                (entity_id, s.day, s.meal_type, s.recipe_id, s.product_id,
+                 s.quantity, s.unit, s.servings_override)
+                for s in entity.slots
+            ],
+        )
 
     def _row_to_entity(self, row: sqlite3.Row) -> WeeklyMenu:
         mid = MenuId(row["id"])

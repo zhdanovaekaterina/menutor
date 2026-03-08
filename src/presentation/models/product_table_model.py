@@ -1,80 +1,38 @@
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPersistentModelIndex, Qt
-
 from src.domain.entities.product import Product
+from src.presentation.models.base_table_model import BaseCrudTableModel
 from src.presentation.units import to_display
 
-COLUMNS = ["Название", "Категория", "Бренд", "Поставщик", "Ед.рецепта", "Ед.покупки", "Цена, руб."]
 
-
-class ProductTableModel(QAbstractTableModel):
+class ProductTableModel(BaseCrudTableModel[Product]):
     """Qt-модель таблицы продуктов."""
 
-    def __init__(self, products: list[Product] | None = None) -> None:
-        super().__init__()
-        self._all_products: list[Product] = products or []
-        self._products: list[Product] = list(self._all_products)
-        self._category_map: dict[int, str] = {}
+    _columns = ["Название", "Категория", "Бренд", "Поставщик", "Ед.рецепта", "Ед.покупки", "Цена, руб."]
 
-    def rowCount(self, parent: QModelIndex | QPersistentModelIndex = QModelIndex()) -> int:
-        return len(self._products)
+    def _entity_id(self, entity: Product) -> int:
+        return entity.id
 
-    def columnCount(self, parent: QModelIndex | QPersistentModelIndex = QModelIndex()) -> int:
-        return len(COLUMNS)
+    def _entity_name(self, entity: Product) -> str:
+        return entity.name
 
-    def headerData(
-        self,
-        section: int,
-        orientation: Qt.Orientation,
-        role: int = Qt.ItemDataRole.DisplayRole,
-    ) -> object:
-        if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
-            return COLUMNS[section]
-        return None
-
-    def data(self, index: QModelIndex | QPersistentModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> object:
-        if not index.isValid() or not (0 <= index.row() < len(self._products)):
-            return None
-        product = self._products[index.row()]
-        if role == Qt.ItemDataRole.DisplayRole:
-            col = index.column()
-            if col == 0:
-                return product.name
-            if col == 1:
-                return self._category_map.get(product.category_id, "")
-            if col == 2:
-                return product.brand
-            if col == 3:
-                return product.supplier
-            if col == 4:
-                return to_display(product.recipe_unit)
-            if col == 5:
-                return to_display(product.purchase_unit)
-            if col == 6:
-                return f"{product.price_per_purchase_unit.amount:.2f}"
-        if role == Qt.ItemDataRole.UserRole:
-            return product.id
-        return None
-
-    def set_category_map(self, category_map: dict[int, str]) -> None:
-        self._category_map = category_map
+    def _display_value(self, entity: Product, column: int) -> str:
+        if column == 0:
+            return entity.name
+        if column == 1:
+            return self._category_map.get(entity.category_id, "")
+        if column == 2:
+            return entity.brand
+        if column == 3:
+            return entity.supplier
+        if column == 4:
+            return to_display(entity.recipe_unit)
+        if column == 5:
+            return to_display(entity.purchase_unit)
+        if column == 6:
+            return f"{entity.price_per_purchase_unit.amount:.2f}"
+        return ""
 
     def set_products(self, products: list[Product]) -> None:
-        self.beginResetModel()
-        self._all_products = list(products)
-        self._products = list(products)
-        self.endResetModel()
-
-    def filter(self, query: str) -> None:
-        q = query.strip().lower()
-        self.beginResetModel()
-        self._products = (
-            self._all_products
-            if not q
-            else [p for p in self._all_products if q in p.name.lower()]
-        )
-        self.endResetModel()
+        self.set_items(products)
 
     def product_at(self, row: int) -> Product | None:
-        if 0 <= row < len(self._products):
-            return self._products[row]
-        return None
+        return self.item_at(row)
