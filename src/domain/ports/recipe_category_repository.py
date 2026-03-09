@@ -1,18 +1,5 @@
-from abc import ABC, abstractmethod
+from src.domain.ports.category_repository import CategoryRepository
 
 
-class RecipeCategoryRepository(ABC):
-    @abstractmethod
-    def find_active(self) -> list[tuple[int, str]]: ...
-
-    @abstractmethod
-    def find_all(self) -> list[tuple[int, str, bool]]: ...
-
-    @abstractmethod
-    def save(self, name: str, category_id: int | None = None) -> int: ...
-
-    @abstractmethod
-    def delete(self, category_id: int) -> None: ...
-
-    @abstractmethod
-    def has_recipes(self, category_id: int) -> bool: ...
+class RecipeCategoryRepository(CategoryRepository):
+    """Marker subclass for recipe categories — enables type-safe DI."""

@@ -1,3 +1,4 @@
+import logging
 from typing import Callable, cast
 
 from src.application.use_cases.generate_shopping_list import GenerateShoppingList
@@ -16,8 +17,11 @@ from src.application.use_cases.plan_menu import (
 )
 from src.domain.entities.menu import MenuSlot, WeeklyMenu
 from src.domain.entities.shopping_list import ShoppingList
+from src.domain.exceptions import AppError
 from src.domain.value_objects.types import MenuId, ProductId, RecipeId
 from src.presentation.views.menu_planner_view import MenuPlannerView
+
+logger = logging.getLogger(__name__)
 
 
 class MenuPlannerController:
@@ -87,7 +91,8 @@ class MenuPlannerController:
 
             members = self._list_family_uc.execute()
             self._view.set_family_members(members)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при загрузке данных меню: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_menu_selected(self, menu_id: object) -> None:
@@ -111,7 +116,8 @@ class MenuPlannerController:
                             quantity=slot.quantity or 0.0,
                             unit=slot.unit or "",
                         )
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при загрузке меню %s: %s", menu_id, exc)
             self._view.show_error(str(exc))
 
     def _on_slot_updated(
@@ -148,7 +154,8 @@ class MenuPlannerController:
                 self._current_menu = self._add_dish_uc.execute(
                     self._current_menu.id, slot
                 )
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при обновлении слота: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_save_menu(self, name: str) -> None:
@@ -181,7 +188,8 @@ class MenuPlannerController:
                 self._current_menu = self._save_menu_uc.execute(self._current_menu)
             menus = self._list_menus_uc.execute()
             self._view.set_menus(menus)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при сохранении меню: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_clear_menu(self) -> None:
@@ -191,7 +199,8 @@ class MenuPlannerController:
         try:
             self._current_menu = self._clear_menu_uc.execute(self._current_menu.id)
             self._view.set_current_menu(self._current_menu)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при очистке меню: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_delete_menu(self, menu_id: object) -> None:
@@ -200,7 +209,8 @@ class MenuPlannerController:
             self._current_menu = None
             menus = self._list_menus_uc.execute()
             self._view.set_menus(menus)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при удалении меню %s: %s", menu_id, exc)
             self._view.show_error(str(exc))
 
     def _on_new_menu(self, name: str) -> None:
@@ -210,7 +220,8 @@ class MenuPlannerController:
             self._view.set_current_menu(menu)
             menus = self._list_menus_uc.execute()
             self._view.set_menus(menus)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при создании меню: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_generate(self) -> None:
@@ -221,5 +232,6 @@ class MenuPlannerController:
             shopping_list = self._generate_uc.execute(self._current_menu.id)
             if self._on_shopping_list_generated:
                 self._on_shopping_list_generated(shopping_list)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при генерации списка покупок: %s", exc)
             self._view.show_error(str(exc))

@@ -1,5 +1,6 @@
 import pytest
 
+from src.domain.exceptions import UnitConversionError
 from src.domain.value_objects.quantity import Quantity
 
 
@@ -44,17 +45,17 @@ def test_convert_same_unit_returns_equal_object() -> None:
 
 
 def test_cross_group_conversion_raises() -> None:
-    with pytest.raises(ValueError, match="incompatible"):
+    with pytest.raises(UnitConversionError, match="incompatible"):
         Quantity(100.0, "g").convert_to("ml")
 
 
 def test_add_incompatible_units_raises() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(UnitConversionError):
         _ = Quantity(100.0, "g") + Quantity(100.0, "ml")
 
 
 def test_unknown_unit_at_construction_raises() -> None:
-    with pytest.raises(ValueError, match="Unknown unit"):
+    with pytest.raises(UnitConversionError, match="Unknown unit"):
         Quantity(1.0, "furlongs")
 
 
@@ -65,7 +66,7 @@ def test_quantity_is_immutable() -> None:
 
 
 def test_count_units_no_conversion_between_types() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(UnitConversionError):
         Quantity(1.0, "pcs").convert_to("box")
 
 

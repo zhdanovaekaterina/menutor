@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 
 from src.application.use_cases.manage_product import ProductData
 from src.domain.entities.product import Product
+from src.domain.value_objects.category import ActiveCategory
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.types import ProductCategoryId, ProductId
 from src.presentation.models.product_table_model import ProductTableModel
@@ -137,10 +138,13 @@ class ProductListView(QWidget):
     # Public API
     # ------------------------------------------------------------------
 
+    def set_category_map(self, category_map: dict[int, str]) -> None:
+        self._model.set_category_map(category_map)
+
     def set_products(self, products: list[Product]) -> None:
         self._model.set_products(products)
 
-    def set_categories(self, categories: list[tuple[int, str]]) -> None:
+    def set_categories(self, categories: list[ActiveCategory]) -> None:
         current_id = self._category_combo.currentData()
         self._category_combo.clear()
         for cat_id, cat_name in categories:

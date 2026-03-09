@@ -9,12 +9,6 @@ from src.application.use_cases.import_export import (
     ExportShoppingListAsCsv,
     ExportShoppingListAsText,
 )
-from src.application.use_cases.manage_family import (
-    CreateFamilyMember,
-    DeleteFamilyMember,
-    EditFamilyMember,
-    ListFamilyMembers,
-)
 from src.application.use_cases.manage_category import (
     CheckProductCategoryUsed,
     CheckRecipeCategoryUsed,
@@ -26,6 +20,12 @@ from src.application.use_cases.manage_category import (
     EditRecipeCategory,
     ListAllProductCategories,
     ListAllRecipeCategories,
+)
+from src.application.use_cases.manage_family import (
+    CreateFamilyMember,
+    DeleteFamilyMember,
+    EditFamilyMember,
+    ListFamilyMembers,
 )
 from src.application.use_cases.manage_product import (
     CreateProduct,

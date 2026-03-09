@@ -1,3 +1,4 @@
+import logging
 from typing import cast
 
 from src.application.use_cases.manage_product import (
@@ -8,8 +9,11 @@ from src.application.use_cases.manage_product import (
     ListProducts,
     ProductData,
 )
+from src.domain.exceptions import AppError
 from src.domain.value_objects.types import ProductId
 from src.presentation.views.product_list_view import ProductListView
+
+logger = logging.getLogger(__name__)
 
 
 class ProductController:
@@ -44,29 +48,33 @@ class ProductController:
         try:
             products = self._list_uc.execute()
             categories = self._list_categories_uc.execute()
-            self._view._model.set_category_map(dict(categories))
+            self._view.set_category_map(dict(categories))
             self._view.set_products(products)
             self._view.set_categories(categories)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при загрузке продуктов: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_create(self, data: ProductData) -> None:
         try:
             self._create_uc.execute(data)
             self._refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при создании продукта: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_edit(self, product_id: object, data: ProductData) -> None:
         try:
             self._edit_uc.execute(ProductId(cast(int, product_id)), data)
             self._refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при редактировании продукта %s: %s", product_id, exc)
             self._view.show_error(str(exc))
 
     def _on_delete(self, product_id: object) -> None:
         try:
             self._delete_uc.execute(ProductId(cast(int, product_id)))
             self._refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при удалении продукта %s: %s", product_id, exc)
             self._view.show_error(str(exc))

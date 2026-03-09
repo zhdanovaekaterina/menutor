@@ -126,13 +126,13 @@ def test_product_category_delete_makes_inactive(conn) -> None:
     assert "Удаляемая" in all_names
 
 
-def test_product_category_has_products_false(conn) -> None:
+def test_product_category_is_used_false(conn) -> None:
     repo = SqliteProductCategoryRepository(conn)
     new_id = repo.save("Пустая")
-    assert repo.has_products(new_id) is False
+    assert repo.is_used(new_id) is False
 
 
-def test_product_category_has_products_true(conn) -> None:
+def test_product_category_is_used_true(conn) -> None:
     repo = SqliteProductCategoryRepository(conn)
     new_id = repo.save("С продуктами")
     conn.execute(
@@ -141,7 +141,7 @@ def test_product_category_has_products_true(conn) -> None:
         (new_id,),
     )
     conn.commit()
-    assert repo.has_products(new_id) is True
+    assert repo.is_used(new_id) is True
 
 
 def test_recipe_category_find_all_includes_inactive(conn) -> None:
@@ -187,13 +187,13 @@ def test_recipe_category_delete_makes_inactive(conn) -> None:
     assert "Удаляемая" in all_names
 
 
-def test_recipe_category_has_recipes_false(conn) -> None:
+def test_recipe_category_is_used_false(conn) -> None:
     repo = SqliteRecipeCategoryRepository(conn)
     new_id = repo.save("Пустая")
-    assert repo.has_recipes(new_id) is False
+    assert repo.is_used(new_id) is False
 
 
-def test_recipe_category_has_recipes_true(conn) -> None:
+def test_recipe_category_is_used_true(conn) -> None:
     repo = SqliteRecipeCategoryRepository(conn)
     new_id = repo.save("С рецептами")
     conn.execute(
@@ -201,7 +201,7 @@ def test_recipe_category_has_recipes_true(conn) -> None:
         (new_id,),
     )
     conn.commit()
-    assert repo.has_recipes(new_id) is True
+    assert repo.is_used(new_id) is True
 
 
 def test_product_category_save_reactivates_on_edit(conn) -> None:

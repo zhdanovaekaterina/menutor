@@ -1,4 +1,5 @@
 from src.domain.entities.menu import MenuSlot, WeeklyMenu
+from src.domain.exceptions import EntityNotFoundError
 from src.domain.ports.menu_repository import MenuRepository
 from src.domain.value_objects.types import MenuId, ProductId, RecipeId
 
@@ -58,7 +59,7 @@ class AddDishToSlot:
     def execute(self, menu_id: MenuId, slot: MenuSlot) -> WeeklyMenu:
         menu = self._repo.get_by_id(menu_id)
         if menu is None:
-            raise ValueError(f"Меню {menu_id} не найдено")
+            raise EntityNotFoundError(f"Меню {menu_id} не найдено")
 
         menu.slots = [s for s in menu.slots if not self._same_item(s, slot)]
         menu.slots.append(slot)
@@ -84,7 +85,7 @@ class RemoveDishFromSlot:
     def execute(self, menu_id: MenuId, day: int, meal_type: str) -> WeeklyMenu:
         menu = self._repo.get_by_id(menu_id)
         if menu is None:
-            raise ValueError(f"Меню {menu_id} не найдено")
+            raise EntityNotFoundError(f"Меню {menu_id} не найдено")
         menu.slots = [
             s for s in menu.slots
             if not (s.day == day and s.meal_type == meal_type)
@@ -108,7 +109,7 @@ class RemoveItemFromSlot:
     ) -> WeeklyMenu:
         menu = self._repo.get_by_id(menu_id)
         if menu is None:
-            raise ValueError(f"Меню {menu_id} не найдено")
+            raise EntityNotFoundError(f"Меню {menu_id} не найдено")
 
         def _matches(s: MenuSlot) -> bool:
             if s.day != day or s.meal_type != meal_type:
@@ -130,6 +131,6 @@ class ClearMenu:
     def execute(self, menu_id: MenuId) -> WeeklyMenu:
         menu = self._repo.get_by_id(menu_id)
         if menu is None:
-            raise ValueError(f"Меню {menu_id} не найдено")
+            raise EntityNotFoundError(f"Меню {menu_id} не найдено")
         menu.slots = []
         return self._repo.save(menu)

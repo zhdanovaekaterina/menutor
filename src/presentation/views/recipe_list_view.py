@@ -24,12 +24,13 @@ from PySide6.QtWidgets import (
 from src.application.use_cases.manage_recipe import RecipeData
 from src.domain.entities.product import Product
 from src.domain.entities.recipe import Recipe
+from src.domain.value_objects.category import ActiveCategory
 from src.domain.value_objects.cooking_step import CookingStep
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
 from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 from src.presentation.models.recipe_table_model import RecipeTableModel
-from src.presentation.units import to_display, to_code
+from src.presentation.units import to_code, to_display
 
 
 class RecipeListView(QWidget):
@@ -161,10 +162,13 @@ class RecipeListView(QWidget):
     # Public API
     # ------------------------------------------------------------------
 
+    def set_category_map(self, category_map: dict[int, str]) -> None:
+        self._model.set_category_map(category_map)
+
     def set_recipes(self, recipes: list[Recipe]) -> None:
         self._model.set_recipes(recipes)
 
-    def set_categories(self, categories: list[tuple[int, str]]) -> None:
+    def set_categories(self, categories: list[ActiveCategory]) -> None:
         current_id = self._category_combo.currentData()
         self._category_combo.clear()
         for cat_id, cat_name in categories:

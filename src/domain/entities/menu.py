@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+from src.domain.exceptions import InvalidEntityError
 from src.domain.value_objects.types import MenuId, ProductId, RecipeId
 
 
@@ -17,7 +18,7 @@ class MenuSlot:
         has_recipe = self.recipe_id is not None
         has_product = self.product_id is not None
         if has_recipe == has_product:
-            raise ValueError(
+            raise InvalidEntityError(
                 "MenuSlot должен содержать ровно одно: recipe_id или product_id"
             )
 

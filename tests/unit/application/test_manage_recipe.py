@@ -1,11 +1,7 @@
-import pytest
 from unittest.mock import MagicMock
 
-from src.domain.entities.recipe import Recipe
-from src.domain.value_objects.cooking_step import CookingStep
-from src.domain.value_objects.quantity import Quantity
-from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
+import pytest
+
 from src.application.use_cases.manage_recipe import (
     CreateRecipe,
     DeleteRecipe,
@@ -14,6 +10,12 @@ from src.application.use_cases.manage_recipe import (
     ListRecipes,
     RecipeData,
 )
+from src.domain.entities.recipe import Recipe
+from src.domain.exceptions import EntityNotFoundError
+from src.domain.value_objects.cooking_step import CookingStep
+from src.domain.value_objects.quantity import Quantity
+from src.domain.value_objects.recipe_ingredient import RecipeIngredient
+from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 
 
 def _data(**kwargs) -> RecipeData:
@@ -78,7 +80,7 @@ def test_edit_recipe_raises_when_not_found() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = None
 
-    with pytest.raises(ValueError, match="не найден"):
+    with pytest.raises(EntityNotFoundError, match="не найден"):
         EditRecipe(repo).execute(RecipeId(999), _data())
 
 

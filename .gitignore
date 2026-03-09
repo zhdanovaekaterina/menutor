@@ -8,6 +8,6 @@ CLAUDE.md
 pyproject.toml
 .mypy_cache
 .claude
-AGENT_PLAN.md
+*_PLAN.md
 __pycache__
 data

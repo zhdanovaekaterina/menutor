@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from src.domain.entities.family_member import FamilyMember
+from src.domain.exceptions import EntityNotFoundError
 from src.domain.ports.family_member_repository import FamilyMemberRepository
 from src.domain.value_objects.types import FamilyMemberId
 
@@ -34,7 +35,7 @@ class EditFamilyMember:
 
     def execute(self, id: FamilyMemberId, data: FamilyMemberData) -> FamilyMember:
         if self._repo.get_by_id(id) is None:
-            raise ValueError(f"Член семьи {id} не найден")
+            raise EntityNotFoundError(f"Член семьи {id} не найден")
         member = FamilyMember(
             id=id,
             name=data.name,

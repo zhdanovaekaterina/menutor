@@ -1,14 +1,14 @@
 from decimal import Decimal
 from unittest.mock import MagicMock
 
-from src.domain.entities.shopping_list import ShoppingList, ShoppingListItem
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.quantity import Quantity
-from src.domain.value_objects.types import ProductId
 from src.application.use_cases.import_export import (
     ExportShoppingListAsCsv,
     ExportShoppingListAsText,
 )
+from src.domain.entities.shopping_list import ShoppingList, ShoppingListItem
+from src.domain.value_objects.money import Money
+from src.domain.value_objects.quantity import Quantity
+from src.domain.value_objects.types import ProductId
 
 
 def _list_with_item() -> ShoppingList:
