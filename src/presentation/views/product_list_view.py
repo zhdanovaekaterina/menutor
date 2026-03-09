@@ -24,6 +24,7 @@ from src.domain.value_objects.category import ActiveCategory
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.types import ProductCategoryId, ProductId
 from src.presentation.models.product_table_model import ProductTableModel
+from src.presentation.models.sortable_proxy_model import SortableProxyModel
 from src.presentation.units import UNIT_DISPLAY_OPTIONS, to_code, to_display
 
 
@@ -39,15 +40,18 @@ class ProductListView(QWidget):
         self._selected_product: Product | None = None
 
         self._model = ProductTableModel()
+        self._proxy = SortableProxyModel()
+        self._proxy.setSourceModel(self._model)
 
         self._search_edit = QLineEdit()
         self._search_edit.setPlaceholderText("Поиск по названию...")
         self._search_edit.textChanged.connect(self._model.filter)
 
         self._table = QTableView()
-        self._table.setModel(self._model)
+        self._table.setModel(self._proxy)
         self._table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self._table.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)
+        self._table.setSortingEnabled(True)
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
         )
@@ -163,7 +167,8 @@ class ProductListView(QWidget):
     # ------------------------------------------------------------------
 
     def _on_row_selected(self, current: QModelIndex, _previous: QModelIndex) -> None:
-        product = self._model.product_at(current.row())
+        source_row = self._proxy.mapToSource(current).row()
+        product = self._model.product_at(source_row)
         if product is None:
             return
         self._selected_product = product

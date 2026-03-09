@@ -30,6 +30,7 @@ from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
 from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 from src.presentation.models.recipe_table_model import RecipeTableModel
+from src.presentation.models.sortable_proxy_model import SortableProxyModel
 from src.presentation.units import to_code, to_display
 
 
@@ -45,15 +46,18 @@ class RecipeListView(QWidget):
         self._selected_recipe: Recipe | None = None
         self._products: list[Product] = []
         self._model = RecipeTableModel()
+        self._proxy = SortableProxyModel()
+        self._proxy.setSourceModel(self._model)
 
         self._search_edit = QLineEdit()
         self._search_edit.setPlaceholderText("Поиск по названию...")
         self._search_edit.textChanged.connect(self._model.filter)
 
         self._table = QTableView()
-        self._table.setModel(self._model)
+        self._table.setModel(self._proxy)
         self._table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self._table.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)
+        self._table.setSortingEnabled(True)
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
         )
@@ -195,7 +199,8 @@ class RecipeListView(QWidget):
     # ------------------------------------------------------------------
 
     def _on_row_selected(self, current: QModelIndex, _previous: QModelIndex) -> None:
-        recipe = self._model.recipe_at(current.row())
+        source_row = self._proxy.mapToSource(current).row()
+        recipe = self._model.recipe_at(source_row)
         if recipe is None:
             return
         self._selected_recipe = recipe
