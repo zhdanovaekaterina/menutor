@@ -10,6 +10,7 @@ from src.application.use_cases.manage_family import (
     ListFamilyMembers,
 )
 from src.domain.entities.family_member import FamilyMember
+from src.domain.exceptions import EntityNotFoundError
 from src.domain.value_objects.types import FamilyMemberId
 
 
@@ -63,7 +64,7 @@ def test_edit_member_raises_when_not_found() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = None
 
-    with pytest.raises(ValueError, match="не найден"):
+    with pytest.raises(EntityNotFoundError, match="не найден"):
         EditFamilyMember(repo).execute(FamilyMemberId(999), _data())
 
 

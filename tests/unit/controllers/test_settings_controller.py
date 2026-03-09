@@ -7,6 +7,7 @@ import pytest
 from src.application.use_cases.manage_family import FamilyMemberData
 from src.domain.entities.family_member import FamilyMember
 from src.domain.entities.shopping_list import ShoppingList
+from src.domain.exceptions import EntityNotFoundError
 from src.domain.value_objects.types import FamilyMemberId
 from src.presentation.controllers.settings_controller import SettingsController
 
@@ -146,7 +147,7 @@ class TestSettingsControllerFamily:
         view: MagicMock,
         controller: SettingsController,
     ) -> None:
-        members_uc["create"].execute.side_effect = ValueError("Имя пустое")
+        members_uc["create"].execute.side_effect = EntityNotFoundError("Имя пустое")
         data = FamilyMemberData(name="")
         controller._on_create(data)
         view.show_error.assert_called_with("Имя пустое")
@@ -177,7 +178,7 @@ class TestSettingsControllerProductCategories:
         view: MagicMock,
         controller: SettingsController,
     ) -> None:
-        product_cat_uc["create"].execute.side_effect = ValueError("Duplicate")
+        product_cat_uc["create"].execute.side_effect = EntityNotFoundError("Duplicate")
         controller._product_cat_handler._on_create("Бакалея")
         view.show_error.assert_called_with("Duplicate")
 

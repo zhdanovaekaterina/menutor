@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from src.domain.entities.recipe import Recipe
+from src.domain.exceptions import EntityNotFoundError
 from src.domain.ports.recipe_category_repository import RecipeCategoryRepository
 from src.domain.ports.recipe_repository import RecipeRepository
 from src.domain.value_objects.category import ActiveCategory
@@ -42,7 +43,7 @@ class EditRecipe:
 
     def execute(self, id: RecipeId, data: RecipeData) -> Recipe:
         if self._repo.get_by_id(id) is None:
-            raise ValueError(f"Рецепт {id} не найден")
+            raise EntityNotFoundError(f"Рецепт {id} не найден")
         recipe = Recipe(
             id=id,
             name=data.name,

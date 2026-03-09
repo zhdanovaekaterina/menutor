@@ -25,24 +25,24 @@ class BaseSqliteCategoryRepository:
         return [Category(row[0], row[1], bool(row[2])) for row in rows]
 
     def save(self, name: str, category_id: int | None = None) -> int:
-        if category_id is None:
-            cursor = self._conn.execute(
-                f"INSERT INTO {self._table_name} (name) VALUES (?)", (name,)
+        with self._conn:
+            if category_id is None:
+                cursor = self._conn.execute(
+                    f"INSERT INTO {self._table_name} (name) VALUES (?)", (name,)
+                )
+                return cursor.lastrowid  # type: ignore[return-value]
+            self._conn.execute(
+                f"UPDATE {self._table_name} SET name = ?, active = 1 WHERE id = ?",
+                (name, category_id),
             )
-            self._conn.commit()
-            return cursor.lastrowid  # type: ignore[return-value]
-        self._conn.execute(
-            f"UPDATE {self._table_name} SET name = ?, active = 1 WHERE id = ?",
-            (name, category_id),
-        )
-        self._conn.commit()
-        return category_id
+            return category_id
 
     def delete(self, category_id: int) -> None:
-        self._conn.execute(
-            f"UPDATE {self._table_name} SET active = 0 WHERE id = ?", (category_id,)
-        )
-        self._conn.commit()
+        with self._conn:
+            self._conn.execute(
+                f"UPDATE {self._table_name} SET active = 0 WHERE id = ?",
+                (category_id,),
+            )
 
     def is_used(self, category_id: int) -> bool:
         row = self._conn.execute(self._usage_query, (category_id,)).fetchone()

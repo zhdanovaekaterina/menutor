@@ -14,6 +14,7 @@ from src.application.use_cases.plan_menu import (
     SaveMenu,
 )
 from src.domain.entities.menu import MenuSlot, WeeklyMenu
+from src.domain.exceptions import EntityNotFoundError
 from src.domain.value_objects.types import MenuId, ProductId, RecipeId
 
 
@@ -182,7 +183,7 @@ def test_add_slot_raises_when_menu_not_found() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = None
 
-    with pytest.raises(ValueError, match="не найдено"):
+    with pytest.raises(EntityNotFoundError, match="не найдено"):
         AddDishToSlot(repo).execute(MenuId(999), _slot())
 
 
@@ -213,7 +214,7 @@ def test_remove_slot_raises_when_menu_not_found() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = None
 
-    with pytest.raises(ValueError, match="не найдено"):
+    with pytest.raises(EntityNotFoundError, match="не найдено"):
         RemoveDishFromSlot(repo).execute(MenuId(999), 0, "обед")
 
 
@@ -255,7 +256,7 @@ def test_remove_item_raises_when_menu_not_found() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = None
 
-    with pytest.raises(ValueError, match="не найдено"):
+    with pytest.raises(EntityNotFoundError, match="не найдено"):
         RemoveItemFromSlot(repo).execute(MenuId(999), 0, "обед", recipe_id=RecipeId(1))
 
 
@@ -276,5 +277,5 @@ def test_clear_menu_raises_when_not_found() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = None
 
-    with pytest.raises(ValueError, match="не найдено"):
+    with pytest.raises(EntityNotFoundError, match="не найдено"):
         ClearMenu(repo).execute(MenuId(999))

@@ -1,12 +1,17 @@
+import logging
+
 from src.application.use_cases.import_export import (
     ExportShoppingListAsCsv,
     ExportShoppingListAsText,
 )
 from src.application.use_cases.manage_product import ListProductCategories, ListProducts
 from src.domain.entities.shopping_list import ShoppingList, ShoppingListItem
+from src.domain.exceptions import AppError
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.types import ProductId
 from src.presentation.views.shopping_list_view import ShoppingListView
+
+logger = logging.getLogger(__name__)
 
 
 class ShoppingListController:
@@ -42,7 +47,8 @@ class ShoppingListController:
         try:
             products = self._list_products_uc.execute()
             self._view.set_products(products)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при загрузке продуктов: %s", exc)
             self._view.show_error(str(exc))
 
     def set_shopping_list(self, shopping_list: ShoppingList) -> None:
@@ -55,7 +61,8 @@ class ShoppingListController:
         try:
             text = self._export_text_uc.execute(self._shopping_list)
             self._view.show_text_export(text)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при экспорте текста: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_export_csv(self, filepath: str) -> None:
@@ -63,7 +70,8 @@ class ShoppingListController:
             return
         try:
             self._export_csv_uc.execute(self._shopping_list, filepath)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при экспорте CSV: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_add_product(self, product_id: int, qty_in_recipe_unit: float) -> None:
@@ -89,7 +97,8 @@ class ShoppingListController:
             )
             self._shopping_list.items.append(item)
             self._view.set_shopping_list(self._shopping_list)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при добавлении продукта %s: %s", product_id, exc)
             self._view.show_error(str(exc))
 
     def _on_remove_product(self, product_id: int) -> None:
@@ -118,5 +127,6 @@ class ShoppingListController:
             item.quantity = Quantity(new_purchase_qty, item.quantity.unit)
             item.cost = product.purchase_cost(new_purchase_qty)
             self._view.set_shopping_list(self._shopping_list)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при изменении количества: %s", exc)
             self._view.show_error(str(exc))

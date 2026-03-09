@@ -7,6 +7,7 @@ import pytest
 
 from src.application.use_cases.manage_product import ProductData
 from src.domain.entities.product import Product
+from src.domain.exceptions import EntityNotFoundError, RepositoryError
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.types import ProductCategoryId, ProductId
 from src.presentation.controllers.product_controller import ProductController
@@ -107,7 +108,7 @@ class TestProductControllerCreate:
     def test_create_shows_error_on_failure(
         self, create_uc: MagicMock, view: MagicMock, controller: ProductController,
     ) -> None:
-        create_uc.execute.side_effect = ValueError("Дубликат")
+        create_uc.execute.side_effect = EntityNotFoundError("Дубликат")
         data = ProductData(
             name="Мука", category_id=ProductCategoryId(1),
             recipe_unit="g", purchase_unit="kg",
@@ -132,7 +133,7 @@ class TestProductControllerEdit:
     def test_edit_shows_error_on_not_found(
         self, edit_uc: MagicMock, view: MagicMock, controller: ProductController,
     ) -> None:
-        edit_uc.execute.side_effect = ValueError("Продукт 99 не найден")
+        edit_uc.execute.side_effect = EntityNotFoundError("Продукт 99 не найден")
         data = ProductData(
             name="X", category_id=ProductCategoryId(1),
             recipe_unit="g", purchase_unit="kg",
@@ -159,6 +160,6 @@ class TestProductControllerDelete:
     def test_delete_shows_error_on_failure(
         self, delete_uc: MagicMock, view: MagicMock, controller: ProductController,
     ) -> None:
-        delete_uc.execute.side_effect = RuntimeError("FK constraint")
+        delete_uc.execute.side_effect = RepositoryError("FK constraint")
         controller._on_delete(1)
         view.show_error.assert_called_once_with("FK constraint")

@@ -7,6 +7,7 @@ import pytest
 
 from src.domain.entities.product import Product
 from src.domain.entities.shopping_list import ShoppingList, ShoppingListItem
+from src.domain.exceptions import RepositoryError
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.types import ProductCategoryId, ProductId
@@ -131,7 +132,7 @@ class TestShoppingListControllerExport:
         controller: ShoppingListController,
     ) -> None:
         controller.set_shopping_list(sample_shopping_list)
-        export_text_uc.execute.side_effect = RuntimeError("Exporter failed")
+        export_text_uc.execute.side_effect = RepositoryError("Exporter failed")
         controller._on_export_text()
         view.show_error.assert_called_once_with("Exporter failed")
 

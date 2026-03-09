@@ -1,3 +1,4 @@
+import logging
 from typing import Callable, cast
 
 from src.application.use_cases.import_export import (
@@ -19,10 +20,13 @@ from src.application.use_cases.manage_family import (
     ListFamilyMembers,
 )
 from src.domain.entities.shopping_list import ShoppingList
+from src.domain.exceptions import AppError
 from src.domain.value_objects.category import Category
 from src.domain.value_objects.types import FamilyMemberId
 from src.presentation.views.settings_view import SettingsView
 from src.presentation.widgets.category_panel import CategoryPanel
+
+logger = logging.getLogger(__name__)
 
 
 class _CategoryHandler:
@@ -55,28 +59,32 @@ class _CategoryHandler:
         try:
             categories = self._list_uc.execute()
             self._set_categories(categories)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при загрузке категорий: %s", exc)
             self._show_error(str(exc))
 
     def _on_create(self, name: str) -> None:
         try:
             self._create_uc.execute(name)
             self.refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при создании категории: %s", exc)
             self._show_error(str(exc))
 
     def _on_edit(self, category_id: int, name: str) -> None:
         try:
             self._edit_uc.execute(category_id, name)
             self.refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при редактировании категории %s: %s", category_id, exc)
             self._show_error(str(exc))
 
     def _on_delete(self, category_id: int) -> None:
         try:
             self._delete_uc.execute(category_id)
             self.refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при удалении категории %s: %s", category_id, exc)
             self._show_error(str(exc))
 
 
@@ -158,7 +166,8 @@ class SettingsController:
         try:
             members = self._list_uc.execute()
             self._view.set_family_members(members)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при загрузке членов семьи: %s", exc)
             self._view.show_error(str(exc))
         self._product_cat_handler.refresh()
         self._recipe_cat_handler.refresh()
@@ -171,21 +180,24 @@ class SettingsController:
         try:
             self._create_uc.execute(data)
             self._refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при создании члена семьи: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_edit(self, member_id: object, data: FamilyMemberData) -> None:
         try:
             self._edit_uc.execute(FamilyMemberId(cast(int, member_id)), data)
             self._refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при редактировании члена семьи %s: %s", member_id, exc)
             self._view.show_error(str(exc))
 
     def _on_delete(self, member_id: object) -> None:
         try:
             self._delete_uc.execute(FamilyMemberId(cast(int, member_id)))
             self._refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при удалении члена семьи %s: %s", member_id, exc)
             self._view.show_error(str(exc))
 
     # ------------------------------------------------------------------
@@ -216,7 +228,8 @@ class SettingsController:
             layout.addWidget(te)
             layout.addWidget(buttons)
             dialog.exec()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при экспорте текста: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_export_csv(self, filepath: str) -> None:
@@ -225,5 +238,6 @@ class SettingsController:
             return
         try:
             self._export_csv_uc.execute(self._last_shopping_list, filepath)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при экспорте CSV в %s: %s", filepath, exc)
             self._view.show_error(str(exc))

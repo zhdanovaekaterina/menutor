@@ -1,6 +1,7 @@
 import sqlite3
 
 from src.domain.entities.menu import MenuSlot, WeeklyMenu
+from src.domain.exceptions import RepositoryError
 from src.domain.ports.menu_repository import MenuRepository
 from src.domain.value_objects.types import MenuId, ProductId, RecipeId
 from src.infrastructure.repositories.base import BaseSqliteRepository
@@ -11,6 +12,7 @@ class SqliteMenuRepository(
     MenuRepository,
 ):
     _table_name = "menus"
+    _columns = "id, name"
 
     def _get_entity_id(self, entity: WeeklyMenu) -> int:
         return entity.id
@@ -24,7 +26,7 @@ class SqliteMenuRepository(
         )
         last_id = cursor.lastrowid
         if last_id is None:
-            raise RuntimeError("INSERT menus did not return lastrowid")
+            raise RepositoryError("INSERT menus did not return lastrowid")
         return last_id
 
     def _update(self, entity: WeeklyMenu) -> None:

@@ -4,12 +4,15 @@ import sqlite3
 from abc import abstractmethod
 from typing import Generic, TypeVar
 
+from src.domain.exceptions import RepositoryError
+
 E = TypeVar("E")  # Entity type
 I = TypeVar("I", bound=int)  # Typed ID (NewType over int)
 
 
 class BaseSqliteRepository(Generic[E, I]):
     _table_name: str
+    _columns: str  # e.g. "id, name, category_id, ..."
 
     def __init__(self, conn: sqlite3.Connection) -> None:
         self._conn = conn
@@ -50,7 +53,7 @@ class BaseSqliteRepository(Generic[E, I]):
             self._save_children(entity_id, entity)
         result = self.get_by_id(entity_id)
         if result is None:
-            raise RuntimeError(
+            raise RepositoryError(
                 f"Failed to retrieve {self._table_name} {entity_id} after save"
             )
         return result
@@ -63,10 +66,12 @@ class BaseSqliteRepository(Generic[E, I]):
 
     def get_by_id(self, id: I) -> E | None:
         row = self._conn.execute(
-            f"SELECT * FROM {self._table_name} WHERE id = ?", (id,)
+            f"SELECT {self._columns} FROM {self._table_name} WHERE id = ?", (id,)
         ).fetchone()
         return self._row_to_entity(row) if row else None
 
     def find_all(self) -> list[E]:
-        rows = self._conn.execute(f"SELECT * FROM {self._table_name}").fetchall()
+        rows = self._conn.execute(
+            f"SELECT {self._columns} FROM {self._table_name}"
+        ).fetchall()
         return [self._row_to_entity(r) for r in rows]

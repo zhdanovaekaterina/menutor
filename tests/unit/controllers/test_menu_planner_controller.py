@@ -10,6 +10,7 @@ from src.domain.entities.menu import MenuSlot, WeeklyMenu
 from src.domain.entities.product import Product
 from src.domain.entities.recipe import Recipe
 from src.domain.entities.shopping_list import ShoppingList
+from src.domain.exceptions import EntityNotFoundError, RepositoryError
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.types import (
     FamilyMemberId,
@@ -231,7 +232,7 @@ class TestMenuPlannerControllerMenuSelection:
         view: MagicMock,
         controller: MenuPlannerController,
     ) -> None:
-        load_menu_uc.execute.side_effect = ValueError("Меню не найдено")
+        load_menu_uc.execute.side_effect = EntityNotFoundError("Меню не найдено")
         controller._on_menu_selected(99)
         view.show_error.assert_called_once_with("Меню не найдено")
 
@@ -296,7 +297,7 @@ class TestMenuPlannerControllerNewMenu:
         view: MagicMock,
         controller: MenuPlannerController,
     ) -> None:
-        create_menu_uc.execute.side_effect = RuntimeError("DB full")
+        create_menu_uc.execute.side_effect = RepositoryError("DB full")
         controller._on_new_menu("X")
         view.show_error.assert_called_once_with("DB full")
 
@@ -374,6 +375,6 @@ class TestMenuPlannerControllerGenerate:
         load_menu_uc.execute.return_value = menu
         controller._on_menu_selected(1)
 
-        generate_uc.execute.side_effect = ValueError("Пустое меню")
+        generate_uc.execute.side_effect = EntityNotFoundError("Пустое меню")
         controller._on_generate()
         view.show_error.assert_called_once_with("Пустое меню")

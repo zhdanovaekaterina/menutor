@@ -1,3 +1,4 @@
+import logging
 from typing import cast
 
 from src.application.use_cases.manage_product import ListProducts
@@ -9,8 +10,11 @@ from src.application.use_cases.manage_recipe import (
     ListRecipes,
     RecipeData,
 )
+from src.domain.exceptions import AppError
 from src.domain.value_objects.types import RecipeId
 from src.presentation.views.recipe_list_view import RecipeListView
+
+logger = logging.getLogger(__name__)
 
 
 class RecipeController:
@@ -52,26 +56,30 @@ class RecipeController:
             products = self._list_products_uc.execute()
             self._view.set_products(products)
             self._view.set_categories(categories)
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при загрузке рецептов: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_create(self, data: RecipeData) -> None:
         try:
             self._create_uc.execute(data)
             self._refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при создании рецепта: %s", exc)
             self._view.show_error(str(exc))
 
     def _on_edit(self, recipe_id: object, data: RecipeData) -> None:
         try:
             self._edit_uc.execute(RecipeId(cast(int, recipe_id)), data)
             self._refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при редактировании рецепта %s: %s", recipe_id, exc)
             self._view.show_error(str(exc))
 
     def _on_delete(self, recipe_id: object) -> None:
         try:
             self._delete_uc.execute(RecipeId(cast(int, recipe_id)))
             self._refresh()
-        except Exception as exc:
+        except AppError as exc:
+            logger.warning("Ошибка при удалении рецепта %s: %s", recipe_id, exc)
             self._view.show_error(str(exc))

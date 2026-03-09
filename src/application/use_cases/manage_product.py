@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from src.domain.entities.product import Product
+from src.domain.exceptions import EntityNotFoundError
 from src.domain.ports.product_category_repository import ProductCategoryRepository
 from src.domain.ports.product_repository import ProductRepository
 from src.domain.value_objects.category import ActiveCategory
@@ -47,7 +48,7 @@ class EditProduct:
 
     def execute(self, id: ProductId, data: ProductData) -> Product:
         if self._repo.get_by_id(id) is None:
-            raise ValueError(f"Продукт {id} не найден")
+            raise EntityNotFoundError(f"Продукт {id} не найден")
         product = Product(
             id=id,
             name=data.name,
@@ -78,7 +79,7 @@ class UpdateProductPrice:
     def execute(self, id: ProductId, price: Money) -> Product:
         product = self._repo.get_by_id(id)
         if product is None:
-            raise ValueError(f"Продукт {id} не найден")
+            raise EntityNotFoundError(f"Продукт {id} не найден")
         product.price_per_purchase_unit = price
         return self._repo.save(product)
 

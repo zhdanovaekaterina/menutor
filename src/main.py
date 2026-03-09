@@ -1,3 +1,4 @@
+import logging
 import sys
 
 from PySide6.QtWidgets import QApplication
@@ -7,6 +8,10 @@ from src.main_window import MainWindow
 
 
 def main() -> None:
+    logging.basicConfig(
+        level=logging.WARNING,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
     app = QApplication(sys.argv)
     container = ApplicationContainer()
     window = MainWindow(container)

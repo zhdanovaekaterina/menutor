@@ -1,6 +1,7 @@
 import sqlite3
 
 from src.domain.entities.recipe import Recipe
+from src.domain.exceptions import RepositoryError
 from src.domain.ports.recipe_repository import RecipeRepository
 from src.domain.value_objects.cooking_step import CookingStep
 from src.domain.value_objects.quantity import Quantity
@@ -14,6 +15,7 @@ class SqliteRecipeRepository(
     RecipeRepository,
 ):
     _table_name = "recipes"
+    _columns = "id, name, category_id, dietary_tags, servings, weight"
 
     def _get_entity_id(self, entity: Recipe) -> int:
         return entity.id
@@ -29,7 +31,7 @@ class SqliteRecipeRepository(
         )
         last_id = cursor.lastrowid
         if last_id is None:
-            raise RuntimeError("INSERT recipes did not return lastrowid")
+            raise RepositoryError("INSERT recipes did not return lastrowid")
         return last_id
 
     def _update(self, entity: Recipe) -> None:
@@ -93,6 +95,7 @@ class SqliteRecipeRepository(
 
     def find_by_category_id(self, category_id: RecipeCategoryId) -> list[Recipe]:
         rows = self._conn.execute(
-            "SELECT * FROM recipes WHERE category_id = ?", (category_id,),
+            f"SELECT {self._columns} FROM recipes WHERE category_id = ?",
+            (category_id,),
         ).fetchall()
         return [self._row_to_entity(r) for r in rows]

@@ -13,6 +13,7 @@ from src.application.use_cases.manage_product import (
     UpdateProductPrice,
 )
 from src.domain.entities.product import Product
+from src.domain.exceptions import EntityNotFoundError
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.types import ProductCategoryId, ProductId
 
@@ -83,7 +84,7 @@ def test_edit_product_raises_when_not_found() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = None
 
-    with pytest.raises(ValueError, match="не найден"):
+    with pytest.raises(EntityNotFoundError, match="не найден"):
         EditProduct(repo).execute(ProductId(999), _data())
 
 
@@ -115,7 +116,7 @@ def test_update_price_raises_when_not_found() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = None
 
-    with pytest.raises(ValueError, match="не найден"):
+    with pytest.raises(EntityNotFoundError, match="не найден"):
         UpdateProductPrice(repo).execute(ProductId(999), Money(Decimal("100")))
 
 

@@ -5,6 +5,7 @@ import pytest
 from src.application.use_cases.generate_shopping_list import GenerateShoppingList
 from src.domain.entities.menu import WeeklyMenu
 from src.domain.entities.shopping_list import ShoppingList
+from src.domain.exceptions import EntityNotFoundError
 from src.domain.value_objects.types import MenuId
 
 
@@ -32,5 +33,5 @@ def test_generate_raises_when_menu_not_found() -> None:
     menu_repo.get_by_id.return_value = None
     builder = MagicMock()
 
-    with pytest.raises(ValueError, match="не найдено"):
+    with pytest.raises(EntityNotFoundError, match="не найдено"):
         _uc(menu_repo, builder).execute(MenuId(999))

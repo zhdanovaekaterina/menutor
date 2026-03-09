@@ -2,6 +2,7 @@ import sqlite3
 from decimal import Decimal
 
 from src.domain.entities.product import Product
+from src.domain.exceptions import RepositoryError
 from src.domain.ports.product_repository import ProductRepository
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.types import ProductCategoryId, ProductId
@@ -13,6 +14,10 @@ class SqliteProductRepository(
     ProductRepository,
 ):
     _table_name = "products"
+    _columns = (
+        "id, name, category_id, brand, supplier, recipe_unit, "
+        "purchase_unit, price_per_purchase_unit, weight_per_piece_g, conversion_factor"
+    )
 
     def _get_entity_id(self, entity: Product) -> int:
         return entity.id
@@ -36,7 +41,7 @@ class SqliteProductRepository(
         )
         last_id = cursor.lastrowid
         if last_id is None:
-            raise RuntimeError("INSERT products did not return lastrowid")
+            raise RepositoryError("INSERT products did not return lastrowid")
         return last_id
 
     def _update(self, entity: Product) -> None:
@@ -72,6 +77,7 @@ class SqliteProductRepository(
 
     def find_by_category_id(self, category_id: ProductCategoryId) -> list[Product]:
         rows = self._conn.execute(
-            "SELECT * FROM products WHERE category_id = ?", (category_id,)
+            f"SELECT {self._columns} FROM products WHERE category_id = ?",
+            (category_id,)
         ).fetchall()
         return [self._row_to_entity(r) for r in rows]

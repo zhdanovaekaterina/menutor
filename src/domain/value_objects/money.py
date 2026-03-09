@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from decimal import Decimal
 
+from src.domain.exceptions import CurrencyMismatchError
+
 
 @dataclass(frozen=True)
 class Money:
@@ -9,7 +11,7 @@ class Money:
 
     def __add__(self, other: "Money") -> "Money":
         if self.currency != other.currency:
-            raise ValueError(
+            raise CurrencyMismatchError(
                 f"Cannot add {self.currency} and {other.currency}: currency mismatch"
             )
         return Money(self.amount + other.amount, self.currency)

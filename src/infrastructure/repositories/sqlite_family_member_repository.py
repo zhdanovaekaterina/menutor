@@ -1,6 +1,7 @@
 import sqlite3
 
 from src.domain.entities.family_member import FamilyMember
+from src.domain.exceptions import RepositoryError
 from src.domain.ports.family_member_repository import FamilyMemberRepository
 from src.domain.value_objects.types import FamilyMemberId
 from src.infrastructure.repositories.base import BaseSqliteRepository
@@ -11,6 +12,7 @@ class SqliteFamilyMemberRepository(
     FamilyMemberRepository,
 ):
     _table_name = "family_members"
+    _columns = "id, name, portion_multiplier, dietary_restrictions, comment"
 
     def _get_entity_id(self, entity: FamilyMember) -> int:
         return entity.id
@@ -28,7 +30,7 @@ class SqliteFamilyMemberRepository(
         )
         last_id = cursor.lastrowid
         if last_id is None:
-            raise RuntimeError("INSERT family_members did not return lastrowid")
+            raise RepositoryError("INSERT family_members did not return lastrowid")
         return last_id
 
     def _update(self, entity: FamilyMember) -> None:

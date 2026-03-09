@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from src.domain.exceptions import UnitConversionError
+
 # Maps unit name → unit group
 _UNIT_GROUPS: dict[str, str] = {
     "g": "weight",
@@ -30,13 +32,13 @@ class Quantity:
 
     def __post_init__(self) -> None:
         if self.unit not in _UNIT_GROUPS:
-            raise ValueError(f"Unknown unit: '{self.unit}'")
+            raise UnitConversionError(f"Unknown unit: '{self.unit}'")
 
     def convert_to(self, target_unit: str) -> "Quantity":
         if target_unit not in _UNIT_GROUPS:
-            raise ValueError(f"Unknown unit: '{target_unit}'")
+            raise UnitConversionError(f"Unknown unit: '{target_unit}'")
         if _UNIT_GROUPS[self.unit] != _UNIT_GROUPS[target_unit]:
-            raise ValueError(
+            raise UnitConversionError(
                 f"Cannot convert '{self.unit}' to '{target_unit}': incompatible unit groups"
             )
         if self.unit == target_unit:
@@ -46,7 +48,7 @@ class Quantity:
 
     def __add__(self, other: "Quantity") -> "Quantity":
         if _UNIT_GROUPS[self.unit] != _UNIT_GROUPS[other.unit]:
-            raise ValueError(
+            raise UnitConversionError(
                 f"Cannot add '{self.unit}' and '{other.unit}': incompatible unit groups"
             )
         converted = other.convert_to(self.unit)

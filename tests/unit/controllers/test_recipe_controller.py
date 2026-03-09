@@ -8,6 +8,7 @@ import pytest
 from src.application.use_cases.manage_recipe import RecipeData
 from src.domain.entities.product import Product
 from src.domain.entities.recipe import Recipe
+from src.domain.exceptions import EntityNotFoundError, RepositoryError
 from src.domain.value_objects.money import Money
 from src.domain.value_objects.types import (
     ProductCategoryId,
@@ -153,7 +154,7 @@ class TestRecipeControllerCreate:
     def test_create_shows_error_on_failure(
         self, create_uc: MagicMock, view: MagicMock, controller: RecipeController,
     ) -> None:
-        create_uc.execute.side_effect = ValueError("Имя пустое")
+        create_uc.execute.side_effect = EntityNotFoundError("Имя пустое")
         data = RecipeData(name="", category_id=RecipeCategoryId(1), servings=4)
         controller._on_create(data)
         view.show_error.assert_called_once_with("Имя пустое")
@@ -172,7 +173,7 @@ class TestRecipeControllerEdit:
     def test_edit_shows_error_on_failure(
         self, edit_uc: MagicMock, view: MagicMock, controller: RecipeController,
     ) -> None:
-        edit_uc.execute.side_effect = ValueError("Рецепт 99 не найден")
+        edit_uc.execute.side_effect = EntityNotFoundError("Рецепт 99 не найден")
         data = RecipeData(name="Блины v2", category_id=RecipeCategoryId(1), servings=4)
         controller._on_edit(99, data)
         view.show_error.assert_called_once_with("Рецепт 99 не найден")
@@ -197,7 +198,7 @@ class TestRecipeControllerDelete:
     def test_delete_shows_error_on_failure(
         self, delete_uc: MagicMock, view: MagicMock, controller: RecipeController,
     ) -> None:
-        delete_uc.execute.side_effect = RuntimeError("DB error")
+        delete_uc.execute.side_effect = RepositoryError("DB error")
         controller._on_delete(1)
         view.show_error.assert_called_once_with("DB error")
 
@@ -223,7 +224,7 @@ class TestRecipeControllerRefresh:
     def test_refresh_shows_error_on_failure(
         self, list_uc: MagicMock, view: MagicMock, controller: RecipeController,
     ) -> None:
-        list_uc.execute.side_effect = RuntimeError("DB down")
+        list_uc.execute.side_effect = RepositoryError("DB down")
         view.show_error.reset_mock()
         controller.refresh()
         view.show_error.assert_called_once_with("DB down")
