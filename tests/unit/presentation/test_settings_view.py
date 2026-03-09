@@ -46,9 +46,9 @@ class TestSettingsViewNavigation:
         view._nav.setCurrentRow(3)
         assert view._stack.currentWidget() is view.ie_panel
 
-    def test_nav_has_four_items(self, qapp: QApplication) -> None:
+    def test_nav_has_five_items(self, qapp: QApplication) -> None:
         view = SettingsView()
-        assert view._nav.count() == 4
+        assert view._nav.count() == 5
 
 
 class TestSettingsViewDelegation:
