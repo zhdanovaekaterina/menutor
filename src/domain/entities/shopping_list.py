@@ -14,6 +14,7 @@ class ShoppingListItem:
     quantity: Quantity
     cost: Money
     purchased: bool = field(default=False)
+    recipe_quantity: Quantity | None = field(default=None)
 
 
 @dataclass

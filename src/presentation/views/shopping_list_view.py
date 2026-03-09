@@ -159,7 +159,13 @@ class ShoppingListView(QWidget):
                 name_item = QTableWidgetItem(item.product_name)
                 name_item.setData(Qt.ItemDataRole.UserRole, int(item.product_id))
                 self._table.setItem(row, 1, name_item)
-                qty_text = f"{item.quantity.amount:.2f} {to_display(item.quantity.unit)}"
+                qty_text = f"{item.quantity.amount:g} {to_display(item.quantity.unit)}"
+                if (
+                    item.recipe_quantity is not None
+                    and item.recipe_quantity.unit != item.quantity.unit
+                ):
+                    recipe_qty = item.recipe_quantity
+                    qty_text += f" ({recipe_qty.amount:g} {to_display(recipe_qty.unit)})"
                 self._table.setItem(row, 2, QTableWidgetItem(qty_text))
                 cost_text = f"{item.cost.amount:.2f}"
                 self._table.setItem(row, 3, QTableWidgetItem(cost_text))
