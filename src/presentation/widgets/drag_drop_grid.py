@@ -58,6 +58,7 @@ class DragDropGrid(QWidget):
                 cell = GridCell(day_idx, meal_type, self._product_units)
                 cell.item_added.connect(self.slot_changed)
                 cell.item_removed.connect(self._on_item_removed)
+                cell.item_moved_from.connect(self._on_item_moved_from)
                 grid.addWidget(cell, row, col)
                 self._cells[(day_idx, meal_type)] = cell
 
@@ -76,6 +77,13 @@ class DragDropGrid(QWidget):
         if cell:
             cell.remove_item(item_type, item_id)
             self.slot_changed.emit(day, meal_type, item_type, item_id, 0.0, "")
+
+    def _on_item_moved_from(self, source_day: int, source_meal: str, item_type: str, item_id: int) -> None:
+        """Remove item from source cell after it was moved to another cell via drag."""
+        source_cell = self._cells.get((source_day, source_meal))
+        if source_cell:
+            source_cell.remove_item(item_type, item_id)
+            self.slot_changed.emit(source_day, source_meal, item_type, item_id, 0.0, "")
 
     def set_product_units(self, units: dict[int, str]) -> None:
         """Обновить справочник единиц измерения продуктов (product_id -> recipe_unit)."""
