@@ -1,108 +1,131 @@
-import sqlite3
 from pathlib import Path
 
-_SCHEMA_PATH = Path(__file__).parent / "schema.sql"
+from sqlalchemy import Engine, create_engine, event, text
+from sqlalchemy.orm import Session
+
+from src.infrastructure.database.models import Base
 
 
-def get_connection(db_path: str = "data/menutor.db") -> sqlite3.Connection:
-    path = Path(db_path)
-    if path.parent != Path("."):
+def get_engine(db_path: str = "data/menutor.db") -> Engine:
+    if db_path != ":memory:":
+        path = Path(db_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+    engine = create_engine(f"sqlite:///{db_path}")
+
+    @event.listens_for(engine, "connect")
+    def _enable_fk(conn, _record):  # type: ignore[no-untyped-def]
+        conn.execute("PRAGMA foreign_keys = ON")
+
+    return engine
 
 
-def _migrate_menu_slots(conn: sqlite3.Connection) -> None:
-    """Migrate old menu_slots (composite PK, no product_id) to new schema."""
-    info = conn.execute("PRAGMA table_info(menu_slots)").fetchall()
+def _migrate_menu_slots(conn) -> None:  # type: ignore[no-untyped-def]
+    """Migrate old menu_slots (no product_id) to new schema."""
+    info = conn.execute(text("PRAGMA table_info(menu_slots)")).fetchall()
     columns = {row[1] for row in info}
     if "product_id" in columns:
-        return  # already migrated
-    # Old schema detected — recreate table
-    conn.executescript("""
+        return
+    conn.execute(text("""
         CREATE TABLE IF NOT EXISTS _menu_slots_backup (
             menu_id INTEGER, day INTEGER, meal_type TEXT,
             recipe_id INTEGER, servings_override REAL
-        );
-        INSERT INTO _menu_slots_backup SELECT menu_id, day, meal_type, recipe_id, servings_override FROM menu_slots;
-        DROP TABLE menu_slots;
-    """)
+        )
+    """))
+    conn.execute(text(
+        "INSERT INTO _menu_slots_backup "
+        "SELECT menu_id, day, meal_type, recipe_id, servings_override FROM menu_slots"
+    ))
+    conn.execute(text("DROP TABLE menu_slots"))
+    conn.commit()
 
 
-def _migrate_products_supplier(conn: sqlite3.Connection) -> None:
-    """Add supplier column to products if missing."""
-    info = conn.execute("PRAGMA table_info(products)").fetchall()
-    columns = {row[1] for row in info}
-    if "supplier" not in columns:
-        conn.execute("ALTER TABLE products ADD COLUMN supplier TEXT NOT NULL DEFAULT ''")
+def _migrate_products_supplier(conn) -> None:  # type: ignore[no-untyped-def]
+    info = conn.execute(text("PRAGMA table_info(products)")).fetchall()
+    if "supplier" not in {row[1] for row in info}:
+        conn.execute(text(
+            "ALTER TABLE products ADD COLUMN supplier TEXT NOT NULL DEFAULT ''"
+        ))
         conn.commit()
 
 
-def _migrate_recipes_weight(conn: sqlite3.Connection) -> None:
-    """Add weight column to recipes if missing."""
-    info = conn.execute("PRAGMA table_info(recipes)").fetchall()
-    columns = {row[1] for row in info}
-    if "weight" not in columns:
-        conn.execute("ALTER TABLE recipes ADD COLUMN weight INTEGER NOT NULL DEFAULT 0")
+def _migrate_recipes_weight(conn) -> None:  # type: ignore[no-untyped-def]
+    info = conn.execute(text("PRAGMA table_info(recipes)")).fetchall()
+    if "weight" not in {row[1] for row in info}:
+        conn.execute(text(
+            "ALTER TABLE recipes ADD COLUMN weight INTEGER NOT NULL DEFAULT 0"
+        ))
         conn.commit()
 
 
-def apply_schema(conn: sqlite3.Connection) -> None:
-    """Create all tables (idempotent). Enables foreign-key enforcement afterwards."""
-    # Migrate old menu_slots if it exists
-    tables = {row[0] for row in conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table'"
-    ).fetchall()}
-    if "menu_slots" in tables:
-        _migrate_menu_slots(conn)
-    if "products" in tables:
-        _migrate_products_supplier(conn)
-    if "recipes" in tables:
-        _migrate_recipes_weight(conn)
+def apply_schema(engine: Engine) -> None:
+    """Create all tables (idempotent). Runs legacy migrations first."""
+    with engine.connect() as conn:
+        tables = {
+            row[0]
+            for row in conn.execute(
+                text("SELECT name FROM sqlite_master WHERE type='table'")
+            ).fetchall()
+        }
+        had_menu_slots = "menu_slots" in tables
+        if had_menu_slots:
+            _migrate_menu_slots(conn)
+        if "products" in tables:
+            _migrate_products_supplier(conn)
+        if "recipes" in tables:
+            _migrate_recipes_weight(conn)
 
-    conn.executescript(_SCHEMA_PATH.read_text(encoding="utf-8"))
+    Base.metadata.create_all(engine)
 
-    # Restore backed-up data if migration happened
-    if "menu_slots" in tables:
-        backup_exists = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='_menu_slots_backup'"
-        ).fetchone()
-        if backup_exists:
-            conn.executescript("""
-                INSERT INTO menu_slots (menu_id, day, meal_type, recipe_id, servings_override)
-                    SELECT menu_id, day, meal_type, recipe_id, servings_override
-                    FROM _menu_slots_backup;
-                DROP TABLE _menu_slots_backup;
-            """)
+    # Restore backed-up menu_slots data if migration happened
+    if had_menu_slots:
+        with engine.connect() as conn:
+            backup_exists = conn.execute(
+                text(
+                    "SELECT name FROM sqlite_master "
+                    "WHERE type='table' AND name='_menu_slots_backup'"
+                )
+            ).fetchone()
+            if backup_exists:
+                conn.execute(text(
+                    "INSERT INTO menu_slots "
+                    "(menu_id, day, meal_type, recipe_id, servings_override) "
+                    "SELECT menu_id, day, meal_type, recipe_id, servings_override "
+                    "FROM _menu_slots_backup"
+                ))
+                conn.execute(text("DROP TABLE _menu_slots_backup"))
+                conn.commit()
 
-    # executescript issues an implicit COMMIT which can reset per-connection PRAGMAs;
-    # re-enable foreign keys explicitly after it returns.
-    conn.execute("PRAGMA foreign_keys = ON")
 
-
-def seed_defaults(conn: sqlite3.Connection) -> None:
+def seed_defaults(session: Session) -> None:
     """Populate lookup tables with default unit and category values."""
-    conn.executemany(
-        "INSERT OR IGNORE INTO units (name, unit_group) VALUES (?, ?)",
+    session.execute(
+        text("INSERT OR IGNORE INTO units (name, unit_group) VALUES (:n, :g)"),
         [
-            ("g",    "weight"),
-            ("kg",   "weight"),
-            ("ml",   "volume"),
-            ("l",    "volume"),
-            ("pcs",  "count_pcs"),
-            ("box",  "count_box"),
-            ("pack", "count_pack"),
+            {"n": "g",    "g": "weight"},
+            {"n": "kg",   "g": "weight"},
+            {"n": "ml",   "g": "volume"},
+            {"n": "l",    "g": "volume"},
+            {"n": "pcs",  "g": "count_pcs"},
+            {"n": "box",  "g": "count_box"},
+            {"n": "pack", "g": "count_pack"},
         ],
     )
-    conn.executemany(
-        "INSERT OR IGNORE INTO recipe_categories (name, active) VALUES (?, 1)",
-        [("Завтраки",), ("Обеды",), ("Ужины",), ("Основные",), ("Салаты",), ("Десерты",)],
+    session.execute(
+        text(
+            "INSERT OR IGNORE INTO recipe_categories (name, active) VALUES (:n, 1)"
+        ),
+        [
+            {"n": "Завтраки"}, {"n": "Обеды"}, {"n": "Ужины"},
+            {"n": "Основные"}, {"n": "Салаты"}, {"n": "Десерты"},
+        ],
     )
-    conn.executemany(
-        "INSERT OR IGNORE INTO product_categories (name, active) VALUES (?, 1)",
-        [("Сыпучие",), ("Молочные",), ("Мясо",), ("Овощи",),
-         ("Фрукты",), ("Консервы",), ("Напитки",), ("Прочее",)],
+    session.execute(
+        text(
+            "INSERT OR IGNORE INTO product_categories (name, active) VALUES (:n, 1)"
+        ),
+        [
+            {"n": "Сыпучие"}, {"n": "Молочные"}, {"n": "Мясо"}, {"n": "Овощи"},
+            {"n": "Фрукты"}, {"n": "Консервы"}, {"n": "Напитки"}, {"n": "Прочее"},
+        ],
     )
-    conn.commit()
+    session.commit()

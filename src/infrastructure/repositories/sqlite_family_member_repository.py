@@ -1,18 +1,22 @@
-import sqlite3
+from typing import Any
+
+from sqlalchemy.orm import Session
 
 from src.domain.entities.family_member import FamilyMember
-from src.domain.exceptions import RepositoryError
 from src.domain.ports.family_member_repository import FamilyMemberRepository
 from src.domain.value_objects.types import FamilyMemberId
-from src.infrastructure.repositories.base import BaseSqliteRepository
+from src.infrastructure.database.models import FamilyMemberRow
+from src.infrastructure.repositories.base import BaseOrmRepository
 
 
 class SqliteFamilyMemberRepository(
-    BaseSqliteRepository[FamilyMember, FamilyMemberId],
+    BaseOrmRepository[FamilyMember, FamilyMemberId],
     FamilyMemberRepository,
 ):
-    _table_name = "family_members"
-    _columns = "id, name, portion_multiplier, dietary_restrictions, comment"
+    _row_class = FamilyMemberRow
+
+    def __init__(self, session: Session) -> None:
+        super().__init__(session)
 
     def _get_entity_id(self, entity: FamilyMember) -> int:
         return entity.id
@@ -20,33 +24,25 @@ class SqliteFamilyMemberRepository(
     def _wrap_id(self, raw_id: int) -> FamilyMemberId:
         return FamilyMemberId(raw_id)
 
-    def _insert(self, entity: FamilyMember) -> int:
-        cursor = self._conn.execute(
-            "INSERT INTO family_members "
-            "(name, portion_multiplier, dietary_restrictions, comment) "
-            "VALUES (?, ?, ?, ?)",
-            (entity.name, entity.portion_multiplier,
-             entity.dietary_restrictions, entity.comment),
-        )
-        last_id = cursor.lastrowid
-        if last_id is None:
-            raise RepositoryError("INSERT family_members did not return lastrowid")
-        return last_id
-
-    def _update(self, entity: FamilyMember) -> None:
-        self._conn.execute(
-            "UPDATE family_members "
-            "SET name=?, portion_multiplier=?, dietary_restrictions=?, comment=? "
-            "WHERE id=?",
-            (entity.name, entity.portion_multiplier,
-             entity.dietary_restrictions, entity.comment, entity.id),
+    def _make_new_row(self, entity: FamilyMember) -> FamilyMemberRow:
+        return FamilyMemberRow(
+            name=entity.name,
+            portion_multiplier=entity.portion_multiplier,
+            dietary_restrictions=entity.dietary_restrictions,
+            comment=entity.comment,
         )
 
-    def _row_to_entity(self, row: sqlite3.Row) -> FamilyMember:
+    def _update_row(self, row: Any, entity: FamilyMember) -> None:
+        row.name = entity.name
+        row.portion_multiplier = entity.portion_multiplier
+        row.dietary_restrictions = entity.dietary_restrictions
+        row.comment = entity.comment
+
+    def _row_to_entity(self, row: Any) -> FamilyMember:
         return FamilyMember(
-            id=FamilyMemberId(row["id"]),
-            name=row["name"],
-            portion_multiplier=row["portion_multiplier"],
-            dietary_restrictions=row["dietary_restrictions"] or "",
-            comment=row["comment"] or "",
+            id=FamilyMemberId(row.id),
+            name=row.name,
+            portion_multiplier=row.portion_multiplier,
+            dietary_restrictions=row.dietary_restrictions or "",
+            comment=row.comment or "",
         )

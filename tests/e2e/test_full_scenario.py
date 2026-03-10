@@ -59,9 +59,11 @@ from src.domain.value_objects.money import Money
 from src.domain.value_objects.quantity import Quantity
 from src.domain.value_objects.recipe_ingredient import RecipeIngredient
 from src.domain.value_objects.types import ProductCategoryId, RecipeCategoryId, RecipeId
+from sqlalchemy.orm import Session
+
 from src.infrastructure.database.connection import (
     apply_schema,
-    get_connection,
+    get_engine,
     seed_defaults,
 )
 from src.infrastructure.export.text_exporter import ShoppingListTextExporter
@@ -90,11 +92,13 @@ from src.presentation.controllers.shopping_list_controller import ShoppingListCo
 @pytest.fixture
 def db():
     """In-memory SQLite database with schema and default data."""
-    conn = get_connection(":memory:")
-    apply_schema(conn)
-    seed_defaults(conn)
-    yield conn
-    conn.close()
+    engine = get_engine(":memory:")
+    apply_schema(engine)
+    session = Session(engine)
+    seed_defaults(session)
+    yield session
+    session.close()
+    engine.dispose()
 
 
 @pytest.fixture

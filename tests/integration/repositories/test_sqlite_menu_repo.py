@@ -1,4 +1,3 @@
-import sqlite3
 from decimal import Decimal
 
 import pytest
@@ -31,9 +30,8 @@ def menu_repo(conn: object) -> SqliteMenuRepository:
 @pytest.fixture
 def seeded_recipe(conn: object) -> Recipe:
     """Insert product + recipe directly; returns recipe with real DB id."""
-    c: sqlite3.Connection = conn  # type: ignore[assignment]
-    product_repo = SqliteProductRepository(c)
-    recipe_repo = SqliteRecipeRepository(c)
+    product_repo = SqliteProductRepository(conn)  # type: ignore[arg-type]
+    recipe_repo = SqliteRecipeRepository(conn)  # type: ignore[arg-type]
     p = product_repo.save(Product(
         id=ProductId(0), name="Мука",
         recipe_unit="g", purchase_unit="kg",
@@ -47,8 +45,7 @@ def seeded_recipe(conn: object) -> Recipe:
 @pytest.fixture
 def seeded_product(conn: object) -> Product:
     """Insert a product; returns product with real DB id."""
-    c: sqlite3.Connection = conn  # type: ignore[assignment]
-    product_repo = SqliteProductRepository(c)
+    product_repo = SqliteProductRepository(conn)  # type: ignore[arg-type]
     return product_repo.save(Product(
         id=ProductId(0), name="Молоко",
         recipe_unit="ml", purchase_unit="l",
@@ -143,16 +140,19 @@ def test_delete_removes_menu(menu_repo: SqliteMenuRepository) -> None:
 def test_delete_cascades_to_slots(menu_repo: SqliteMenuRepository,
                                    seeded_recipe: Recipe,
                                    conn: object) -> None:
-    c: sqlite3.Connection = conn  # type: ignore[assignment]
+    from sqlalchemy import text
+    from sqlalchemy.orm import Session
+    session: Session = conn  # type: ignore[assignment]
     menu = WeeklyMenu(MenuId(0), "Тест", slots=[
         MenuSlot(0, "завтрак", recipe_id=seeded_recipe.id)
     ])
     saved = menu_repo.save(menu)
     menu_repo.delete(saved.id)
 
-    count = c.execute(
-        "SELECT COUNT(*) FROM menu_slots WHERE menu_id = ?", (saved.id,)
-    ).fetchone()[0]
+    count = session.execute(
+        text("SELECT COUNT(*) FROM menu_slots WHERE menu_id = :id"),
+        {"id": saved.id},
+    ).scalar()
     assert count == 0
 
 

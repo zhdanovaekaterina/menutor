@@ -93,17 +93,20 @@ def test_delete_removes_recipe(recipe_repo: SqliteRecipeRepository,
 def test_delete_cascades_to_ingredients_and_steps(recipe_repo: SqliteRecipeRepository,
                                                    flour: Product,
                                                    conn: object) -> None:
-    import sqlite3
-    c: sqlite3.Connection = conn  # type: ignore[assignment]
+    from sqlalchemy import text
+    from sqlalchemy.orm import Session
+    session: Session = conn  # type: ignore[assignment]
     saved = recipe_repo.save(_pancake_recipe(flour.id))
     recipe_repo.delete(saved.id)
 
-    ing_count = c.execute(
-        "SELECT COUNT(*) FROM recipe_ingredients WHERE recipe_id = ?", (saved.id,)
-    ).fetchone()[0]
-    step_count = c.execute(
-        "SELECT COUNT(*) FROM cooking_steps WHERE recipe_id = ?", (saved.id,)
-    ).fetchone()[0]
+    ing_count = session.execute(
+        text("SELECT COUNT(*) FROM recipe_ingredients WHERE recipe_id = :id"),
+        {"id": saved.id},
+    ).scalar()
+    step_count = session.execute(
+        text("SELECT COUNT(*) FROM cooking_steps WHERE recipe_id = :id"),
+        {"id": saved.id},
+    ).scalar()
     assert ing_count == 0
     assert step_count == 0
 

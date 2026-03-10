@@ -58,9 +58,11 @@ from src.application.use_cases.plan_menu import (
 from src.domain.services.portion_calculator import PortionCalculator
 from src.domain.services.shopping_list_builder import ShoppingListBuilder
 from src.domain.services.unit_converter import UnitConverter
+from sqlalchemy.orm import Session
+
 from src.infrastructure.database.connection import (
     apply_schema,
-    get_connection,
+    get_engine,
     seed_defaults,
 )
 from src.infrastructure.export.csv_exporter import ShoppingListCsvExporter
@@ -88,16 +90,17 @@ class ApplicationContainer:
 
     def __init__(self, db_path: str = "data/menutor.db") -> None:
         # ── Infrastructure ────────────────────────────────────────────
-        conn = get_connection(db_path)
-        apply_schema(conn)
-        seed_defaults(conn)
+        engine = get_engine(db_path)
+        apply_schema(engine)
+        session = Session(engine)
+        seed_defaults(session)
 
-        recipe_repo = SqliteRecipeRepository(conn)
-        product_repo = SqliteProductRepository(conn)
-        menu_repo = SqliteMenuRepository(conn)
-        family_repo = SqliteFamilyMemberRepository(conn)
-        product_category_repo = SqliteProductCategoryRepository(conn)
-        recipe_category_repo = SqliteRecipeCategoryRepository(conn)
+        recipe_repo = SqliteRecipeRepository(session)
+        product_repo = SqliteProductRepository(session)
+        menu_repo = SqliteMenuRepository(session)
+        family_repo = SqliteFamilyMemberRepository(session)
+        product_category_repo = SqliteProductCategoryRepository(session)
+        recipe_category_repo = SqliteRecipeCategoryRepository(session)
 
         text_exporter = ShoppingListTextExporter()
         csv_exporter = ShoppingListCsvExporter()
@@ -178,5 +181,6 @@ class ApplicationContainer:
         self.export_shopping_list_as_text = ExportShoppingListAsText(text_exporter)
         self.export_shopping_list_as_csv = ExportShoppingListAsCsv(csv_exporter)
 
-        # Keep connection alive for the process lifetime
-        self._conn = conn
+        # Keep engine and session alive for the process lifetime
+        self._engine = engine
+        self._session = session

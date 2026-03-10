@@ -1,65 +1,88 @@
-"""Base class for SQLite category repositories — eliminates table-name duplication."""
+"""Base ORM repository for category tables (product_categories, recipe_categories)."""
 
-import sqlite3
+from typing import Any, ClassVar
+
+from sqlalchemy.orm import Session
 
 from src.domain.value_objects.category import ActiveCategory, Category
 
 
-class BaseSqliteCategoryRepository:
-    _table_name: str
-    _usage_query: str  # e.g. "SELECT COUNT(*) FROM products WHERE category_id = ?"
-    _delete_linked_query: str  # e.g. "DELETE FROM products WHERE category_id = ?"
+class BaseOrmCategoryRepository:
+    _cat_class: ClassVar[type]     # ORM row class for the category table
+    _linked_class: ClassVar[type]  # ORM row class with a category_id FK
+    _linked_fk_col: ClassVar[str]  # Attribute name on _linked_class, e.g. "category_id"
 
-    def __init__(self, conn: sqlite3.Connection) -> None:
-        self._conn = conn
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _linked_fk_attr(self) -> Any:
+        return getattr(self._linked_class, self._linked_fk_col)
+
+    # ------------------------------------------------------------------
+    # Public API (mirrors the CategoryRepository port)
+    # ------------------------------------------------------------------
 
     def find_active(self) -> list[ActiveCategory]:
-        rows = self._conn.execute(
-            f"SELECT id, name FROM {self._table_name} WHERE active = 1 ORDER BY name"
-        ).fetchall()
-        return [ActiveCategory(row[0], row[1]) for row in rows]
+        rows = (
+            self._session.query(self._cat_class)
+            .filter(self._cat_class.active == 1)
+            .order_by(self._cat_class.name)
+            .all()
+        )
+        return [ActiveCategory(r.id, r.name) for r in rows]
 
     def find_all(self) -> list[Category]:
-        rows = self._conn.execute(
-            f"SELECT id, name, active FROM {self._table_name} ORDER BY name"
-        ).fetchall()
-        return [Category(row[0], row[1], bool(row[2])) for row in rows]
+        rows = (
+            self._session.query(self._cat_class)
+            .order_by(self._cat_class.name)
+            .all()
+        )
+        return [Category(r.id, r.name, bool(r.active)) for r in rows]
 
     def save(self, name: str, category_id: int | None = None) -> int:
-        with self._conn:
-            if category_id is None:
-                cursor = self._conn.execute(
-                    f"INSERT INTO {self._table_name} (name) VALUES (?)", (name,)
-                )
-                return cursor.lastrowid  # type: ignore[return-value]
-            self._conn.execute(
-                f"UPDATE {self._table_name} SET name = ?, active = 1 WHERE id = ?",
-                (name, category_id),
-            )
-            return category_id
+        if category_id is None:
+            row = self._cat_class(name=name)
+            self._session.add(row)
+            self._session.flush()
+            new_id: int = row.id
+            self._session.commit()
+            return new_id
+        row = self._session.get(self._cat_class, category_id)
+        if row is not None:
+            row.name = name
+            row.active = 1
+        self._session.commit()
+        return category_id
 
     def delete(self, category_id: int) -> None:
-        with self._conn:
-            self._conn.execute(
-                f"UPDATE {self._table_name} SET active = 0 WHERE id = ?",
-                (category_id,),
-            )
+        row = self._session.get(self._cat_class, category_id)
+        if row is not None:
+            row.active = 0
+            self._session.commit()
 
     def hard_delete(self, category_id: int) -> None:
-        with self._conn:
-            self._conn.execute(self._delete_linked_query, (category_id,))
-            self._conn.execute(
-                f"DELETE FROM {self._table_name} WHERE id = ?",
-                (category_id,),
-            )
+        self._session.query(self._linked_class).filter(
+            self._linked_fk_attr() == category_id
+        ).delete(synchronize_session=False)
+        row = self._session.get(self._cat_class, category_id)
+        if row is not None:
+            self._session.delete(row)
+        self._session.commit()
 
     def activate(self, category_id: int) -> None:
-        with self._conn:
-            self._conn.execute(
-                f"UPDATE {self._table_name} SET active = 1 WHERE id = ?",
-                (category_id,),
-            )
+        row = self._session.get(self._cat_class, category_id)
+        if row is not None:
+            row.active = 1
+            self._session.commit()
 
     def is_used(self, category_id: int) -> bool:
-        row = self._conn.execute(self._usage_query, (category_id,)).fetchone()
-        return row[0] > 0
+        count = (
+            self._session.query(self._linked_class)
+            .filter(self._linked_fk_attr() == category_id)
+            .count()
+        )
+        return count > 0

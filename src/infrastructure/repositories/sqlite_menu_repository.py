@@ -1,18 +1,22 @@
-import sqlite3
+from typing import Any
+
+from sqlalchemy.orm import Session
 
 from src.domain.entities.menu import MenuSlot, WeeklyMenu
-from src.domain.exceptions import RepositoryError
 from src.domain.ports.menu_repository import MenuRepository
 from src.domain.value_objects.types import MenuId, ProductId, RecipeId
-from src.infrastructure.repositories.base import BaseSqliteRepository
+from src.infrastructure.database.models import MenuRow, MenuSlotRow
+from src.infrastructure.repositories.base import BaseOrmRepository
 
 
 class SqliteMenuRepository(
-    BaseSqliteRepository[WeeklyMenu, MenuId],
+    BaseOrmRepository[WeeklyMenu, MenuId],
     MenuRepository,
 ):
-    _table_name = "menus"
-    _columns = "id, name"
+    _row_class = MenuRow
+
+    def __init__(self, session: Session) -> None:
+        super().__init__(session)
 
     def _get_entity_id(self, entity: WeeklyMenu) -> int:
         return entity.id
@@ -20,55 +24,41 @@ class SqliteMenuRepository(
     def _wrap_id(self, raw_id: int) -> MenuId:
         return MenuId(raw_id)
 
-    def _insert(self, entity: WeeklyMenu) -> int:
-        cursor = self._conn.execute(
-            "INSERT INTO menus (name) VALUES (?)", (entity.name,)
-        )
-        last_id = cursor.lastrowid
-        if last_id is None:
-            raise RepositoryError("INSERT menus did not return lastrowid")
-        return last_id
+    def _make_new_row(self, entity: WeeklyMenu) -> MenuRow:
+        row = MenuRow(name=entity.name)
+        row.slots = [self._slot_to_row(s) for s in entity.slots]
+        return row
 
-    def _update(self, entity: WeeklyMenu) -> None:
-        self._conn.execute(
-            "UPDATE menus SET name=? WHERE id=?", (entity.name, entity.id)
-        )
+    def _update_row(self, row: Any, entity: WeeklyMenu) -> None:
+        row.name = entity.name
+        row.slots = [self._slot_to_row(s) for s in entity.slots]
 
-    def _save_children(self, entity_id: MenuId, entity: WeeklyMenu) -> None:
-        self._conn.execute(
-            "DELETE FROM menu_slots WHERE menu_id = ?", (entity_id,)
-        )
-        self._conn.executemany(
-            "INSERT INTO menu_slots "
-            "(menu_id, day, meal_type, recipe_id, product_id, quantity, unit, servings_override) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-                (entity_id, s.day, s.meal_type, s.recipe_id, s.product_id,
-                 s.quantity, s.unit, s.servings_override)
-                for s in entity.slots
-            ],
-        )
-
-    def _row_to_entity(self, row: sqlite3.Row) -> WeeklyMenu:
-        mid = MenuId(row["id"])
-        slot_rows = self._conn.execute(
-            "SELECT day, meal_type, recipe_id, product_id, quantity, unit, servings_override "
-            "FROM menu_slots WHERE menu_id = ?",
-            (mid,),
-        ).fetchall()
+    def _row_to_entity(self, row: Any) -> WeeklyMenu:
         return WeeklyMenu(
-            id=mid,
-            name=row["name"],
+            id=MenuId(row.id),
+            name=row.name,
             slots=[
                 MenuSlot(
-                    day=r["day"],
-                    meal_type=r["meal_type"],
-                    recipe_id=RecipeId(r["recipe_id"]) if r["recipe_id"] is not None else None,
-                    product_id=ProductId(r["product_id"]) if r["product_id"] is not None else None,
-                    quantity=r["quantity"],
-                    unit=r["unit"],
-                    servings_override=r["servings_override"],
+                    day=s.day,
+                    meal_type=s.meal_type,
+                    recipe_id=RecipeId(s.recipe_id) if s.recipe_id is not None else None,
+                    product_id=ProductId(s.product_id) if s.product_id is not None else None,
+                    quantity=s.quantity,
+                    unit=s.unit,
+                    servings_override=s.servings_override,
                 )
-                for r in slot_rows
+                for s in row.slots
             ],
+        )
+
+    @staticmethod
+    def _slot_to_row(slot: MenuSlot) -> MenuSlotRow:
+        return MenuSlotRow(
+            day=slot.day,
+            meal_type=slot.meal_type,
+            recipe_id=slot.recipe_id,
+            product_id=slot.product_id,
+            quantity=slot.quantity,
+            unit=slot.unit,
+            servings_override=slot.servings_override,
         )
