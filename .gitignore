@@ -11,3 +11,4 @@ pyproject.toml
 *_PLAN.md
 __pycache__
 data
+.env

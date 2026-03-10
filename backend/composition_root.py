@@ -4,6 +4,11 @@
 main.py создаёт ApplicationContainer и передаёт его в MainWindow.
 """
 
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
 from backend.application.use_cases.generate_shopping_list import GenerateShoppingList
 from backend.application.use_cases.import_export import (
     ExportShoppingListAsCsv,
@@ -88,9 +93,13 @@ from backend.infrastructure.repositories.sqlite_recipe_repository import (
 class ApplicationContainer:
     """Граф зависимостей всего приложения. Создаётся один раз в main()."""
 
-    def __init__(self, db_path: str = "data/menutor.db") -> None:
+    def __init__(self, db_url: str | None = None) -> None:
         # ── Infrastructure ────────────────────────────────────────────
-        engine = get_engine(db_path)
+        if db_url is None:
+            _env_path = Path(__file__).resolve().parents[1] / ".config" / ".env"
+            load_dotenv(_env_path)
+            db_url = os.environ.get("DATABASE_URL", "sqlite:///data/menutor.db")
+        engine = get_engine(db_url)
         apply_schema(engine)
         session = Session(engine)
         seed_defaults(session)

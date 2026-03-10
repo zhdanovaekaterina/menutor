@@ -6,17 +6,37 @@ from sqlalchemy.orm import Session
 from backend.infrastructure.database.models import Base
 
 
-def get_engine(db_path: str = "data/menutor.db") -> Engine:
-    if db_path != ":memory:":
-        path = Path(db_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-    engine = create_engine(f"sqlite:///{db_path}")
+def get_engine(db_url: str = "sqlite:///data/menutor.db") -> Engine:
+    """Create a SQLAlchemy engine from a database URL.
 
-    @event.listens_for(engine, "connect")
-    def _enable_fk(conn, _record):  # type: ignore[no-untyped-def]
-        conn.execute("PRAGMA foreign_keys = ON")
+    Accepts any SQLAlchemy-compatible URL:
+      - sqlite:///data/menutor.db
+      - sqlite:///:memory:
+      - postgresql+psycopg2://user:pass@host:5432/dbname
+    """
+    if db_url.startswith("sqlite"):
+        # Ensure parent directory exists for file-based SQLite
+        if ":memory:" not in db_url:
+            # Extract path from sqlite:///path
+            db_path = db_url.replace("sqlite:///", "")
+            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+
+        engine = create_engine(db_url)
+
+        @event.listens_for(engine, "connect")
+        def _enable_fk(conn, _record):  # type: ignore[no-untyped-def]
+            conn.execute("PRAGMA foreign_keys = ON")
+    else:
+        engine = create_engine(db_url)
 
     return engine
+
+
+def _is_sqlite(engine: Engine) -> bool:
+    return engine.dialect.name == "sqlite"
+
+
+# ── SQLite-only legacy migrations ────────────────────────────────────────
 
 
 def _migrate_menu_slots(conn) -> None:  # type: ignore[no-untyped-def]
@@ -57,8 +77,9 @@ def _migrate_recipes_weight(conn) -> None:  # type: ignore[no-untyped-def]
         conn.commit()
 
 
-def apply_schema(engine: Engine) -> None:
-    """Create all tables (idempotent). Runs legacy migrations first."""
+def _run_sqlite_migrations(engine: Engine) -> bool:
+    """Run SQLite-specific legacy migrations. Returns True if menu_slots backup exists."""
+    had_menu_slots = False
     with engine.connect() as conn:
         tables = {
             row[0]
@@ -73,31 +94,54 @@ def apply_schema(engine: Engine) -> None:
             _migrate_products_supplier(conn)
         if "recipes" in tables:
             _migrate_recipes_weight(conn)
+    return had_menu_slots
+
+
+def _restore_sqlite_menu_slots_backup(engine: Engine) -> None:
+    with engine.connect() as conn:
+        backup_exists = conn.execute(
+            text(
+                "SELECT name FROM sqlite_master "
+                "WHERE type='table' AND name='_menu_slots_backup'"
+            )
+        ).fetchone()
+        if backup_exists:
+            conn.execute(text(
+                "INSERT INTO menu_slots "
+                "(menu_id, day, meal_type, recipe_id, servings_override) "
+                "SELECT menu_id, day, meal_type, recipe_id, servings_override "
+                "FROM _menu_slots_backup"
+            ))
+            conn.execute(text("DROP TABLE _menu_slots_backup"))
+            conn.commit()
+
+
+# ── Public API ───────────────────────────────────────────────────────────
+
+
+def apply_schema(engine: Engine) -> None:
+    """Create all tables (idempotent). Runs legacy SQLite migrations first."""
+    had_menu_slots = False
+    if _is_sqlite(engine):
+        had_menu_slots = _run_sqlite_migrations(engine)
 
     Base.metadata.create_all(engine)
 
-    # Restore backed-up menu_slots data if migration happened
-    if had_menu_slots:
-        with engine.connect() as conn:
-            backup_exists = conn.execute(
-                text(
-                    "SELECT name FROM sqlite_master "
-                    "WHERE type='table' AND name='_menu_slots_backup'"
-                )
-            ).fetchone()
-            if backup_exists:
-                conn.execute(text(
-                    "INSERT INTO menu_slots "
-                    "(menu_id, day, meal_type, recipe_id, servings_override) "
-                    "SELECT menu_id, day, meal_type, recipe_id, servings_override "
-                    "FROM _menu_slots_backup"
-                ))
-                conn.execute(text("DROP TABLE _menu_slots_backup"))
-                conn.commit()
+    if had_menu_slots and _is_sqlite(engine):
+        _restore_sqlite_menu_slots_backup(engine)
 
 
 def seed_defaults(session: Session) -> None:
     """Populate lookup tables with default unit and category values."""
+    dialect = session.bind.dialect.name  # type: ignore[union-attr]
+    if dialect == "sqlite":
+        _seed_defaults_sqlite(session)
+    else:
+        _seed_defaults_pg(session)
+    session.commit()
+
+
+def _seed_defaults_sqlite(session: Session) -> None:
     session.execute(
         text("INSERT OR IGNORE INTO units (name, unit_group) VALUES (:n, :g)"),
         [
@@ -128,4 +172,41 @@ def seed_defaults(session: Session) -> None:
             {"n": "Фрукты"}, {"n": "Консервы"}, {"n": "Напитки"}, {"n": "Прочее"},
         ],
     )
-    session.commit()
+
+
+def _seed_defaults_pg(session: Session) -> None:
+    session.execute(
+        text(
+            "INSERT INTO units (name, unit_group) VALUES (:n, :g) "
+            "ON CONFLICT (name) DO NOTHING"
+        ),
+        [
+            {"n": "g",    "g": "weight"},
+            {"n": "kg",   "g": "weight"},
+            {"n": "ml",   "g": "volume"},
+            {"n": "l",    "g": "volume"},
+            {"n": "pcs",  "g": "count_pcs"},
+            {"n": "box",  "g": "count_box"},
+            {"n": "pack", "g": "count_pack"},
+        ],
+    )
+    session.execute(
+        text(
+            "INSERT INTO recipe_categories (name, active) VALUES (:n, 1) "
+            "ON CONFLICT (name) DO NOTHING"
+        ),
+        [
+            {"n": "Завтраки"}, {"n": "Обеды"}, {"n": "Ужины"},
+            {"n": "Основные"}, {"n": "Салаты"}, {"n": "Десерты"},
+        ],
+    )
+    session.execute(
+        text(
+            "INSERT INTO product_categories (name, active) VALUES (:n, 1) "
+            "ON CONFLICT (name) DO NOTHING"
+        ),
+        [
+            {"n": "Сыпучие"}, {"n": "Молочные"}, {"n": "Мясо"}, {"n": "Овощи"},
+            {"n": "Фрукты"}, {"n": "Консервы"}, {"n": "Напитки"}, {"n": "Прочее"},
+        ],
+    )

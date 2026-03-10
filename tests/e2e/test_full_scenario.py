@@ -92,7 +92,7 @@ from backend.presentation.controllers.shopping_list_controller import ShoppingLi
 @pytest.fixture
 def db():
     """In-memory SQLite database with schema and default data."""
-    engine = get_engine(":memory:")
+    engine = get_engine("sqlite:///:memory:")
     apply_schema(engine)
     session = Session(engine)
     seed_defaults(session)
