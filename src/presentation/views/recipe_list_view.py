@@ -1,11 +1,11 @@
 from decimal import Decimal
 
 from PySide6.QtCore import QModelIndex, Qt, Signal
+from PySide6.QtGui import QBrush, QColor, QFont
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QFormLayout,
-    QGroupBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QMessageBox,
     QPushButton,
-    QScrollArea,
+    QSizePolicy,
     QSpinBox,
     QTableView,
     QTableWidget,
@@ -32,6 +32,55 @@ from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 from src.presentation.models.recipe_table_model import RecipeTableModel
 from src.presentation.models.sortable_proxy_model import SortableProxyModel
 from src.presentation.units import to_code, to_display
+
+_QWIDGETSIZE_MAX = 16777215
+
+
+class _CollapsibleSection(QWidget):
+    """Titled section widget that can be collapsed/expanded with a toggle button."""
+
+    def __init__(self, title: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._title = title
+
+        self._toggle_btn = QPushButton(f"▼  {title}")
+        self._toggle_btn.setCheckable(True)
+        self._toggle_btn.setStyleSheet(
+            "QPushButton { text-align: left; font-weight: bold;"
+            " background: #d0d8e8; border: none; padding: 4px 8px; }"
+            "QPushButton:hover { background: #b8c8e0; }"
+        )
+        self._toggle_btn.clicked.connect(self._on_toggle)
+
+        self._content = QWidget()
+        self._content_layout = QVBoxLayout(self._content)
+        self._content_layout.setContentsMargins(0, 4, 0, 0)
+        self._content_layout.setSpacing(4)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self._toggle_btn)
+        layout.addWidget(self._content, 1)
+
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+
+    @property
+    def content_layout(self) -> QVBoxLayout:
+        return self._content_layout
+
+    def _on_toggle(self, checked: bool) -> None:
+        self._content.setVisible(not checked)
+        arrow = "▶" if checked else "▼"
+        self._toggle_btn.setText(f"{arrow}  {self._title}")
+        if checked:
+            self.setMaximumHeight(self._toggle_btn.sizeHint().height())
+            self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        else:
+            self.setMaximumHeight(_QWIDGETSIZE_MAX)
+            self.setSizePolicy(
+                QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding
+            )
 
 
 class RecipeListView(QWidget):
@@ -73,13 +122,9 @@ class RecipeListView(QWidget):
         table_panel = QWidget()
         table_panel.setLayout(table_layout)
 
-        # --- Form ---
-        form_scroll = QScrollArea()
-        form_scroll.setWidgetResizable(True)
-        form_container = QWidget()
-        form_scroll.setWidget(form_container)
-
-        form_layout = QVBoxLayout(form_container)
+        # --- Form (no scroll area — sections stretch to fill height) ---
+        form_panel = QWidget()
+        form_layout = QVBoxLayout(form_panel)
 
         self._name_edit = QLineEdit()
         self._category_combo = QComboBox()
@@ -94,23 +139,23 @@ class RecipeListView(QWidget):
         self._weight_spin.setValue(0)
         self._weight_spin.setSuffix(" г")
 
-        form = QFormLayout()
-        form.addRow("Название:", self._name_edit)
-        form.addRow("Категория:", self._category_combo)
-        form.addRow("Порций:", self._servings_spin)
-        form.addRow("Вес:", self._weight_spin)
-        form_layout.addLayout(form)
+        meta_form = QFormLayout()
+        meta_form.addRow("Название:", self._name_edit)
+        meta_form.addRow("Категория:", self._category_combo)
+        meta_form.addRow("Порций:", self._servings_spin)
+        meta_form.addRow("Вес:", self._weight_spin)
+        form_layout.addLayout(meta_form)
 
-        # Ingredients table
-        ingredients_box = QGroupBox("Ингредиенты")
-        ing_layout = QVBoxLayout(ingredients_box)
+        # --- Ingredients collapsible section ---
+        ing_section = _CollapsibleSection("Ингредиенты")
+        ing_layout = ing_section.content_layout
 
         self._ingredients_table = QTableWidget(0, 3)
         self._ingredients_table.setHorizontalHeaderLabels(["Продукт", "Кол-во", "Ед."])
         self._ingredients_table.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.Stretch
         )
-        ing_layout.addWidget(self._ingredients_table)
+        ing_layout.addWidget(self._ingredients_table, 1)
 
         ing_btns = QHBoxLayout()
         self._add_ing_btn = QPushButton("+ Добавить")
@@ -120,14 +165,15 @@ class RecipeListView(QWidget):
         ing_btns.addWidget(self._add_ing_btn)
         ing_btns.addWidget(self._remove_ing_btn)
         ing_layout.addLayout(ing_btns)
-        form_layout.addWidget(ingredients_box)
 
-        # Cooking steps
-        steps_box = QGroupBox("Шаги приготовления")
-        steps_layout = QVBoxLayout(steps_box)
+        form_layout.addWidget(ing_section, 1)
+
+        # --- Cooking steps collapsible section ---
+        steps_section = _CollapsibleSection("Шаги приготовления")
+        steps_layout = steps_section.content_layout
 
         self._steps_list = QListWidget()
-        steps_layout.addWidget(self._steps_list)
+        steps_layout.addWidget(self._steps_list, 1)
 
         self._step_input = QLineEdit()
         self._step_input.setPlaceholderText("Описание шага...")
@@ -141,7 +187,8 @@ class RecipeListView(QWidget):
         step_btns.addWidget(self._add_step_btn)
         step_btns.addWidget(self._remove_step_btn)
         steps_layout.addLayout(step_btns)
-        form_layout.addWidget(steps_box)
+
+        form_layout.addWidget(steps_section, 1)
 
         # Action buttons
         action_btns = QHBoxLayout()
@@ -155,12 +202,11 @@ class RecipeListView(QWidget):
         action_btns.addWidget(self._delete_btn)
         action_btns.addWidget(self._clear_btn)
         form_layout.addLayout(action_btns)
-        form_layout.addStretch()
 
         # --- Main layout: 2/3 table + 1/3 form ---
         main_layout = QHBoxLayout(self)
         main_layout.addWidget(table_panel, 2)
-        main_layout.addWidget(form_scroll, 1)
+        main_layout.addWidget(form_panel, 1)
 
     # ------------------------------------------------------------------
     # Public API
