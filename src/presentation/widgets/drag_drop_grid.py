@@ -106,6 +106,11 @@ class DragDropGrid(QWidget):
         if cell:
             cell.remove_item(item_type, item_id)
 
+    def update_item_name(self, item_type: str, item_id: int, new_name: str) -> None:
+        """Обновить имя элемента во всех ячейках сетки."""
+        for cell in self._cells.values():
+            cell.update_item_name(item_type, item_id, new_name)
+
     def clear_all(self) -> None:
         for cell in self._cells.values():
             cell.clear()

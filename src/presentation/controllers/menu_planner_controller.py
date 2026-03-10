@@ -76,6 +76,27 @@ class MenuPlannerController:
     def refresh(self) -> None:
         self._refresh()
 
+    def refresh_names(self) -> None:
+        """Обновить имена рецептов/продуктов в сетке без перезагрузки меню."""
+        try:
+            recipes = self._list_recipes_uc.execute()
+            new_recipe_map = {r.id: r.name for r in recipes}
+            for rid, new_name in new_recipe_map.items():
+                if self._recipe_map.get(rid) != new_name:
+                    self._view.update_item_name("recipe", rid, new_name)
+            self._recipe_map = new_recipe_map
+            self._view.set_recipes(recipes)
+
+            products = self._list_products_uc.execute()
+            new_product_map = {p.id: p.name for p in products}
+            for pid, new_name in new_product_map.items():
+                if self._product_map.get(pid) != new_name:
+                    self._view.update_item_name("product", pid, new_name)
+            self._product_map = new_product_map
+            self._view.set_products(products)
+        except AppError as exc:
+            logger.warning("Ошибка при обновлении имён: %s", exc)
+
     def _refresh(self) -> None:
         try:
             menus = self._list_menus_uc.execute()

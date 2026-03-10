@@ -279,6 +279,14 @@ class GridCell(QFrame):
         })
         self._rebuild_ui()
 
+    def update_item_name(self, item_type: str, item_id: int, new_name: str) -> None:
+        """Обновить отображаемое имя элемента без удаления/пересоздания."""
+        for it in self._items:
+            if it["type"] == item_type and it["id"] == item_id:
+                it["name"] = new_name
+                self._rebuild_ui()
+                return
+
     def remove_item(self, item_type: str, item_id: int) -> None:
         self._items = [
             it for it in self._items

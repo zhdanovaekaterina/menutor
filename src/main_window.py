@@ -99,6 +99,10 @@ class MainWindow(QMainWindow):
             on_shopping_list_generated=self._on_shopping_list_generated,
         )
 
+        # --- Cross-controller signals: update menu grid when data changes ---
+        self._recipe_ctrl.data_changed.connect(self._menu_ctrl.refresh_names)
+        self._product_ctrl.data_changed.connect(self._menu_ctrl.refresh_names)
+
         # --- Tab widget ---
         tabs = QTabWidget()
         tabs.addTab(self._menu_view, "Планировщик")
