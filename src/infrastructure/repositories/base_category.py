@@ -8,6 +8,7 @@ from src.domain.value_objects.category import ActiveCategory, Category
 class BaseSqliteCategoryRepository:
     _table_name: str
     _usage_query: str  # e.g. "SELECT COUNT(*) FROM products WHERE category_id = ?"
+    _delete_linked_query: str  # e.g. "DELETE FROM products WHERE category_id = ?"
 
     def __init__(self, conn: sqlite3.Connection) -> None:
         self._conn = conn
@@ -41,6 +42,21 @@ class BaseSqliteCategoryRepository:
         with self._conn:
             self._conn.execute(
                 f"UPDATE {self._table_name} SET active = 0 WHERE id = ?",
+                (category_id,),
+            )
+
+    def hard_delete(self, category_id: int) -> None:
+        with self._conn:
+            self._conn.execute(self._delete_linked_query, (category_id,))
+            self._conn.execute(
+                f"DELETE FROM {self._table_name} WHERE id = ?",
+                (category_id,),
+            )
+
+    def activate(self, category_id: int) -> None:
+        with self._conn:
+            self._conn.execute(
+                f"UPDATE {self._table_name} SET active = 1 WHERE id = ?",
                 (category_id,),
             )
 

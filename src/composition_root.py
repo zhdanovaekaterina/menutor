@@ -10,6 +10,7 @@ from src.application.use_cases.import_export import (
     ExportShoppingListAsText,
 )
 from src.application.use_cases.manage_category import (
+    ActivateCategory,
     CheckProductCategoryUsed,
     CheckRecipeCategoryUsed,
     CreateProductCategory,
@@ -18,6 +19,7 @@ from src.application.use_cases.manage_category import (
     DeleteRecipeCategory,
     EditProductCategory,
     EditRecipeCategory,
+    HardDeleteCategory,
     ListAllProductCategories,
     ListAllRecipeCategories,
 )
@@ -144,6 +146,8 @@ class ApplicationContainer:
         self.create_product_category = CreateProductCategory(product_category_repo)
         self.edit_product_category = EditProductCategory(product_category_repo)
         self.delete_product_category = DeleteProductCategory(product_category_repo)
+        self.hard_delete_product_category = HardDeleteCategory(product_category_repo)
+        self.activate_product_category = ActivateCategory(product_category_repo)
         self.check_product_category_used = CheckProductCategoryUsed(
             product_category_repo
         )
@@ -154,6 +158,8 @@ class ApplicationContainer:
         self.create_recipe_category = CreateRecipeCategory(recipe_category_repo)
         self.edit_recipe_category = EditRecipeCategory(recipe_category_repo)
         self.delete_recipe_category = DeleteRecipeCategory(recipe_category_repo)
+        self.hard_delete_recipe_category = HardDeleteCategory(recipe_category_repo)
+        self.activate_recipe_category = ActivateCategory(recipe_category_repo)
         self.check_recipe_category_used = CheckRecipeCategoryUsed(
             recipe_category_repo
         )

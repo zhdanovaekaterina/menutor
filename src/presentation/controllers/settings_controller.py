@@ -1,11 +1,15 @@
 import logging
 from typing import Callable, cast
 
+from PySide6.QtWidgets import QMessageBox
+
 from src.application.use_cases.manage_category import (
+    ActivateCategory,
     CheckCategoryUsed,
     CreateCategory,
     DeleteCategory,
     EditCategory,
+    HardDeleteCategory,
     ListAllCategories,
 )
 from src.application.use_cases.manage_family import (
@@ -34,14 +38,19 @@ class _CategoryHandler:
         create_uc: CreateCategory,
         edit_uc: EditCategory,
         delete_uc: DeleteCategory,
+        hard_delete_uc: HardDeleteCategory,
+        activate_uc: ActivateCategory,
         check_uc: CheckCategoryUsed,
         set_categories: Callable[[list[Category]], None],
         show_error: Callable[[str], None],
     ) -> None:
+        self._panel = panel
         self._list_uc = list_uc
         self._create_uc = create_uc
         self._edit_uc = edit_uc
         self._delete_uc = delete_uc
+        self._hard_delete_uc = hard_delete_uc
+        self._activate_uc = activate_uc
         self._check_uc = check_uc
         self._set_categories = set_categories
         self._show_error = show_error
@@ -49,6 +58,7 @@ class _CategoryHandler:
         panel.create_requested.connect(self._on_create)
         panel.edit_requested.connect(self._on_edit)
         panel.delete_requested.connect(self._on_delete)
+        panel.activate_requested.connect(self._on_activate)
 
     def refresh(self) -> None:
         try:
@@ -76,10 +86,43 @@ class _CategoryHandler:
 
     def _on_delete(self, category_id: int) -> None:
         try:
-            self._delete_uc.execute(category_id)
-            self.refresh()
+            if not self._check_uc.execute(category_id):
+                self._hard_delete_uc.execute(category_id)
+                self.refresh()
+                return
+
+            msg = QMessageBox(self._panel)
+            msg.setWindowTitle("Удаление категории")
+            msg.setText(
+                "К этой категории привязаны элементы.\n"
+                "Что вы хотите сделать?"
+            )
+            delete_btn = msg.addButton(
+                "Удалить с элементами", QMessageBox.ButtonRole.DestructiveRole
+            )
+            hide_btn = msg.addButton(
+                "Скрыть категорию", QMessageBox.ButtonRole.AcceptRole
+            )
+            msg.addButton("Отмена", QMessageBox.ButtonRole.RejectRole)
+            msg.exec()
+
+            clicked = msg.clickedButton()
+            if clicked is delete_btn:
+                self._hard_delete_uc.execute(category_id)
+                self.refresh()
+            elif clicked is hide_btn:
+                self._delete_uc.execute(category_id)
+                self.refresh()
         except AppError as exc:
             logger.warning("Ошибка при удалении категории %s: %s", category_id, exc)
+            self._show_error(str(exc))
+
+    def _on_activate(self, category_id: int) -> None:
+        try:
+            self._activate_uc.execute(category_id)
+            self.refresh()
+        except AppError as exc:
+            logger.warning("Ошибка при активации категории %s: %s", category_id, exc)
             self._show_error(str(exc))
 
 
@@ -98,12 +141,16 @@ class SettingsController:
         create_product_category_uc: CreateCategory,
         edit_product_category_uc: EditCategory,
         delete_product_category_uc: DeleteCategory,
+        hard_delete_product_category_uc: HardDeleteCategory,
+        activate_product_category_uc: ActivateCategory,
         check_product_category_used_uc: CheckCategoryUsed,
         # Recipe categories
         list_recipe_categories_uc: ListAllCategories,
         create_recipe_category_uc: CreateCategory,
         edit_recipe_category_uc: EditCategory,
         delete_recipe_category_uc: DeleteCategory,
+        hard_delete_recipe_category_uc: HardDeleteCategory,
+        activate_recipe_category_uc: ActivateCategory,
         check_recipe_category_used_uc: CheckCategoryUsed,
     ) -> None:
         self._view = view
@@ -119,6 +166,8 @@ class SettingsController:
             create_uc=create_product_category_uc,
             edit_uc=edit_product_category_uc,
             delete_uc=delete_product_category_uc,
+            hard_delete_uc=hard_delete_product_category_uc,
+            activate_uc=activate_product_category_uc,
             check_uc=check_product_category_used_uc,
             set_categories=view.set_product_categories,
             show_error=view.show_error,
@@ -129,6 +178,8 @@ class SettingsController:
             create_uc=create_recipe_category_uc,
             edit_uc=edit_recipe_category_uc,
             delete_uc=delete_recipe_category_uc,
+            hard_delete_uc=hard_delete_recipe_category_uc,
+            activate_uc=activate_recipe_category_uc,
             check_uc=check_recipe_category_used_uc,
             set_categories=view.set_recipe_categories,
             show_error=view.show_error,

@@ -72,11 +72,15 @@ class MainWindow(QMainWindow):
             create_product_category_uc=container.create_product_category,
             edit_product_category_uc=container.edit_product_category,
             delete_product_category_uc=container.delete_product_category,
+            hard_delete_product_category_uc=container.hard_delete_product_category,
+            activate_product_category_uc=container.activate_product_category,
             check_product_category_used_uc=container.check_product_category_used,
             list_recipe_categories_uc=container.list_all_recipe_categories,
             create_recipe_category_uc=container.create_recipe_category,
             edit_recipe_category_uc=container.edit_recipe_category,
             delete_recipe_category_uc=container.delete_recipe_category,
+            hard_delete_recipe_category_uc=container.hard_delete_recipe_category,
+            activate_recipe_category_uc=container.activate_recipe_category,
             check_recipe_category_used_uc=container.check_recipe_category_used,
         )
 

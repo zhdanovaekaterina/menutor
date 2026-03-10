@@ -30,7 +30,9 @@ def members_uc() -> dict[str, MagicMock]:
 def product_cat_uc() -> dict[str, MagicMock]:
     return {
         "list": MagicMock(), "create": MagicMock(),
-        "edit": MagicMock(), "delete": MagicMock(), "check": MagicMock(),
+        "edit": MagicMock(), "delete": MagicMock(),
+        "hard_delete": MagicMock(), "activate": MagicMock(),
+        "check": MagicMock(),
     }
 
 
@@ -38,7 +40,9 @@ def product_cat_uc() -> dict[str, MagicMock]:
 def recipe_cat_uc() -> dict[str, MagicMock]:
     return {
         "list": MagicMock(), "create": MagicMock(),
-        "edit": MagicMock(), "delete": MagicMock(), "check": MagicMock(),
+        "edit": MagicMock(), "delete": MagicMock(),
+        "hard_delete": MagicMock(), "activate": MagicMock(),
+        "check": MagicMock(),
     }
 
 
@@ -71,11 +75,15 @@ def controller(
         create_product_category_uc=product_cat_uc["create"],
         edit_product_category_uc=product_cat_uc["edit"],
         delete_product_category_uc=product_cat_uc["delete"],
+        hard_delete_product_category_uc=product_cat_uc["hard_delete"],
+        activate_product_category_uc=product_cat_uc["activate"],
         check_product_category_used_uc=product_cat_uc["check"],
         list_recipe_categories_uc=recipe_cat_uc["list"],
         create_recipe_category_uc=recipe_cat_uc["create"],
         edit_recipe_category_uc=recipe_cat_uc["edit"],
         delete_recipe_category_uc=recipe_cat_uc["delete"],
+        hard_delete_recipe_category_uc=recipe_cat_uc["hard_delete"],
+        activate_recipe_category_uc=recipe_cat_uc["activate"],
         check_recipe_category_used_uc=recipe_cat_uc["check"],
     )
 
@@ -94,9 +102,11 @@ class TestSettingsControllerInit:
         view.product_cat_panel.create_requested.connect.assert_called_once()
         view.product_cat_panel.edit_requested.connect.assert_called_once()
         view.product_cat_panel.delete_requested.connect.assert_called_once()
+        view.product_cat_panel.activate_requested.connect.assert_called_once()
         view.recipe_cat_panel.create_requested.connect.assert_called_once()
         view.recipe_cat_panel.edit_requested.connect.assert_called_once()
         view.recipe_cat_panel.delete_requested.connect.assert_called_once()
+        view.recipe_cat_panel.activate_requested.connect.assert_called_once()
 
     def test_loads_data_on_init(
         self,
@@ -155,11 +165,13 @@ class TestSettingsControllerProductCategories:
         controller._product_cat_handler._on_edit(1, "Бакалея (ред.)")
         product_cat_uc["edit"].execute.assert_called_once_with(1, "Бакалея (ред.)")
 
-    def test_delete_product_category(
+    def test_delete_unused_product_category_hard_deletes(
         self, product_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
+        product_cat_uc["check"].execute.return_value = False
         controller._product_cat_handler._on_delete(1)
-        product_cat_uc["delete"].execute.assert_called_once_with(1)
+        product_cat_uc["hard_delete"].execute.assert_called_once_with(1)
+        product_cat_uc["delete"].execute.assert_not_called()
 
     def test_create_error_shows_message(
         self,
@@ -185,10 +197,24 @@ class TestSettingsControllerRecipeCategories:
         controller._recipe_cat_handler._on_edit(1, "Завтраки (ред.)")
         recipe_cat_uc["edit"].execute.assert_called_once_with(1, "Завтраки (ред.)")
 
-    def test_delete_recipe_category(
+    def test_delete_unused_recipe_category_hard_deletes(
         self, recipe_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
+        recipe_cat_uc["check"].execute.return_value = False
         controller._recipe_cat_handler._on_delete(1)
-        recipe_cat_uc["delete"].execute.assert_called_once_with(1)
+        recipe_cat_uc["hard_delete"].execute.assert_called_once_with(1)
+        recipe_cat_uc["delete"].execute.assert_not_called()
 
 
+class TestSettingsControllerActivateCategory:
+    def test_activate_product_category(
+        self, product_cat_uc: dict[str, MagicMock], controller: SettingsController,
+    ) -> None:
+        controller._product_cat_handler._on_activate(1)
+        product_cat_uc["activate"].execute.assert_called_once_with(1)
+
+    def test_activate_recipe_category(
+        self, recipe_cat_uc: dict[str, MagicMock], controller: SettingsController,
+    ) -> None:
+        controller._recipe_cat_handler._on_activate(1)
+        recipe_cat_uc["activate"].execute.assert_called_once_with(1)
