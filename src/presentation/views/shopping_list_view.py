@@ -177,6 +177,7 @@ class ShoppingListView(QWidget):
         QMessageBox.critical(self, "Ошибка", message)
 
     def show_text_export(self, text: str) -> None:
+        from PySide6.QtGui import QGuiApplication
         from PySide6.QtWidgets import QDialog, QDialogButtonBox, QPlainTextEdit
 
         dialog = QDialog(self)
@@ -184,10 +185,21 @@ class ShoppingListView(QWidget):
         dialog.resize(500, 400)
         text_edit = QPlainTextEdit(text)
         text_edit.setReadOnly(True)
+
+        copy_status = QLabel()
+        copy_status.setStyleSheet("color: green;")
+
+        def copy_to_clipboard() -> None:
+            QGuiApplication.clipboard().setText(text)
+            copy_status.setText("Скопировано в буфер обмена")
+
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        copy_btn = buttons.addButton("Копировать", QDialogButtonBox.ButtonRole.ActionRole)
+        copy_btn.clicked.connect(copy_to_clipboard)
         buttons.rejected.connect(dialog.reject)
         layout = QVBoxLayout(dialog)
         layout.addWidget(text_edit)
+        layout.addWidget(copy_status)
         layout.addWidget(buttons)
         dialog.exec()
 
