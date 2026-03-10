@@ -19,16 +19,42 @@ MIME_RECIPE = "application/x-menutor-recipe-id"
 MIME_PRODUCT = "application/x-menutor-product-id"
 
 
-class ItemRow(QWidget):
+_ITEM_STYLE = {
+    "recipe": (
+        "background-color: #e8f0fe; border: 1px solid #a4c2f4;"
+        " border-radius: 4px; padding: 2px 4px;"
+    ),
+    "product": (
+        "background-color: #fef3e0; border: 1px solid #f4bc78;"
+        " border-radius: 4px; padding: 2px 4px;"
+    ),
+}
+
+_LABEL_STYLE = {
+    "recipe": "color: #1a56db;",
+    "product": "color: #b45309;",
+}
+
+
+class ItemRow(QFrame):
     """Single item display inside a grid cell, with a remove button."""
 
     remove_clicked = Signal()
     edit_clicked = Signal()
 
-    def __init__(self, label_text: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        label_text: str,
+        item_type: str = "",
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
+        style = _ITEM_STYLE.get(item_type, "")
+        if style:
+            self.setStyleSheet(style)
+
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(2, 2, 2, 2)
         layout.setSpacing(2)
 
         self._label = QLabel(label_text)
@@ -36,6 +62,9 @@ class ItemRow(QWidget):
         self._label.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
         )
+        label_style = _LABEL_STYLE.get(item_type, "")
+        if label_style:
+            self._label.setStyleSheet(label_style)
         self._label.setToolTip("Двойной клик — изменить количество")
 
         self._remove_btn = QPushButton("✕")
@@ -90,7 +119,7 @@ class GridCell(QFrame):
             else:
                 text = f"{item['name']} ({item['quantity']:.1f} {to_display(item['unit'])})"
 
-            row = ItemRow(text)
+            row = ItemRow(text, item_type=item["type"])
             item_type = item["type"]
             item_id = item["id"]
             row.remove_clicked.connect(
