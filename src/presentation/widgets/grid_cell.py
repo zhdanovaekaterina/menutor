@@ -391,7 +391,7 @@ class GridCell(QFrame):
             new_val, ok = QInputDialog.getDouble(
                 self, "Порции",
                 f"Количество порций для «{item['name']}»:",
-                item["servings"], 0.5, 99999.0, 1,
+                item["servings"], 0.1, 99999.0, 1,
             )
             if not ok:
                 return

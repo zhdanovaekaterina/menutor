@@ -1,10 +1,6 @@
 import logging
 from typing import Callable, cast
 
-from src.application.use_cases.import_export import (
-    ExportShoppingListAsCsv,
-    ExportShoppingListAsText,
-)
 from src.application.use_cases.manage_category import (
     CheckCategoryUsed,
     CreateCategory,
@@ -19,7 +15,6 @@ from src.application.use_cases.manage_family import (
     FamilyMemberData,
     ListFamilyMembers,
 )
-from src.domain.entities.shopping_list import ShoppingList
 from src.domain.exceptions import AppError
 from src.domain.value_objects.category import Category
 from src.domain.value_objects.types import FamilyMemberId
@@ -89,7 +84,7 @@ class _CategoryHandler:
 
 
 class SettingsController:
-    """Соединяет SettingsView с use cases семьи, категорий и экспорта."""
+    """Соединяет SettingsView с use cases семьи и категорий."""
 
     def __init__(
         self,
@@ -98,8 +93,6 @@ class SettingsController:
         edit_member_uc: EditFamilyMember,
         delete_member_uc: DeleteFamilyMember,
         list_members_uc: ListFamilyMembers,
-        export_text_uc: ExportShoppingListAsText,
-        export_csv_uc: ExportShoppingListAsCsv,
         # Product categories
         list_product_categories_uc: ListAllCategories,
         create_product_category_uc: CreateCategory,
@@ -118,9 +111,6 @@ class SettingsController:
         self._edit_uc = edit_member_uc
         self._delete_uc = delete_member_uc
         self._list_uc = list_members_uc
-        self._export_text_uc = export_text_uc
-        self._export_csv_uc = export_csv_uc
-        self._last_shopping_list: ShoppingList | None = None
 
         # Category handlers (replaces duplicate product/recipe category methods)
         self._product_cat_handler = _CategoryHandler(
@@ -149,15 +139,7 @@ class SettingsController:
         view.edit_member_requested.connect(self._on_edit)
         view.delete_member_requested.connect(self._on_delete)
 
-        # Export signals
-        view.export_text_requested.connect(self._on_export_text)
-        view.export_csv_requested.connect(self._on_export_csv)
-
         self._refresh()
-
-    def set_shopping_list(self, shopping_list: ShoppingList) -> None:
-        """Обновляет последний список покупок для экспорта из настроек."""
-        self._last_shopping_list = shopping_list
 
     def refresh(self) -> None:
         self._refresh()
@@ -200,44 +182,3 @@ class SettingsController:
             logger.warning("Ошибка при удалении члена семьи %s: %s", member_id, exc)
             self._view.show_error(str(exc))
 
-    # ------------------------------------------------------------------
-    # Export
-    # ------------------------------------------------------------------
-
-    def _on_export_text(self) -> None:
-        if self._last_shopping_list is None:
-            self._view.show_error("Сначала сформируйте список покупок.")
-            return
-        try:
-            text = self._export_text_uc.execute(self._last_shopping_list)
-            from PySide6.QtWidgets import (
-                QDialog,
-                QDialogButtonBox,
-                QPlainTextEdit,
-                QVBoxLayout,
-            )
-
-            dialog = QDialog(self._view)
-            dialog.setWindowTitle("Список покупок (текст)")
-            dialog.resize(500, 400)
-            te = QPlainTextEdit(text)
-            te.setReadOnly(True)
-            buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
-            buttons.rejected.connect(dialog.reject)
-            layout = QVBoxLayout(dialog)
-            layout.addWidget(te)
-            layout.addWidget(buttons)
-            dialog.exec()
-        except AppError as exc:
-            logger.warning("Ошибка при экспорте текста: %s", exc)
-            self._view.show_error(str(exc))
-
-    def _on_export_csv(self, filepath: str) -> None:
-        if self._last_shopping_list is None:
-            self._view.show_error("Сначала сформируйте список покупок.")
-            return
-        try:
-            self._export_csv_uc.execute(self._last_shopping_list, filepath)
-        except AppError as exc:
-            logger.warning("Ошибка при экспорте CSV в %s: %s", filepath, exc)
-            self._view.show_error(str(exc))

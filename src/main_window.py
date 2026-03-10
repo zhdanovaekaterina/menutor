@@ -68,8 +68,6 @@ class MainWindow(QMainWindow):
             edit_member_uc=container.edit_family_member,
             delete_member_uc=container.delete_family_member,
             list_members_uc=container.list_family_members,
-            export_text_uc=container.export_shopping_list_as_text,
-            export_csv_uc=container.export_shopping_list_as_csv,
             list_product_categories_uc=container.list_all_product_categories,
             create_product_category_uc=container.create_product_category,
             edit_product_category_uc=container.edit_product_category,
@@ -119,7 +117,6 @@ class MainWindow(QMainWindow):
 
     def _on_shopping_list_generated(self, shopping_list) -> None:
         self._shopping_ctrl.set_shopping_list(shopping_list)
-        self._settings_ctrl.set_shopping_list(shopping_list)
         # Switch to shopping list tab
         self._tabs.setCurrentIndex(1)
 
