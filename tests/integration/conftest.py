@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import Session
 
-from src.infrastructure.database.connection import apply_schema
+from backend.infrastructure.database.connection import apply_schema
 
 _SEED_SQL = [
     "INSERT OR IGNORE INTO units (name, unit_group) VALUES ('g',    'weight')",

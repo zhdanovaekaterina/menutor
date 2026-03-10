@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
-from src.presentation.widgets.searchable_list import SearchableList
+from backend.presentation.widgets.searchable_list import SearchableList
 
 
 class TestSearchableList:

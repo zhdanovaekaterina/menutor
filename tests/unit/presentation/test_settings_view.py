@@ -4,11 +4,11 @@ from unittest.mock import MagicMock
 
 from PySide6.QtWidgets import QApplication
 
-from src.application.use_cases.manage_family import FamilyMemberData
-from src.domain.entities.family_member import FamilyMember
-from src.domain.value_objects.category import Category
-from src.domain.value_objects.types import FamilyMemberId
-from src.presentation.views.settings_view import SettingsView
+from backend.application.use_cases.manage_family import FamilyMemberData
+from backend.domain.entities.family_member import FamilyMember
+from backend.domain.value_objects.category import Category
+from backend.domain.value_objects.types import FamilyMemberId
+from backend.presentation.views.settings_view import SettingsView
 
 
 def _members() -> list[FamilyMember]:

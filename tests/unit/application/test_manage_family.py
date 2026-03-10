@@ -2,16 +2,16 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.application.use_cases.manage_family import (
+from backend.application.use_cases.manage_family import (
     CreateFamilyMember,
     DeleteFamilyMember,
     EditFamilyMember,
     FamilyMemberData,
     ListFamilyMembers,
 )
-from src.domain.entities.family_member import FamilyMember
-from src.domain.exceptions import EntityNotFoundError
-from src.domain.value_objects.types import FamilyMemberId
+from backend.domain.entities.family_member import FamilyMember
+from backend.domain.exceptions import EntityNotFoundError
+from backend.domain.value_objects.types import FamilyMemberId
 
 
 def _data(**kwargs) -> FamilyMemberData:

@@ -9,23 +9,23 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.application.use_cases.generate_shopping_list import GenerateShoppingList
-from src.application.use_cases.import_export import (
+from backend.application.use_cases.generate_shopping_list import GenerateShoppingList
+from backend.application.use_cases.import_export import (
     ExportShoppingListAsCsv,
     ExportShoppingListAsText,
 )
-from src.application.use_cases.manage_category import (
+from backend.application.use_cases.manage_category import (
     CreateProductCategory,
     CreateRecipeCategory,
     ListAllProductCategories,
     ListAllRecipeCategories,
 )
-from src.application.use_cases.manage_family import (
+from backend.application.use_cases.manage_family import (
     CreateFamilyMember,
     FamilyMemberData,
     ListFamilyMembers,
 )
-from src.application.use_cases.manage_product import (
+from backend.application.use_cases.manage_product import (
     CreateProduct,
     DeleteProduct,
     EditProduct,
@@ -33,7 +33,7 @@ from src.application.use_cases.manage_product import (
     ListProducts,
     ProductData,
 )
-from src.application.use_cases.manage_recipe import (
+from backend.application.use_cases.manage_recipe import (
     CreateRecipe,
     DeleteRecipe,
     EditRecipe,
@@ -41,7 +41,7 @@ from src.application.use_cases.manage_recipe import (
     ListRecipes,
     RecipeData,
 )
-from src.application.use_cases.plan_menu import (
+from backend.application.use_cases.plan_menu import (
     AddDishToSlot,
     ClearMenu,
     CreateMenu,
@@ -51,42 +51,42 @@ from src.application.use_cases.plan_menu import (
     RemoveItemFromSlot,
     SaveMenu,
 )
-from src.domain.entities.menu import MenuSlot
-from src.domain.services.portion_calculator import PortionCalculator
-from src.domain.services.shopping_list_builder import ShoppingListBuilder
-from src.domain.services.unit_converter import UnitConverter
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.quantity import Quantity
-from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import ProductCategoryId, RecipeCategoryId, RecipeId
+from backend.domain.entities.menu import MenuSlot
+from backend.domain.services.portion_calculator import PortionCalculator
+from backend.domain.services.shopping_list_builder import ShoppingListBuilder
+from backend.domain.services.unit_converter import UnitConverter
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.quantity import Quantity
+from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
+from backend.domain.value_objects.types import ProductCategoryId, RecipeCategoryId, RecipeId
 from sqlalchemy.orm import Session
 
-from src.infrastructure.database.connection import (
+from backend.infrastructure.database.connection import (
     apply_schema,
     get_engine,
     seed_defaults,
 )
-from src.infrastructure.export.text_exporter import ShoppingListTextExporter
-from src.infrastructure.repositories.sqlite_family_member_repository import (
+from backend.infrastructure.export.text_exporter import ShoppingListTextExporter
+from backend.infrastructure.repositories.sqlite_family_member_repository import (
     SqliteFamilyMemberRepository,
 )
-from src.infrastructure.repositories.sqlite_menu_repository import SqliteMenuRepository
-from src.infrastructure.repositories.sqlite_product_category_repository import (
+from backend.infrastructure.repositories.sqlite_menu_repository import SqliteMenuRepository
+from backend.infrastructure.repositories.sqlite_product_category_repository import (
     SqliteProductCategoryRepository,
 )
-from src.infrastructure.repositories.sqlite_product_repository import (
+from backend.infrastructure.repositories.sqlite_product_repository import (
     SqliteProductRepository,
 )
-from src.infrastructure.repositories.sqlite_recipe_category_repository import (
+from backend.infrastructure.repositories.sqlite_recipe_category_repository import (
     SqliteRecipeCategoryRepository,
 )
-from src.infrastructure.repositories.sqlite_recipe_repository import (
+from backend.infrastructure.repositories.sqlite_recipe_repository import (
     SqliteRecipeRepository,
 )
-from src.presentation.controllers.menu_planner_controller import MenuPlannerController
-from src.presentation.controllers.product_controller import ProductController
-from src.presentation.controllers.recipe_controller import RecipeController
-from src.presentation.controllers.shopping_list_controller import ShoppingListController
+from backend.presentation.controllers.menu_planner_controller import MenuPlannerController
+from backend.presentation.controllers.product_controller import ProductController
+from backend.presentation.controllers.recipe_controller import RecipeController
+from backend.presentation.controllers.shopping_list_controller import ShoppingListController
 
 
 @pytest.fixture
@@ -255,7 +255,7 @@ class TestFullUserScenario:
         ))
         assert product.name == "Сахар"
 
-        from src.application.use_cases.manage_product import ProductData as PD
+        from backend.application.use_cases.manage_product import ProductData as PD
         edited = edit_prod.execute(product.id, PD(
             name="Сахар-песок", category_id=cat_id,
             recipe_unit="g", purchase_unit="kg",

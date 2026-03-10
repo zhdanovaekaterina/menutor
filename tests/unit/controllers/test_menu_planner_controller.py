@@ -5,14 +5,14 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from src.domain.entities.family_member import FamilyMember
-from src.domain.entities.menu import MenuSlot, WeeklyMenu
-from src.domain.entities.product import Product
-from src.domain.entities.recipe import Recipe
-from src.domain.entities.shopping_list import ShoppingList
-from src.domain.exceptions import EntityNotFoundError, RepositoryError
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import (
+from backend.domain.entities.family_member import FamilyMember
+from backend.domain.entities.menu import MenuSlot, WeeklyMenu
+from backend.domain.entities.product import Product
+from backend.domain.entities.recipe import Recipe
+from backend.domain.entities.shopping_list import ShoppingList
+from backend.domain.exceptions import EntityNotFoundError, RepositoryError
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.types import (
     FamilyMemberId,
     MenuId,
     ProductCategoryId,
@@ -20,7 +20,7 @@ from src.domain.value_objects.types import (
     RecipeCategoryId,
     RecipeId,
 )
-from src.presentation.controllers.menu_planner_controller import MenuPlannerController
+from backend.presentation.controllers.menu_planner_controller import MenuPlannerController
 
 
 @pytest.fixture

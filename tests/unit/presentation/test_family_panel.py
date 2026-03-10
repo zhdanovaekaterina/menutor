@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 
 from PySide6.QtWidgets import QApplication
 
-from src.application.use_cases.manage_family import FamilyMemberData
-from src.domain.entities.family_member import FamilyMember
-from src.domain.value_objects.types import FamilyMemberId
-from src.presentation.widgets.family_panel import FamilyPanel
+from backend.application.use_cases.manage_family import FamilyMemberData
+from backend.domain.entities.family_member import FamilyMember
+from backend.domain.value_objects.types import FamilyMemberId
+from backend.presentation.widgets.family_panel import FamilyPanel
 
 
 def _members() -> list[FamilyMember]:
@@ -108,7 +108,7 @@ class TestFamilyPanelSave:
         assert member_id == FamilyMemberId(1)
         assert data.name == "Папа (обновлён)"
 
-    @patch("src.presentation.widgets.family_panel.QMessageBox.warning")
+    @patch("backend.presentation.widgets.family_panel.QMessageBox.warning")
     def test_save_empty_name_does_not_emit(
         self, mock_warning: MagicMock, qapp: QApplication,
     ) -> None:

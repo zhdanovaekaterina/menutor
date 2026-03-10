@@ -1,7 +1,7 @@
 import pytest
 
-from src.domain.exceptions import UnitConversionError
-from src.domain.value_objects.quantity import Quantity
+from backend.domain.exceptions import UnitConversionError
+from backend.domain.value_objects.quantity import Quantity
 
 
 def test_add_same_unit() -> None:

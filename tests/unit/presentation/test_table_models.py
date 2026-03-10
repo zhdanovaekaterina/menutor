@@ -5,17 +5,17 @@ from decimal import Decimal
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
-from src.domain.entities.product import Product
-from src.domain.entities.recipe import Recipe
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import (
+from backend.domain.entities.product import Product
+from backend.domain.entities.recipe import Recipe
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.types import (
     ProductCategoryId,
     ProductId,
     RecipeCategoryId,
     RecipeId,
 )
-from src.presentation.models.product_table_model import ProductTableModel
-from src.presentation.models.recipe_table_model import RecipeTableModel
+from backend.presentation.models.product_table_model import ProductTableModel
+from backend.presentation.models.recipe_table_model import RecipeTableModel
 
 
 def _product(id: int = 1, name: str = "Мука", category_id: int = 1) -> Product:

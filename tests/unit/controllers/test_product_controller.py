@@ -5,12 +5,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.application.use_cases.manage_product import ProductData
-from src.domain.entities.product import Product
-from src.domain.exceptions import EntityNotFoundError, RepositoryError
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import ProductCategoryId, ProductId
-from src.presentation.controllers.product_controller import ProductController
+from backend.application.use_cases.manage_product import ProductData
+from backend.domain.entities.product import Product
+from backend.domain.exceptions import EntityNotFoundError, RepositoryError
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.types import ProductCategoryId, ProductId
+from backend.presentation.controllers.product_controller import ProductController
 
 
 @pytest.fixture

@@ -4,10 +4,10 @@ from decimal import Decimal
 
 import pytest
 
-from src.domain.entities.product import Product
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.quantity import Quantity
-from src.domain.value_objects.types import ProductCategoryId, ProductId
+from backend.domain.entities.product import Product
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.quantity import Quantity
+from backend.domain.value_objects.types import ProductCategoryId, ProductId
 
 
 @pytest.fixture

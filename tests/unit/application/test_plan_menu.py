@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.application.use_cases.plan_menu import (
+from backend.application.use_cases.plan_menu import (
     AddDishToSlot,
     ClearMenu,
     CreateMenu,
@@ -13,9 +13,9 @@ from src.application.use_cases.plan_menu import (
     RemoveItemFromSlot,
     SaveMenu,
 )
-from src.domain.entities.menu import MenuSlot, WeeklyMenu
-from src.domain.exceptions import EntityNotFoundError
-from src.domain.value_objects.types import MenuId, ProductId, RecipeId
+from backend.domain.entities.menu import MenuSlot, WeeklyMenu
+from backend.domain.exceptions import EntityNotFoundError
+from backend.domain.value_objects.types import MenuId, ProductId, RecipeId
 
 
 def _menu(id: int = 1, slots: list[MenuSlot] | None = None) -> WeeklyMenu:

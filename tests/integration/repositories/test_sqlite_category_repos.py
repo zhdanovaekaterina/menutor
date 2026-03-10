@@ -1,9 +1,9 @@
 from sqlalchemy import text
 
-from src.infrastructure.repositories.sqlite_product_category_repository import (
+from backend.infrastructure.repositories.sqlite_product_category_repository import (
     SqliteProductCategoryRepository,
 )
-from src.infrastructure.repositories.sqlite_recipe_category_repository import (
+from backend.infrastructure.repositories.sqlite_recipe_category_repository import (
     SqliteRecipeCategoryRepository,
 )
 

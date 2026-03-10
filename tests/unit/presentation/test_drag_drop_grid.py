@@ -4,12 +4,12 @@ from unittest.mock import MagicMock
 
 from PySide6.QtWidgets import QApplication
 
-from src.presentation.widgets.drag_drop_grid import (
+from backend.presentation.widgets.drag_drop_grid import (
     DAYS,
     DEFAULT_MEAL_TYPES,
     DragDropGrid,
 )
-from src.presentation.widgets.grid_cell import GridCell
+from backend.presentation.widgets.grid_cell import GridCell
 
 # ---- GridCell ----
 

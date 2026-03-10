@@ -5,12 +5,12 @@ from decimal import Decimal
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
-from src.domain.entities.product import Product
-from src.domain.entities.shopping_list import ShoppingList, ShoppingListItem
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.quantity import Quantity
-from src.domain.value_objects.types import ProductCategoryId, ProductId
-from src.presentation.views.shopping_list_view import ShoppingListView
+from backend.domain.entities.product import Product
+from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.quantity import Quantity
+from backend.domain.value_objects.types import ProductCategoryId, ProductId
+from backend.presentation.views.shopping_list_view import ShoppingListView
 
 
 def _product(id: int = 1, name: str = "Мука", unit: str = "g") -> Product:

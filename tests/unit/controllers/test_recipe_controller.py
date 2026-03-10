@@ -5,18 +5,18 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from src.application.use_cases.manage_recipe import RecipeData
-from src.domain.entities.product import Product
-from src.domain.entities.recipe import Recipe
-from src.domain.exceptions import EntityNotFoundError, RepositoryError
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import (
+from backend.application.use_cases.manage_recipe import RecipeData
+from backend.domain.entities.product import Product
+from backend.domain.entities.recipe import Recipe
+from backend.domain.exceptions import EntityNotFoundError, RepositoryError
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.types import (
     ProductCategoryId,
     ProductId,
     RecipeCategoryId,
     RecipeId,
 )
-from src.presentation.controllers.recipe_controller import RecipeController
+from backend.presentation.controllers.recipe_controller import RecipeController
 
 
 @pytest.fixture

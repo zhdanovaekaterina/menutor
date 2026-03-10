@@ -4,11 +4,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.application.use_cases.manage_family import FamilyMemberData
-from src.domain.entities.family_member import FamilyMember
-from src.domain.exceptions import EntityNotFoundError
-from src.domain.value_objects.types import FamilyMemberId
-from src.presentation.controllers.settings_controller import SettingsController
+from backend.application.use_cases.manage_family import FamilyMemberData
+from backend.domain.entities.family_member import FamilyMember
+from backend.domain.exceptions import EntityNotFoundError
+from backend.domain.value_objects.types import FamilyMemberId
+from backend.presentation.controllers.settings_controller import SettingsController
 
 
 @pytest.fixture

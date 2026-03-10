@@ -1,8 +1,8 @@
 import pytest
 
-from src.domain.entities.family_member import FamilyMember
-from src.domain.value_objects.types import FamilyMemberId
-from src.infrastructure.repositories.sqlite_family_member_repository import (
+from backend.domain.entities.family_member import FamilyMember
+from backend.domain.value_objects.types import FamilyMemberId
+from backend.infrastructure.repositories.sqlite_family_member_repository import (
     SqliteFamilyMemberRepository,
 )
 

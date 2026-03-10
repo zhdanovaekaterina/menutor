@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.application.use_cases.manage_recipe import (
+from backend.application.use_cases.manage_recipe import (
     CreateRecipe,
     DeleteRecipe,
     EditRecipe,
@@ -10,12 +10,12 @@ from src.application.use_cases.manage_recipe import (
     ListRecipes,
     RecipeData,
 )
-from src.domain.entities.recipe import Recipe
-from src.domain.exceptions import EntityNotFoundError
-from src.domain.value_objects.cooking_step import CookingStep
-from src.domain.value_objects.quantity import Quantity
-from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
+from backend.domain.entities.recipe import Recipe
+from backend.domain.exceptions import EntityNotFoundError
+from backend.domain.value_objects.cooking_step import CookingStep
+from backend.domain.value_objects.quantity import Quantity
+from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
+from backend.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 
 
 def _data(**kwargs) -> RecipeData:

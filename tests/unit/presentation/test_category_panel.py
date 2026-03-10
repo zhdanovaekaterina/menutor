@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 from PySide6.QtWidgets import QApplication
 
-from src.domain.value_objects.category import Category
-from src.presentation.widgets.category_panel import CategoryPanel
+from backend.domain.value_objects.category import Category
+from backend.presentation.widgets.category_panel import CategoryPanel
 
 
 def _categories() -> list[Category]:
@@ -81,7 +81,7 @@ class TestCategoryPanelSave:
 
         spy.assert_called_once_with(1, "Бакалея обновлённая")
 
-    @patch("src.presentation.widgets.category_panel.QMessageBox.warning")
+    @patch("backend.presentation.widgets.category_panel.QMessageBox.warning")
     def test_save_empty_name_does_not_emit(
         self, mock_warning: MagicMock, qapp: QApplication,
     ) -> None:
@@ -95,7 +95,7 @@ class TestCategoryPanelSave:
         spy.assert_not_called()
         mock_warning.assert_called_once()
 
-    @patch("src.presentation.widgets.category_panel.QMessageBox.warning")
+    @patch("backend.presentation.widgets.category_panel.QMessageBox.warning")
     def test_save_whitespace_name_does_not_emit(
         self, mock_warning: MagicMock, qapp: QApplication,
     ) -> None:

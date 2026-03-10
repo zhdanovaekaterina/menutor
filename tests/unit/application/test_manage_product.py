@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.application.use_cases.manage_product import (
+from backend.application.use_cases.manage_product import (
     CreateProduct,
     DeleteProduct,
     EditProduct,
@@ -12,10 +12,10 @@ from src.application.use_cases.manage_product import (
     ProductData,
     UpdateProductPrice,
 )
-from src.domain.entities.product import Product
-from src.domain.exceptions import EntityNotFoundError
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import ProductCategoryId, ProductId
+from backend.domain.entities.product import Product
+from backend.domain.exceptions import EntityNotFoundError
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.types import ProductCategoryId, ProductId
 
 
 def _data(**kwargs) -> ProductData:

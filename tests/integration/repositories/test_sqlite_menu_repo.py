@@ -2,22 +2,22 @@ from decimal import Decimal
 
 import pytest
 
-from src.domain.entities.menu import MenuSlot, WeeklyMenu
-from src.domain.entities.product import Product
-from src.domain.entities.recipe import Recipe
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.types import (
+from backend.domain.entities.menu import MenuSlot, WeeklyMenu
+from backend.domain.entities.product import Product
+from backend.domain.entities.recipe import Recipe
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.types import (
     MenuId,
     ProductCategoryId,
     ProductId,
     RecipeCategoryId,
     RecipeId,
 )
-from src.infrastructure.repositories.sqlite_menu_repository import SqliteMenuRepository
-from src.infrastructure.repositories.sqlite_product_repository import (
+from backend.infrastructure.repositories.sqlite_menu_repository import SqliteMenuRepository
+from backend.infrastructure.repositories.sqlite_product_repository import (
     SqliteProductRepository,
 )
-from src.infrastructure.repositories.sqlite_recipe_repository import (
+from backend.infrastructure.repositories.sqlite_recipe_repository import (
     SqliteRecipeRepository,
 )
 

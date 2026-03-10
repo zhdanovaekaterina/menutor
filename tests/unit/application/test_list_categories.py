@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
-from src.application.use_cases.manage_product import ListProductCategories
-from src.application.use_cases.manage_recipe import ListRecipeCategories
+from backend.application.use_cases.manage_product import ListProductCategories
+from backend.application.use_cases.manage_recipe import ListRecipeCategories
 
 
 def test_list_product_categories_returns_active() -> None:

@@ -1,8 +1,8 @@
 import pytest
 
-from src.domain.entities.menu import MenuSlot
-from src.domain.exceptions import InvalidEntityError
-from src.domain.value_objects.types import ProductId, RecipeId
+from backend.domain.entities.menu import MenuSlot
+from backend.domain.exceptions import InvalidEntityError
+from backend.domain.value_objects.types import ProductId, RecipeId
 
 
 def test_recipe_slot_valid() -> None:

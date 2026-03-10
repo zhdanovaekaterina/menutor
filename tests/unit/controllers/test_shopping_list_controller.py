@@ -5,13 +5,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.domain.entities.product import Product
-from src.domain.entities.shopping_list import ShoppingList, ShoppingListItem
-from src.domain.exceptions import RepositoryError
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.quantity import Quantity
-from src.domain.value_objects.types import ProductCategoryId, ProductId
-from src.presentation.controllers.shopping_list_controller import ShoppingListController
+from backend.domain.entities.product import Product
+from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
+from backend.domain.exceptions import RepositoryError
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.quantity import Quantity
+from backend.domain.value_objects.types import ProductCategoryId, ProductId
+from backend.presentation.controllers.shopping_list_controller import ShoppingListController
 
 
 @pytest.fixture

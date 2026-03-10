@@ -1,6 +1,6 @@
 """Tests for presentation.units — code↔display unit conversion."""
 
-from src.presentation.units import UNIT_DISPLAY_OPTIONS, UNIT_RU, to_code, to_display
+from backend.presentation.units import UNIT_DISPLAY_OPTIONS, UNIT_RU, to_code, to_display
 
 
 class TestToDisplay:
