@@ -20,7 +20,7 @@ class Product:
 
     def compute_purchase(self, recipe_amount: float) -> tuple[Quantity, Money]:
         """Конвертирует количество в единицах рецепта в закупочную единицу и стоимость."""
-        purchase_amount = recipe_amount * self.conversion_factor
+        purchase_amount = recipe_amount / self.conversion_factor
         return (
             Quantity(purchase_amount, self.purchase_unit),
             self.price_per_purchase_unit * purchase_amount,

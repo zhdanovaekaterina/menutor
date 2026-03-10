@@ -27,7 +27,7 @@ def _product(id: int, name: str, price: str = "10.00") -> Product:
         recipe_unit="g",
         purchase_unit="kg",
         price_per_purchase_unit=Money(Decimal(price)),
-        conversion_factor=0.001,
+        conversion_factor=1000,
         category_id=ProductCategoryId(1),
     )
 

@@ -27,7 +27,7 @@ def _product(id: int = 1, name: str = "Мука", category_id: int = 1) -> Produ
         price_per_purchase_unit=Money(Decimal("80.50")),
         brand="Макфа",
         supplier="Магнит",
-        conversion_factor=0.001,
+        conversion_factor=1000,
         category_id=ProductCategoryId(category_id),
     )
 
