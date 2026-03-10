@@ -70,6 +70,7 @@ class ShoppingListBuilder:
                 category=category_map.get(product.category_id, ""),
                 quantity=purchase_qty,
                 cost=cost,
+                recipe_quantity=recipe_qty,
             ))
 
         return ShoppingList(items=items)

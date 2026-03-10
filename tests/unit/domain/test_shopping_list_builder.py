@@ -19,7 +19,7 @@ from src.domain.value_objects.types import (
 
 
 def _product(pid: int, recipe_unit: str = "g", purchase_unit: str = "kg",
-             conversion_factor: float = 0.001, price: float = 100.0) -> Product:
+             conversion_factor: float = 1000, price: float = 100.0) -> Product:
     return Product(
         id=ProductId(pid),
         name=f"Product{pid}",
@@ -60,7 +60,7 @@ def test_single_slot_quantity_and_cost() -> None:
     recipe_repo = MagicMock()
     product_repo = MagicMock()
     recipe_repo.get_by_id.return_value = _recipe(1, 1, amount=200.0, base_servings=2)
-    product_repo.get_by_id.return_value = _product(1, "g", "kg", 0.001, 100.0)
+    product_repo.get_by_id.return_value = _product(1, "g", "kg", 1000, 100.0)
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
@@ -79,7 +79,7 @@ def test_single_slot_no_members_uses_base_servings() -> None:
     recipe_repo = MagicMock()
     product_repo = MagicMock()
     recipe_repo.get_by_id.return_value = _recipe(1, 1, amount=200.0, base_servings=2)
-    product_repo.get_by_id.return_value = _product(1, "g", "kg", 0.001, 100.0)
+    product_repo.get_by_id.return_value = _product(1, "g", "kg", 1000, 100.0)
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
@@ -96,7 +96,7 @@ def test_single_slot_no_members_uses_base_servings() -> None:
 def test_two_slots_same_ingredient_aggregated() -> None:
     r1 = _recipe(1, 1, amount=200.0, base_servings=2)
     r2 = _recipe(2, 1, amount=300.0, base_servings=2)
-    product = _product(1, "g", "kg", 0.001, 100.0)
+    product = _product(1, "g", "kg", 1000, 100.0)
 
     recipe_repo = MagicMock()
     recipe_repo.get_by_id.side_effect = lambda rid: r1 if rid == RecipeId(1) else r2
@@ -120,8 +120,8 @@ def test_two_slots_same_ingredient_aggregated() -> None:
 def test_two_different_products_two_items() -> None:
     r1 = _recipe(1, 1, amount=200.0, base_servings=2)
     r2 = _recipe(2, 2, amount=400.0, base_servings=2)
-    p1 = _product(1, "g", "kg", 0.001, 100.0)
-    p2 = _product(2, "g", "kg", 0.001, 50.0)
+    p1 = _product(1, "g", "kg", 1000, 100.0)
+    p2 = _product(2, "g", "kg", 1000, 50.0)
 
     recipe_repo = MagicMock()
     recipe_repo.get_by_id.side_effect = lambda rid: r1 if rid == RecipeId(1) else r2
@@ -248,7 +248,7 @@ def test_total_cost() -> None:
     recipe_repo = MagicMock()
     product_repo = MagicMock()
     recipe_repo.get_by_id.return_value = _recipe(1, 1, amount=200.0, base_servings=2)
-    product_repo.get_by_id.return_value = _product(1, "g", "kg", 0.001, 100.0)
+    product_repo.get_by_id.return_value = _product(1, "g", "kg", 1000, 100.0)
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
@@ -265,12 +265,12 @@ def test_items_by_category() -> None:
     p1 = Product(
         id=ProductId(1), name="Flour", recipe_unit="g", purchase_unit="kg",
         price_per_purchase_unit=Money(Decimal("80")),
-        conversion_factor=0.001, category_id=ProductCategoryId(1),
+        conversion_factor=1000, category_id=ProductCategoryId(1),
     )
     p2 = Product(
         id=ProductId(2), name="Milk", recipe_unit="ml", purchase_unit="l",
         price_per_purchase_unit=Money(Decimal("90")),
-        conversion_factor=0.001, category_id=ProductCategoryId(2),
+        conversion_factor=1000, category_id=ProductCategoryId(2),
     )
 
     recipe_repo = MagicMock()
@@ -303,7 +303,7 @@ def test_items_by_category() -> None:
 def test_standalone_product_slot_adds_quantity_directly() -> None:
     recipe_repo = MagicMock()
     product_repo = MagicMock()
-    product_repo.get_by_id.return_value = _product(1, "g", "kg", 0.001, 100.0)
+    product_repo.get_by_id.return_value = _product(1, "g", "kg", 1000, 100.0)
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
@@ -337,7 +337,7 @@ def test_product_slot_aggregates_with_recipe_ingredient() -> None:
     recipe_repo = MagicMock()
     product_repo = MagicMock()
     recipe_repo.get_by_id.return_value = _recipe(1, 1, amount=200.0, base_servings=2)
-    product_repo.get_by_id.return_value = _product(1, "g", "kg", 0.001, 100.0)
+    product_repo.get_by_id.return_value = _product(1, "g", "kg", 1000, 100.0)
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",

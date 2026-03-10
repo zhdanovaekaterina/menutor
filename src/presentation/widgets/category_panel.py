@@ -24,6 +24,7 @@ class CategoryPanel(QWidget):
     create_requested = Signal(str)
     edit_requested = Signal(int, str)
     delete_requested = Signal(int)
+    activate_requested = Signal(int)
 
     def __init__(self, title: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -44,12 +45,16 @@ class CategoryPanel(QWidget):
         btns = QHBoxLayout()
         self._save_btn = QPushButton("Сохранить")
         self._delete_btn = QPushButton("Удалить")
+        self._activate_btn = QPushButton("Активировать")
         self._clear_btn = QPushButton("Очистить")
         self._save_btn.clicked.connect(self._on_save)
         self._delete_btn.clicked.connect(self._on_delete)
+        self._activate_btn.clicked.connect(self._on_activate)
         self._clear_btn.clicked.connect(self._clear_form)
+        self._activate_btn.setVisible(False)
         btns.addWidget(self._save_btn)
         btns.addWidget(self._delete_btn)
+        btns.addWidget(self._activate_btn)
         btns.addWidget(self._clear_btn)
 
         form_box = QGroupBox("Добавить / редактировать")
@@ -76,9 +81,10 @@ class CategoryPanel(QWidget):
     def _on_row_selected(self, current, _previous) -> None:  # type: ignore[no-untyped-def]
         row = current.row()
         if 0 <= row < len(self._categories):
-            cat_id, name, _active = self._categories[row]
+            cat_id, name, active = self._categories[row]
             self._selected_id = cat_id
             self._name_edit.setText(name)
+            self._activate_btn.setVisible(not active)
 
     def _on_save(self) -> None:
         name = self._name_edit.text().strip()
@@ -94,17 +100,16 @@ class CategoryPanel(QWidget):
         if self._selected_id is None:
             QMessageBox.information(self, "Удаление", "Выберите категорию для удаления.")
             return
-        selected_name = self._name_edit.text().strip()
-        reply = QMessageBox.question(
-            self,
-            "Подтверждение",
-            f"Скрыть категорию «{selected_name}»?\n"
-            "Категория станет неактивной, но существующие записи сохранятся.",
-        )
-        if reply == QMessageBox.StandardButton.Yes:
-            self.delete_requested.emit(self._selected_id)
-            self._clear_form()
+        self.delete_requested.emit(self._selected_id)
+        self._clear_form()
+
+    def _on_activate(self) -> None:
+        if self._selected_id is None:
+            return
+        self.activate_requested.emit(self._selected_id)
+        self._clear_form()
 
     def _clear_form(self) -> None:
         self._selected_id = None
         self._name_edit.clear()
+        self._activate_btn.setVisible(False)

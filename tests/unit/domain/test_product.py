@@ -18,7 +18,7 @@ def flour() -> Product:
         recipe_unit="g",
         purchase_unit="kg",
         price_per_purchase_unit=Money(Decimal("80")),
-        conversion_factor=0.001,
+        conversion_factor=1000,
         category_id=ProductCategoryId(1),
     )
 
@@ -31,7 +31,7 @@ def milk() -> Product:
         recipe_unit="ml",
         purchase_unit="l",
         price_per_purchase_unit=Money(Decimal("90")),
-        conversion_factor=0.001,
+        conversion_factor=1000,
         category_id=ProductCategoryId(2),
     )
 

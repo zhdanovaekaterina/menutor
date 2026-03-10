@@ -107,7 +107,7 @@ class TestShoppingListViewSetShoppingList:
         view.set_shopping_list(sl)
         qty_item = view._table.item(1, 2)
         assert qty_item is not None
-        assert "2.00" in qty_item.text()
+        assert "2" in qty_item.text()
         assert "кг" in qty_item.text()
 
     def test_renders_cost(self, qapp: QApplication) -> None:

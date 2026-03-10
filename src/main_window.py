@@ -68,17 +68,19 @@ class MainWindow(QMainWindow):
             edit_member_uc=container.edit_family_member,
             delete_member_uc=container.delete_family_member,
             list_members_uc=container.list_family_members,
-            export_text_uc=container.export_shopping_list_as_text,
-            export_csv_uc=container.export_shopping_list_as_csv,
             list_product_categories_uc=container.list_all_product_categories,
             create_product_category_uc=container.create_product_category,
             edit_product_category_uc=container.edit_product_category,
             delete_product_category_uc=container.delete_product_category,
+            hard_delete_product_category_uc=container.hard_delete_product_category,
+            activate_product_category_uc=container.activate_product_category,
             check_product_category_used_uc=container.check_product_category_used,
             list_recipe_categories_uc=container.list_all_recipe_categories,
             create_recipe_category_uc=container.create_recipe_category,
             edit_recipe_category_uc=container.edit_recipe_category,
             delete_recipe_category_uc=container.delete_recipe_category,
+            hard_delete_recipe_category_uc=container.hard_delete_recipe_category,
+            activate_recipe_category_uc=container.activate_recipe_category,
             check_recipe_category_used_uc=container.check_recipe_category_used,
         )
 
@@ -99,6 +101,10 @@ class MainWindow(QMainWindow):
             on_shopping_list_generated=self._on_shopping_list_generated,
         )
 
+        # --- Cross-controller signals: update menu grid when data changes ---
+        self._recipe_ctrl.data_changed.connect(self._menu_ctrl.refresh_names)
+        self._product_ctrl.data_changed.connect(self._menu_ctrl.refresh_names)
+
         # --- Tab widget ---
         tabs = QTabWidget()
         tabs.addTab(self._menu_view, "Планировщик")
@@ -115,7 +121,6 @@ class MainWindow(QMainWindow):
 
     def _on_shopping_list_generated(self, shopping_list) -> None:
         self._shopping_ctrl.set_shopping_list(shopping_list)
-        self._settings_ctrl.set_shopping_list(shopping_list)
         # Switch to shopping list tab
         self._tabs.setCurrentIndex(1)
 

@@ -145,6 +145,9 @@ class MenuPlannerView(QWidget):
     def clear_grid_slot_item(self, day: int, meal_type: str, item_type: str, item_id: int) -> None:
         self._grid.clear_slot_item(day, meal_type, item_type, item_id)
 
+    def update_item_name(self, item_type: str, item_id: int, new_name: str) -> None:
+        self._grid.update_item_name(item_type, item_id, new_name)
+
     def set_recipes(self, recipes: list[Recipe]) -> None:
         self._recipe_source.set_items([(r.id, r.name) for r in recipes])
 

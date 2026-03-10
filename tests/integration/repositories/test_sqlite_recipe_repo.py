@@ -38,7 +38,7 @@ def flour(product_repo: SqliteProductRepository) -> Product:
         id=ProductId(0), name="Мука",
         recipe_unit="g", purchase_unit="kg",
         price_per_purchase_unit=Money(Decimal("80")),
-        conversion_factor=0.001,
+        conversion_factor=1000,
         category_id=ProductCategoryId(1),
     ))
 

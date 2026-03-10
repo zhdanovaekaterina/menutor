@@ -5,3 +5,4 @@ from src.infrastructure.repositories.base_category import BaseSqliteCategoryRepo
 class SqliteProductCategoryRepository(BaseSqliteCategoryRepository, ProductCategoryRepository):
     _table_name = "product_categories"
     _usage_query = "SELECT COUNT(*) FROM products WHERE category_id = ?"
+    _delete_linked_query = "DELETE FROM products WHERE category_id = ?"

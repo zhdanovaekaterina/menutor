@@ -1,4 +1,4 @@
-"""Unit tests for SettingsController — family members, categories, export."""
+"""Unit tests for SettingsController — family members and categories."""
 
 from unittest.mock import MagicMock
 
@@ -6,7 +6,6 @@ import pytest
 
 from src.application.use_cases.manage_family import FamilyMemberData
 from src.domain.entities.family_member import FamilyMember
-from src.domain.entities.shopping_list import ShoppingList
 from src.domain.exceptions import EntityNotFoundError
 from src.domain.value_objects.types import FamilyMemberId
 from src.presentation.controllers.settings_controller import SettingsController
@@ -28,15 +27,12 @@ def members_uc() -> dict[str, MagicMock]:
 
 
 @pytest.fixture
-def export_uc() -> dict[str, MagicMock]:
-    return {"text": MagicMock(), "csv": MagicMock()}
-
-
-@pytest.fixture
 def product_cat_uc() -> dict[str, MagicMock]:
     return {
         "list": MagicMock(), "create": MagicMock(),
-        "edit": MagicMock(), "delete": MagicMock(), "check": MagicMock(),
+        "edit": MagicMock(), "delete": MagicMock(),
+        "hard_delete": MagicMock(), "activate": MagicMock(),
+        "check": MagicMock(),
     }
 
 
@@ -44,7 +40,9 @@ def product_cat_uc() -> dict[str, MagicMock]:
 def recipe_cat_uc() -> dict[str, MagicMock]:
     return {
         "list": MagicMock(), "create": MagicMock(),
-        "edit": MagicMock(), "delete": MagicMock(), "check": MagicMock(),
+        "edit": MagicMock(), "delete": MagicMock(),
+        "hard_delete": MagicMock(), "activate": MagicMock(),
+        "check": MagicMock(),
     }
 
 
@@ -60,7 +58,6 @@ def sample_members() -> list[FamilyMember]:
 def controller(
     view: MagicMock,
     members_uc: dict[str, MagicMock],
-    export_uc: dict[str, MagicMock],
     product_cat_uc: dict[str, MagicMock],
     recipe_cat_uc: dict[str, MagicMock],
     sample_members: list[FamilyMember],
@@ -74,30 +71,30 @@ def controller(
         edit_member_uc=members_uc["edit"],
         delete_member_uc=members_uc["delete"],
         list_members_uc=members_uc["list"],
-        export_text_uc=export_uc["text"],
-        export_csv_uc=export_uc["csv"],
         list_product_categories_uc=product_cat_uc["list"],
         create_product_category_uc=product_cat_uc["create"],
         edit_product_category_uc=product_cat_uc["edit"],
         delete_product_category_uc=product_cat_uc["delete"],
+        hard_delete_product_category_uc=product_cat_uc["hard_delete"],
+        activate_product_category_uc=product_cat_uc["activate"],
         check_product_category_used_uc=product_cat_uc["check"],
         list_recipe_categories_uc=recipe_cat_uc["list"],
         create_recipe_category_uc=recipe_cat_uc["create"],
         edit_recipe_category_uc=recipe_cat_uc["edit"],
         delete_recipe_category_uc=recipe_cat_uc["delete"],
+        hard_delete_recipe_category_uc=recipe_cat_uc["hard_delete"],
+        activate_recipe_category_uc=recipe_cat_uc["activate"],
         check_recipe_category_used_uc=recipe_cat_uc["check"],
     )
 
 
 class TestSettingsControllerInit:
-    def test_connects_family_and_export_signals(
+    def test_connects_family_signals(
         self, view: MagicMock, controller: SettingsController,
     ) -> None:
         view.create_member_requested.connect.assert_called_once()
         view.edit_member_requested.connect.assert_called_once()
         view.delete_member_requested.connect.assert_called_once()
-        view.export_text_requested.connect.assert_called_once()
-        view.export_csv_requested.connect.assert_called_once()
 
     def test_connects_category_panel_signals(
         self, view: MagicMock, controller: SettingsController,
@@ -105,9 +102,11 @@ class TestSettingsControllerInit:
         view.product_cat_panel.create_requested.connect.assert_called_once()
         view.product_cat_panel.edit_requested.connect.assert_called_once()
         view.product_cat_panel.delete_requested.connect.assert_called_once()
+        view.product_cat_panel.activate_requested.connect.assert_called_once()
         view.recipe_cat_panel.create_requested.connect.assert_called_once()
         view.recipe_cat_panel.edit_requested.connect.assert_called_once()
         view.recipe_cat_panel.delete_requested.connect.assert_called_once()
+        view.recipe_cat_panel.activate_requested.connect.assert_called_once()
 
     def test_loads_data_on_init(
         self,
@@ -166,11 +165,13 @@ class TestSettingsControllerProductCategories:
         controller._product_cat_handler._on_edit(1, "Бакалея (ред.)")
         product_cat_uc["edit"].execute.assert_called_once_with(1, "Бакалея (ред.)")
 
-    def test_delete_product_category(
+    def test_delete_unused_product_category_hard_deletes(
         self, product_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
+        product_cat_uc["check"].execute.return_value = False
         controller._product_cat_handler._on_delete(1)
-        product_cat_uc["delete"].execute.assert_called_once_with(1)
+        product_cat_uc["hard_delete"].execute.assert_called_once_with(1)
+        product_cat_uc["delete"].execute.assert_not_called()
 
     def test_create_error_shows_message(
         self,
@@ -196,34 +197,24 @@ class TestSettingsControllerRecipeCategories:
         controller._recipe_cat_handler._on_edit(1, "Завтраки (ред.)")
         recipe_cat_uc["edit"].execute.assert_called_once_with(1, "Завтраки (ред.)")
 
-    def test_delete_recipe_category(
+    def test_delete_unused_recipe_category_hard_deletes(
         self, recipe_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
+        recipe_cat_uc["check"].execute.return_value = False
         controller._recipe_cat_handler._on_delete(1)
-        recipe_cat_uc["delete"].execute.assert_called_once_with(1)
+        recipe_cat_uc["hard_delete"].execute.assert_called_once_with(1)
+        recipe_cat_uc["delete"].execute.assert_not_called()
 
 
-class TestSettingsControllerExport:
-    def test_export_text_without_shopping_list_shows_error(
-        self, view: MagicMock, controller: SettingsController,
+class TestSettingsControllerActivateCategory:
+    def test_activate_product_category(
+        self, product_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
-        view.show_error.reset_mock()
-        controller._on_export_text()
-        view.show_error.assert_called_once_with("Сначала сформируйте список покупок.")
+        controller._product_cat_handler._on_activate(1)
+        product_cat_uc["activate"].execute.assert_called_once_with(1)
 
-    def test_export_csv_without_shopping_list_shows_error(
-        self, view: MagicMock, controller: SettingsController,
+    def test_activate_recipe_category(
+        self, recipe_cat_uc: dict[str, MagicMock], controller: SettingsController,
     ) -> None:
-        view.show_error.reset_mock()
-        controller._on_export_csv("/tmp/test.csv")
-        view.show_error.assert_called_once_with("Сначала сформируйте список покупок.")
-
-    def test_export_csv_delegates_to_use_case(
-        self,
-        export_uc: dict[str, MagicMock],
-        controller: SettingsController,
-    ) -> None:
-        sl = ShoppingList()
-        controller.set_shopping_list(sl)
-        controller._on_export_csv("/tmp/out.csv")
-        export_uc["csv"].execute.assert_called_once_with(sl, "/tmp/out.csv")
+        controller._recipe_cat_handler._on_activate(1)
+        recipe_cat_uc["activate"].execute.assert_called_once_with(1)

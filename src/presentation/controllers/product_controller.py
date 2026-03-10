@@ -1,6 +1,8 @@
 import logging
 from typing import cast
 
+from PySide6.QtCore import QObject, Signal
+
 from src.application.use_cases.manage_product import (
     CreateProduct,
     DeleteProduct,
@@ -16,8 +18,10 @@ from src.presentation.views.product_list_view import ProductListView
 logger = logging.getLogger(__name__)
 
 
-class ProductController:
+class ProductController(QObject):
     """Соединяет ProductListView с use cases слоя Application."""
+
+    data_changed = Signal()
 
     def __init__(
         self,
@@ -28,6 +32,7 @@ class ProductController:
         list_uc: ListProducts,
         list_categories_uc: ListProductCategories,
     ) -> None:
+        super().__init__()
         self._view = view
         self._create_uc = create_uc
         self._edit_uc = edit_uc
@@ -59,6 +64,7 @@ class ProductController:
         try:
             self._create_uc.execute(data)
             self._refresh()
+            self.data_changed.emit()
         except AppError as exc:
             logger.warning("Ошибка при создании продукта: %s", exc)
             self._view.show_error(str(exc))
@@ -67,6 +73,7 @@ class ProductController:
         try:
             self._edit_uc.execute(ProductId(cast(int, product_id)), data)
             self._refresh()
+            self.data_changed.emit()
         except AppError as exc:
             logger.warning("Ошибка при редактировании продукта %s: %s", product_id, exc)
             self._view.show_error(str(exc))
@@ -75,6 +82,7 @@ class ProductController:
         try:
             self._delete_uc.execute(ProductId(cast(int, product_id)))
             self._refresh()
+            self.data_changed.emit()
         except AppError as exc:
             logger.warning("Ошибка при удалении продукта %s: %s", product_id, exc)
             self._view.show_error(str(exc))

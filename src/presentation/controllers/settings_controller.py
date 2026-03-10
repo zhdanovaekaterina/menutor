@@ -1,15 +1,15 @@
 import logging
 from typing import Callable, cast
 
-from src.application.use_cases.import_export import (
-    ExportShoppingListAsCsv,
-    ExportShoppingListAsText,
-)
+from PySide6.QtWidgets import QMessageBox
+
 from src.application.use_cases.manage_category import (
+    ActivateCategory,
     CheckCategoryUsed,
     CreateCategory,
     DeleteCategory,
     EditCategory,
+    HardDeleteCategory,
     ListAllCategories,
 )
 from src.application.use_cases.manage_family import (
@@ -19,7 +19,6 @@ from src.application.use_cases.manage_family import (
     FamilyMemberData,
     ListFamilyMembers,
 )
-from src.domain.entities.shopping_list import ShoppingList
 from src.domain.exceptions import AppError
 from src.domain.value_objects.category import Category
 from src.domain.value_objects.types import FamilyMemberId
@@ -39,14 +38,19 @@ class _CategoryHandler:
         create_uc: CreateCategory,
         edit_uc: EditCategory,
         delete_uc: DeleteCategory,
+        hard_delete_uc: HardDeleteCategory,
+        activate_uc: ActivateCategory,
         check_uc: CheckCategoryUsed,
         set_categories: Callable[[list[Category]], None],
         show_error: Callable[[str], None],
     ) -> None:
+        self._panel = panel
         self._list_uc = list_uc
         self._create_uc = create_uc
         self._edit_uc = edit_uc
         self._delete_uc = delete_uc
+        self._hard_delete_uc = hard_delete_uc
+        self._activate_uc = activate_uc
         self._check_uc = check_uc
         self._set_categories = set_categories
         self._show_error = show_error
@@ -54,6 +58,7 @@ class _CategoryHandler:
         panel.create_requested.connect(self._on_create)
         panel.edit_requested.connect(self._on_edit)
         panel.delete_requested.connect(self._on_delete)
+        panel.activate_requested.connect(self._on_activate)
 
     def refresh(self) -> None:
         try:
@@ -81,15 +86,48 @@ class _CategoryHandler:
 
     def _on_delete(self, category_id: int) -> None:
         try:
-            self._delete_uc.execute(category_id)
-            self.refresh()
+            if not self._check_uc.execute(category_id):
+                self._hard_delete_uc.execute(category_id)
+                self.refresh()
+                return
+
+            msg = QMessageBox(self._panel)
+            msg.setWindowTitle("Удаление категории")
+            msg.setText(
+                "К этой категории привязаны элементы.\n"
+                "Что вы хотите сделать?"
+            )
+            delete_btn = msg.addButton(
+                "Удалить с элементами", QMessageBox.ButtonRole.DestructiveRole
+            )
+            hide_btn = msg.addButton(
+                "Скрыть категорию", QMessageBox.ButtonRole.AcceptRole
+            )
+            msg.addButton("Отмена", QMessageBox.ButtonRole.RejectRole)
+            msg.exec()
+
+            clicked = msg.clickedButton()
+            if clicked is delete_btn:
+                self._hard_delete_uc.execute(category_id)
+                self.refresh()
+            elif clicked is hide_btn:
+                self._delete_uc.execute(category_id)
+                self.refresh()
         except AppError as exc:
             logger.warning("Ошибка при удалении категории %s: %s", category_id, exc)
             self._show_error(str(exc))
 
+    def _on_activate(self, category_id: int) -> None:
+        try:
+            self._activate_uc.execute(category_id)
+            self.refresh()
+        except AppError as exc:
+            logger.warning("Ошибка при активации категории %s: %s", category_id, exc)
+            self._show_error(str(exc))
+
 
 class SettingsController:
-    """Соединяет SettingsView с use cases семьи, категорий и экспорта."""
+    """Соединяет SettingsView с use cases семьи и категорий."""
 
     def __init__(
         self,
@@ -98,19 +136,21 @@ class SettingsController:
         edit_member_uc: EditFamilyMember,
         delete_member_uc: DeleteFamilyMember,
         list_members_uc: ListFamilyMembers,
-        export_text_uc: ExportShoppingListAsText,
-        export_csv_uc: ExportShoppingListAsCsv,
         # Product categories
         list_product_categories_uc: ListAllCategories,
         create_product_category_uc: CreateCategory,
         edit_product_category_uc: EditCategory,
         delete_product_category_uc: DeleteCategory,
+        hard_delete_product_category_uc: HardDeleteCategory,
+        activate_product_category_uc: ActivateCategory,
         check_product_category_used_uc: CheckCategoryUsed,
         # Recipe categories
         list_recipe_categories_uc: ListAllCategories,
         create_recipe_category_uc: CreateCategory,
         edit_recipe_category_uc: EditCategory,
         delete_recipe_category_uc: DeleteCategory,
+        hard_delete_recipe_category_uc: HardDeleteCategory,
+        activate_recipe_category_uc: ActivateCategory,
         check_recipe_category_used_uc: CheckCategoryUsed,
     ) -> None:
         self._view = view
@@ -118,9 +158,6 @@ class SettingsController:
         self._edit_uc = edit_member_uc
         self._delete_uc = delete_member_uc
         self._list_uc = list_members_uc
-        self._export_text_uc = export_text_uc
-        self._export_csv_uc = export_csv_uc
-        self._last_shopping_list: ShoppingList | None = None
 
         # Category handlers (replaces duplicate product/recipe category methods)
         self._product_cat_handler = _CategoryHandler(
@@ -129,6 +166,8 @@ class SettingsController:
             create_uc=create_product_category_uc,
             edit_uc=edit_product_category_uc,
             delete_uc=delete_product_category_uc,
+            hard_delete_uc=hard_delete_product_category_uc,
+            activate_uc=activate_product_category_uc,
             check_uc=check_product_category_used_uc,
             set_categories=view.set_product_categories,
             show_error=view.show_error,
@@ -139,6 +178,8 @@ class SettingsController:
             create_uc=create_recipe_category_uc,
             edit_uc=edit_recipe_category_uc,
             delete_uc=delete_recipe_category_uc,
+            hard_delete_uc=hard_delete_recipe_category_uc,
+            activate_uc=activate_recipe_category_uc,
             check_uc=check_recipe_category_used_uc,
             set_categories=view.set_recipe_categories,
             show_error=view.show_error,
@@ -149,15 +190,7 @@ class SettingsController:
         view.edit_member_requested.connect(self._on_edit)
         view.delete_member_requested.connect(self._on_delete)
 
-        # Export signals
-        view.export_text_requested.connect(self._on_export_text)
-        view.export_csv_requested.connect(self._on_export_csv)
-
         self._refresh()
-
-    def set_shopping_list(self, shopping_list: ShoppingList) -> None:
-        """Обновляет последний список покупок для экспорта из настроек."""
-        self._last_shopping_list = shopping_list
 
     def refresh(self) -> None:
         self._refresh()
@@ -200,44 +233,3 @@ class SettingsController:
             logger.warning("Ошибка при удалении члена семьи %s: %s", member_id, exc)
             self._view.show_error(str(exc))
 
-    # ------------------------------------------------------------------
-    # Export
-    # ------------------------------------------------------------------
-
-    def _on_export_text(self) -> None:
-        if self._last_shopping_list is None:
-            self._view.show_error("Сначала сформируйте список покупок.")
-            return
-        try:
-            text = self._export_text_uc.execute(self._last_shopping_list)
-            from PySide6.QtWidgets import (
-                QDialog,
-                QDialogButtonBox,
-                QPlainTextEdit,
-                QVBoxLayout,
-            )
-
-            dialog = QDialog(self._view)
-            dialog.setWindowTitle("Список покупок (текст)")
-            dialog.resize(500, 400)
-            te = QPlainTextEdit(text)
-            te.setReadOnly(True)
-            buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
-            buttons.rejected.connect(dialog.reject)
-            layout = QVBoxLayout(dialog)
-            layout.addWidget(te)
-            layout.addWidget(buttons)
-            dialog.exec()
-        except AppError as exc:
-            logger.warning("Ошибка при экспорте текста: %s", exc)
-            self._view.show_error(str(exc))
-
-    def _on_export_csv(self, filepath: str) -> None:
-        if self._last_shopping_list is None:
-            self._view.show_error("Сначала сформируйте список покупок.")
-            return
-        try:
-            self._export_csv_uc.execute(self._last_shopping_list, filepath)
-        except AppError as exc:
-            logger.warning("Ошибка при экспорте CSV в %s: %s", filepath, exc)
-            self._view.show_error(str(exc))

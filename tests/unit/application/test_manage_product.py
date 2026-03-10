@@ -27,7 +27,7 @@ def _data(**kwargs) -> ProductData:
         price=Money(Decimal("80")),
         brand="",
         weight_per_piece_g=None,
-        conversion_factor=0.001,
+        conversion_factor=1000,
     )
     defaults.update(kwargs)
     return ProductData(**defaults)
@@ -40,7 +40,7 @@ def _saved_product(id: int = 1) -> Product:
         recipe_unit="g",
         purchase_unit="kg",
         price_per_purchase_unit=Money(Decimal("80")),
-        conversion_factor=0.001,
+        conversion_factor=1000,
         category_id=ProductCategoryId(1),
     )
 
@@ -61,10 +61,10 @@ def test_create_product_builds_entity_correctly() -> None:
     repo = MagicMock()
     repo.save.side_effect = lambda p: p
 
-    result = CreateProduct(repo).execute(_data(name="Сахар", conversion_factor=0.001))
+    result = CreateProduct(repo).execute(_data(name="Сахар", conversion_factor=1000))
 
     assert result.name == "Сахар"
-    assert result.conversion_factor == 0.001
+    assert result.conversion_factor == 1000
 
 
 # ---- EditProduct ----

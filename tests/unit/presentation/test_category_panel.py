@@ -110,6 +110,41 @@ class TestCategoryPanelSave:
         mock_warning.assert_called_once()
 
 
+class TestCategoryPanelActivateButton:
+    def test_activate_hidden_for_active_category(self, qapp: QApplication) -> None:
+        panel = CategoryPanel("Тест")
+        panel.set_categories(_categories())
+        panel._table.setCurrentCell(0, 0)  # "Бакалея", active
+        assert panel._activate_btn.isHidden()
+
+    def test_activate_shown_for_hidden_category(self, qapp: QApplication) -> None:
+        panel = CategoryPanel("Тест")
+        panel.set_categories(_categories())
+        panel._table.setCurrentCell(2, 0)  # "Архив", inactive
+        assert not panel._activate_btn.isHidden()
+
+    def test_activate_emits_signal(self, qapp: QApplication) -> None:
+        panel = CategoryPanel("Тест")
+        panel.set_categories(_categories())
+        panel._table.setCurrentCell(2, 0)
+        spy = MagicMock()
+        panel.activate_requested.connect(spy)
+
+        panel._on_activate()
+
+        spy.assert_called_once_with(3)
+
+    def test_activate_clears_form(self, qapp: QApplication) -> None:
+        panel = CategoryPanel("Тест")
+        panel.set_categories(_categories())
+        panel._table.setCurrentCell(2, 0)
+
+        panel._on_activate()
+
+        assert panel._selected_id is None
+        assert panel._activate_btn.isHidden()
+
+
 class TestCategoryPanelClear:
     def test_clear_resets_form(self, qapp: QApplication) -> None:
         panel = CategoryPanel("Тест")
@@ -120,3 +155,4 @@ class TestCategoryPanelClear:
 
         assert panel._name_edit.text() == ""
         assert panel._selected_id is None
+        assert panel._activate_btn.isHidden()

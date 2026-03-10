@@ -41,11 +41,6 @@ class TestSettingsViewNavigation:
         view._nav.setCurrentRow(2)
         assert view._stack.currentWidget() is view.recipe_cat_panel
 
-    def test_nav_to_import_export(self, qapp: QApplication) -> None:
-        view = SettingsView()
-        view._nav.setCurrentRow(3)
-        assert view._stack.currentWidget() is view.ie_panel
-
     def test_nav_has_four_items(self, qapp: QApplication) -> None:
         view = SettingsView()
         assert view._nav.count() == 4
@@ -79,11 +74,3 @@ class TestSettingsViewSignalWiring:
 
         spy.assert_called_once_with(data)
 
-    def test_export_text_signal_propagates(self, qapp: QApplication) -> None:
-        view = SettingsView()
-        spy = MagicMock()
-        view.export_text_requested.connect(spy)
-
-        view.ie_panel.export_text_requested.emit()
-
-        spy.assert_called_once()

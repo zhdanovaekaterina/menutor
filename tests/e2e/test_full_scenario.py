@@ -130,7 +130,7 @@ class TestFullUserScenario:
             name="Мука", category_id=bakery_cat_id,
             recipe_unit="g", purchase_unit="kg",
             price=Money(Decimal("80")),
-            conversion_factor=0.001,
+            conversion_factor=1000,
         ))
         assert flour.id != 0
 
@@ -138,7 +138,7 @@ class TestFullUserScenario:
             name="Молоко", category_id=bakery_cat_id,
             recipe_unit="ml", purchase_unit="l",
             price=Money(Decimal("90")),
-            conversion_factor=0.001,
+            conversion_factor=1000,
         ))
         assert milk.id != 0
 
@@ -333,7 +333,7 @@ class TestFullUserScenario:
             name="Рис", category_id=cat_id,
             recipe_unit="g", purchase_unit="kg",
             price=Money(Decimal("100")),
-            conversion_factor=0.001,
+            conversion_factor=1000,
         ))
         recipe = CreateRecipe(repos["recipe"]).execute(RecipeData(
             name="Плов", category_id=rcat_id, servings=4,

@@ -1,6 +1,8 @@
 import logging
 from typing import cast
 
+from PySide6.QtCore import QObject, Signal
+
 from src.application.use_cases.manage_product import ListProducts
 from src.application.use_cases.manage_recipe import (
     CreateRecipe,
@@ -17,8 +19,10 @@ from src.presentation.views.recipe_list_view import RecipeListView
 logger = logging.getLogger(__name__)
 
 
-class RecipeController:
+class RecipeController(QObject):
     """Соединяет RecipeListView с use cases слоя Application."""
+
+    data_changed = Signal()
 
     def __init__(
         self,
@@ -30,6 +34,7 @@ class RecipeController:
         list_products_uc: ListProducts,
         list_categories_uc: ListRecipeCategories,
     ) -> None:
+        super().__init__()
         self._view = view
         self._create_uc = create_uc
         self._edit_uc = edit_uc
@@ -64,6 +69,7 @@ class RecipeController:
         try:
             self._create_uc.execute(data)
             self._refresh()
+            self.data_changed.emit()
         except AppError as exc:
             logger.warning("Ошибка при создании рецепта: %s", exc)
             self._view.show_error(str(exc))
@@ -72,6 +78,7 @@ class RecipeController:
         try:
             self._edit_uc.execute(RecipeId(cast(int, recipe_id)), data)
             self._refresh()
+            self.data_changed.emit()
         except AppError as exc:
             logger.warning("Ошибка при редактировании рецепта %s: %s", recipe_id, exc)
             self._view.show_error(str(exc))
@@ -80,6 +87,7 @@ class RecipeController:
         try:
             self._delete_uc.execute(RecipeId(cast(int, recipe_id)))
             self._refresh()
+            self.data_changed.emit()
         except AppError as exc:
             logger.warning("Ошибка при удалении рецепта %s: %s", recipe_id, exc)
             self._view.show_error(str(exc))

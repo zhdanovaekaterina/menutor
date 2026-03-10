@@ -37,7 +37,7 @@ def seeded_recipe(conn: object) -> Recipe:
     p = product_repo.save(Product(
         id=ProductId(0), name="Мука",
         recipe_unit="g", purchase_unit="kg",
-        price_per_purchase_unit=Money(Decimal("80")), conversion_factor=0.001,
+        price_per_purchase_unit=Money(Decimal("80")), conversion_factor=1000,
         category_id=ProductCategoryId(1),
     ))
     return recipe_repo.save(Recipe(id=RecipeId(0), name="Блины", servings=4,
@@ -52,7 +52,7 @@ def seeded_product(conn: object) -> Product:
     return product_repo.save(Product(
         id=ProductId(0), name="Молоко",
         recipe_unit="ml", purchase_unit="l",
-        price_per_purchase_unit=Money(Decimal("90")), conversion_factor=0.001,
+        price_per_purchase_unit=Money(Decimal("90")), conversion_factor=1000,
         category_id=ProductCategoryId(1),
     ))
 

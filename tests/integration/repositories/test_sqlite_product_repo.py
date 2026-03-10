@@ -20,7 +20,7 @@ def _flour(**kw: object) -> Product:
         id=ProductId(0), name="Мука",
         recipe_unit="g", purchase_unit="kg",
         price_per_purchase_unit=Money(Decimal("80")),
-        conversion_factor=0.001,
+        conversion_factor=1000,
         category_id=ProductCategoryId(1),  # Сыпучие
     )
     defaults.update(kw)
@@ -41,7 +41,7 @@ def test_save_and_get_by_id_roundtrip(repo: SqliteProductRepository) -> None:
     assert retrieved.category_id == ProductCategoryId(1)
     assert retrieved.recipe_unit == "g"
     assert retrieved.purchase_unit == "kg"
-    assert retrieved.conversion_factor == pytest.approx(0.001)
+    assert retrieved.conversion_factor == pytest.approx(1000)
     assert retrieved.price_per_purchase_unit == Money(Decimal("80"))
 
 
@@ -78,7 +78,7 @@ def test_update_existing_product(repo: SqliteProductRepository) -> None:
         id=saved.id, name="Мука высш. сорт",
         recipe_unit="g", purchase_unit="kg",
         price_per_purchase_unit=Money(Decimal("120")),
-        conversion_factor=0.001,
+        conversion_factor=1000,
         category_id=ProductCategoryId(1),
     )
     result = repo.save(updated)

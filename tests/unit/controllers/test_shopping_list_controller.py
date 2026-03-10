@@ -46,14 +46,14 @@ def sample_products() -> list[Product]:
             id=ProductId(1), name="Мука",
             recipe_unit="g", purchase_unit="kg",
             price_per_purchase_unit=Money(Decimal("80")),
-            conversion_factor=0.001,
+            conversion_factor=1000,
             category_id=ProductCategoryId(1),
         ),
         Product(
             id=ProductId(2), name="Молоко",
             recipe_unit="ml", purchase_unit="l",
             price_per_purchase_unit=Money(Decimal("90")),
-            conversion_factor=0.001,
+            conversion_factor=1000,
             category_id=ProductCategoryId(2),
         ),
     ]
@@ -158,7 +158,7 @@ class TestShoppingListControllerAddProduct:
         controller.set_shopping_list(sample_shopping_list)
         view.set_shopping_list.reset_mock()
 
-        # Add 500ml of milk (product_id=2, conversion_factor=0.001)
+        # Add 500ml of milk (product_id=2, conversion_factor=1000)
         controller._on_add_product(2, 500.0)
 
         assert len(sample_shopping_list.items) == 2

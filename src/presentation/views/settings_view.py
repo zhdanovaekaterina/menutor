@@ -10,9 +10,9 @@ from PySide6.QtWidgets import (
 from src.application.use_cases.manage_family import FamilyMemberData
 from src.domain.entities.family_member import FamilyMember
 from src.domain.value_objects.category import Category
+from src.presentation.widgets.about_panel import AboutPanel
 from src.presentation.widgets.category_panel import CategoryPanel
 from src.presentation.widgets.family_panel import FamilyPanel
-from src.presentation.widgets.import_export_panel import ImportExportPanel
 
 
 class SettingsView(QWidget):
@@ -22,10 +22,6 @@ class SettingsView(QWidget):
     create_member_requested = Signal(FamilyMemberData)
     edit_member_requested = Signal(object, FamilyMemberData)
     delete_member_requested = Signal(object)
-
-    # Export signals
-    export_text_requested = Signal()
-    export_csv_requested = Signal(str)
 
     # Product category signals
     create_product_category_requested = Signal(str)
@@ -45,7 +41,7 @@ class SettingsView(QWidget):
         self._nav.addItem("Члены семьи")
         self._nav.addItem("Категории продуктов")
         self._nav.addItem("Категории рецептов")
-        self._nav.addItem("Импорт / Экспорт")
+        self._nav.addItem("О программе")
         self._nav.currentRowChanged.connect(self._on_nav_changed)
         self._nav.setMaximumWidth(200)
 
@@ -77,15 +73,13 @@ class SettingsView(QWidget):
             self.delete_recipe_category_requested
         )
 
-        self.ie_panel = ImportExportPanel()
-        self.ie_panel.export_text_requested.connect(self.export_text_requested)
-        self.ie_panel.export_csv_requested.connect(self.export_csv_requested)
+        self.about_panel = AboutPanel()
 
         self._stack = QStackedWidget()
         self._stack.addWidget(self.family_panel)
         self._stack.addWidget(self.product_cat_panel)
         self._stack.addWidget(self.recipe_cat_panel)
-        self._stack.addWidget(self.ie_panel)
+        self._stack.addWidget(self.about_panel)
 
         layout = QHBoxLayout(self)
         layout.addWidget(self._nav)

@@ -34,6 +34,22 @@ class DeleteCategory:
         self._repo.delete(category_id)
 
 
+class HardDeleteCategory:
+    def __init__(self, repo: CategoryRepository) -> None:
+        self._repo = repo
+
+    def execute(self, category_id: int) -> None:
+        self._repo.hard_delete(category_id)
+
+
+class ActivateCategory:
+    def __init__(self, repo: CategoryRepository) -> None:
+        self._repo = repo
+
+    def execute(self, category_id: int) -> None:
+        self._repo.activate(category_id)
+
+
 class CheckCategoryUsed:
     def __init__(self, repo: CategoryRepository) -> None:
         self._repo = repo

@@ -126,6 +126,32 @@ def test_product_category_delete_makes_inactive(conn) -> None:
     assert "Удаляемая" in all_names
 
 
+def test_product_category_hard_delete_removes_row(conn) -> None:
+    repo = SqliteProductCategoryRepository(conn)
+    new_id = repo.save("Удаляемая навсегда")
+    repo.hard_delete(new_id)
+    all_names = [name for _, name, _ in repo.find_all()]
+    assert "Удаляемая навсегда" not in all_names
+
+
+def test_product_category_hard_delete_removes_linked_products(conn) -> None:
+    repo = SqliteProductCategoryRepository(conn)
+    new_id = repo.save("С продуктами")
+    conn.execute(
+        "INSERT INTO products (name, category_id, recipe_unit, purchase_unit) "
+        "VALUES ('Тест-продукт', ?, 'g', 'kg')",
+        (new_id,),
+    )
+    conn.commit()
+    repo.hard_delete(new_id)
+    all_names = [name for _, name, _ in repo.find_all()]
+    assert "С продуктами" not in all_names
+    count = conn.execute(
+        "SELECT COUNT(*) FROM products WHERE category_id = ?", (new_id,)
+    ).fetchone()[0]
+    assert count == 0
+
+
 def test_product_category_is_used_false(conn) -> None:
     repo = SqliteProductCategoryRepository(conn)
     new_id = repo.save("Пустая")
@@ -187,6 +213,31 @@ def test_recipe_category_delete_makes_inactive(conn) -> None:
     assert "Удаляемая" in all_names
 
 
+def test_recipe_category_hard_delete_removes_row(conn) -> None:
+    repo = SqliteRecipeCategoryRepository(conn)
+    new_id = repo.save("Удаляемая навсегда")
+    repo.hard_delete(new_id)
+    all_names = [name for _, name, _ in repo.find_all()]
+    assert "Удаляемая навсегда" not in all_names
+
+
+def test_recipe_category_hard_delete_removes_linked_recipes(conn) -> None:
+    repo = SqliteRecipeCategoryRepository(conn)
+    new_id = repo.save("С рецептами")
+    conn.execute(
+        "INSERT INTO recipes (name, category_id, servings) VALUES ('Тест-рецепт', ?, 1)",
+        (new_id,),
+    )
+    conn.commit()
+    repo.hard_delete(new_id)
+    all_names = [name for _, name, _ in repo.find_all()]
+    assert "С рецептами" not in all_names
+    count = conn.execute(
+        "SELECT COUNT(*) FROM recipes WHERE category_id = ?", (new_id,)
+    ).fetchone()[0]
+    assert count == 0
+
+
 def test_recipe_category_is_used_false(conn) -> None:
     repo = SqliteRecipeCategoryRepository(conn)
     new_id = repo.save("Пустая")
@@ -202,6 +253,28 @@ def test_recipe_category_is_used_true(conn) -> None:
     )
     conn.commit()
     assert repo.is_used(new_id) is True
+
+
+def test_product_category_activate_restores_hidden(conn) -> None:
+    repo = SqliteProductCategoryRepository(conn)
+    new_id = repo.save("Скрытая")
+    repo.delete(new_id)
+    assert "Скрытая" not in [name for _, name in repo.find_active()]
+
+    repo.activate(new_id)
+    active_names = [name for _, name in repo.find_active()]
+    assert "Скрытая" in active_names
+
+
+def test_recipe_category_activate_restores_hidden(conn) -> None:
+    repo = SqliteRecipeCategoryRepository(conn)
+    new_id = repo.save("Скрытая")
+    repo.delete(new_id)
+    assert "Скрытая" not in [name for _, name in repo.find_active()]
+
+    repo.activate(new_id)
+    active_names = [name for _, name in repo.find_active()]
+    assert "Скрытая" in active_names
 
 
 def test_product_category_save_reactivates_on_edit(conn) -> None:
