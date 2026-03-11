@@ -4,6 +4,7 @@ import type { RecipeCreate } from '@/api/types'
 import RecipeForm from '@/components/recipes/RecipeForm.vue'
 import RecipeTable from '@/components/recipes/RecipeTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import SlidePanel from '@/components/ui/SlidePanel.vue'
 import { useProductStore } from '@/stores/products'
 import { useRecipeStore } from '@/stores/recipes'
 import { useToastStore } from '@/stores/toast'
@@ -14,6 +15,7 @@ const toast = useToastStore()
 
 const selectedId = ref<number | null>(null)
 const confirmDeleteOpen = ref(false)
+const formOpen = ref(false)
 
 onMounted(async () => {
   await Promise.all([store.load(), productStore.load()])
@@ -25,6 +27,12 @@ const selectedRecipe = computed(() =>
 
 function onSelect(id: number) {
   selectedId.value = id
+  formOpen.value = true
+}
+
+function openNew() {
+  selectedId.value = null
+  formOpen.value = true
 }
 
 async function onSave(data: RecipeCreate, id: number | null) {
@@ -51,6 +59,7 @@ async function onConfirmDelete() {
   try {
     await store.remove(selectedId.value)
     selectedId.value = null
+    formOpen.value = false
   } catch (e: any) {
     toast.show(e?.response?.data?.detail ?? 'Ошибка удаления', 'error')
   }
@@ -58,6 +67,7 @@ async function onConfirmDelete() {
 
 function onClear() {
   selectedId.value = null
+  formOpen.value = false
 }
 </script>
 
@@ -67,32 +77,35 @@ function onClear() {
       <h1 class="text-xl font-bold">Рецепты</h1>
       <button
         class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
-        @click="selectedId = null"
+        @click="openNew"
       >
         + Новый рецепт
       </button>
     </div>
 
-    <div class="flex-1 flex gap-4 min-h-0">
-      <div class="flex-1 min-w-0">
-        <RecipeTable
-          :recipes="store.recipes"
-          :categories="store.categories"
-          :selected-id="selectedId"
-          @select="onSelect"
-        />
-      </div>
-      <div class="w-96 shrink-0 overflow-y-auto border-l pl-4">
-        <RecipeForm
-          :recipe="selectedRecipe"
-          :categories="store.categories"
-          :products="productStore.products"
-          @save="onSave"
-          @remove="onRemove"
-          @clear="onClear"
-        />
-      </div>
+    <div class="flex-1 min-h-0">
+      <RecipeTable
+        :recipes="store.recipes"
+        :categories="store.categories"
+        :selected-id="selectedId"
+        @select="onSelect"
+      />
     </div>
+
+    <SlidePanel
+      :open="formOpen"
+      :title="selectedRecipe ? 'Редактировать рецепт' : 'Новый рецепт'"
+      @close="onClear"
+    >
+      <RecipeForm
+        :recipe="selectedRecipe"
+        :categories="store.categories"
+        :products="productStore.products"
+        @save="onSave"
+        @remove="onRemove"
+        @clear="onClear"
+      />
+    </SlidePanel>
 
     <ConfirmDialog
       :open="confirmDeleteOpen"

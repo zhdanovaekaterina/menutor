@@ -161,8 +161,5 @@ function onSave() {
         Удалить
       </button>
     </div>
-    <button class="w-full px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50" @click="clearForm">
-      Очистить
-    </button>
   </div>
 </template>

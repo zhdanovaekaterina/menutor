@@ -2,6 +2,7 @@
 import { onMounted, ref, computed } from 'vue'
 import type { Category } from '@/api/types'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import SlidePanel from '@/components/ui/SlidePanel.vue'
 import { useCategoryStore } from '@/stores/categories'
 import { useToastStore } from '@/stores/toast'
 
@@ -16,6 +17,7 @@ const selectedId = ref<number | null>(null)
 const name = ref('')
 const confirmOpen = ref(false)
 const confirmHardOpen = ref(false)
+const formOpen = ref(false)
 
 onMounted(() => store.load(props.type))
 
@@ -25,11 +27,18 @@ const isInactive = computed(() => selected.value?.active === false)
 function selectCategory(c: Category) {
   selectedId.value = c.id
   name.value = c.name
+  formOpen.value = true
+}
+
+function openNew() {
+  clearForm()
+  formOpen.value = true
 }
 
 function clearForm() {
   selectedId.value = null
   name.value = ''
+  formOpen.value = false
 }
 
 async function onSave() {
@@ -84,71 +93,81 @@ const title = computed(() =>
 </script>
 
 <template>
-  <div class="flex gap-6 h-full">
+  <div class="h-full flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <h3 class="font-semibold text-sm">{{ title }}</h3>
+      <button
+        class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
+        @click="openNew"
+      >
+        + Добавить
+      </button>
+    </div>
+
     <!-- Table -->
-    <div class="flex-1">
-      <h3 class="font-semibold text-sm mb-3">{{ title }}</h3>
-      <div class="overflow-y-auto border rounded-lg">
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50 sticky top-0">
-            <tr>
-              <th class="text-left px-4 py-2">Название</th>
-              <th class="text-left px-4 py-2 w-32">Статус</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr
-              v-for="c in categories"
-              :key="c.id"
-              :class="c.id === selectedId ? 'bg-blue-50' : 'hover:bg-gray-50'"
-              class="cursor-pointer"
-              @click="selectCategory(c)"
-            >
-              <td class="px-4 py-2">{{ c.name }}</td>
-              <td class="px-4 py-2">
-                <span v-if="c.active"
-                  class="inline-flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-                  Активна
-                </span>
-                <span v-else
-                  class="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                  Скрыта
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <div class="flex-1 overflow-y-auto border rounded-lg">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 sticky top-0">
+          <tr>
+            <th class="text-left px-4 py-2">Название</th>
+            <th class="text-left px-4 py-2 w-32">Статус</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          <tr
+            v-for="c in categories"
+            :key="c.id"
+            :class="c.id === selectedId ? 'bg-blue-50' : 'hover:bg-gray-50'"
+            class="cursor-pointer"
+            @click="selectCategory(c)"
+          >
+            <td class="px-4 py-2">{{ c.name }}</td>
+            <td class="px-4 py-2">
+              <span v-if="c.active"
+                class="inline-flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                Активна
+              </span>
+              <span v-else
+                class="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                Скрыта
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <!-- Form -->
-    <div class="w-72 shrink-0 space-y-4">
-      <h3 class="font-semibold text-sm">{{ selectedId ? 'Редактировать' : 'Добавить' }}</h3>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Название *</label>
-        <input v-model="name"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-      </div>
+    <!-- Slide Panel Form -->
+    <SlidePanel
+      :open="formOpen"
+      :title="selectedId ? 'Редактировать' : 'Добавить'"
+      width="w-72"
+      @close="clearForm"
+    >
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Название *</label>
+          <input v-model="name"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        </div>
 
-      <div class="flex flex-col gap-2 pt-4 border-t">
-        <button class="w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" @click="onSave">
-          Сохранить
-        </button>
-        <button v-if="selectedId"
-          class="w-full px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
-          @click="onDelete">
-          Удалить
-        </button>
-        <button v-if="isInactive"
-          class="w-full px-4 py-2 rounded-lg border border-green-300 text-green-600 text-sm hover:bg-green-50"
-          @click="onActivate">
-          Активировать
-        </button>
-        <button class="w-full px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50" @click="clearForm">
-          Очистить
-        </button>
+        <div class="flex flex-col gap-2 pt-4 border-t">
+          <button class="w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" @click="onSave">
+            Сохранить
+          </button>
+          <button v-if="selectedId"
+            class="w-full px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
+            @click="onDelete">
+            Удалить
+          </button>
+          <button v-if="isInactive"
+            class="w-full px-4 py-2 rounded-lg border border-green-300 text-green-600 text-sm hover:bg-green-50"
+            @click="onActivate">
+            Активировать
+          </button>
+        </div>
       </div>
-    </div>
+    </SlidePanel>
 
     <ConfirmDialog
       :open="confirmOpen"

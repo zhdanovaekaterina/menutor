@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import type { FamilyMember, FamilyMemberCreate } from '@/api/types'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import SlidePanel from '@/components/ui/SlidePanel.vue'
 import { useFamilyStore } from '@/stores/family'
 import { useToastStore } from '@/stores/toast'
 
@@ -14,6 +15,7 @@ const portionMultiplier = ref(1.0)
 const dietaryRestrictions = ref('')
 const comment = ref('')
 const confirmOpen = ref(false)
+const formOpen = ref(false)
 
 onMounted(() => store.load())
 
@@ -23,6 +25,12 @@ function selectMember(m: FamilyMember) {
   portionMultiplier.value = m.portion_multiplier
   dietaryRestrictions.value = m.dietary_restrictions
   comment.value = m.comment
+  formOpen.value = true
+}
+
+function openNew() {
+  clearForm()
+  formOpen.value = true
 }
 
 function clearForm() {
@@ -31,6 +39,7 @@ function clearForm() {
   portionMultiplier.value = 1.0
   dietaryRestrictions.value = ''
   comment.value = ''
+  formOpen.value = false
 }
 
 async function onSave() {
@@ -59,7 +68,17 @@ async function onConfirmDelete() {
 </script>
 
 <template>
-  <div class="flex gap-6 h-full">
+  <div class="h-full flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <h3 class="font-semibold text-sm">Члены семьи</h3>
+      <button
+        class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
+        @click="openNew"
+      >
+        + Добавить
+      </button>
+    </div>
+
     <!-- Table -->
     <div class="flex-1 overflow-y-auto border rounded-lg">
       <table class="w-full text-sm">
@@ -88,45 +107,47 @@ async function onConfirmDelete() {
       </table>
     </div>
 
-    <!-- Form -->
-    <div class="w-80 shrink-0 space-y-4">
-      <h3 class="font-semibold text-sm">{{ selectedId ? 'Редактировать' : 'Добавить' }}</h3>
+    <!-- Slide Panel Form -->
+    <SlidePanel
+      :open="formOpen"
+      :title="selectedId ? 'Редактировать' : 'Добавить'"
+      width="w-80"
+      @close="clearForm"
+    >
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Имя *</label>
+          <input v-model="name"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Коэф. порции</label>
+          <input v-model.number="portionMultiplier" type="number" min="0.1" max="5" step="0.1"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Ограничения</label>
+          <input v-model="dietaryRestrictions"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Комментарий</label>
+          <input v-model="comment"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Имя *</label>
-        <input v-model="name"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        <div class="flex gap-2 pt-4 border-t">
+          <button class="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" @click="onSave">
+            Сохранить
+          </button>
+          <button v-if="selectedId"
+            class="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
+            @click="confirmOpen = true">
+            Удалить
+          </button>
+        </div>
       </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Коэф. порции</label>
-        <input v-model.number="portionMultiplier" type="number" min="0.1" max="5" step="0.1"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Ограничения</label>
-        <input v-model="dietaryRestrictions"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Комментарий</label>
-        <input v-model="comment"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-      </div>
-
-      <div class="flex gap-2 pt-4 border-t">
-        <button class="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" @click="onSave">
-          Сохранить
-        </button>
-        <button v-if="selectedId"
-          class="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
-          @click="confirmOpen = true">
-          Удалить
-        </button>
-      </div>
-      <button class="w-full px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50" @click="clearForm">
-        Очистить
-      </button>
-    </div>
+    </SlidePanel>
 
     <ConfirmDialog
       :open="confirmOpen"
