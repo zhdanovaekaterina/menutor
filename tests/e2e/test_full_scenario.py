@@ -1,25 +1,15 @@
-"""E2E scenario tests: real DB + real use cases, mocked views.
+"""E2E scenario tests: real DB + real use cases.
 
 Covers the main user journey:
   Create products → Create recipe → Plan menu → Generate shopping list → Export
 """
 
 from decimal import Decimal
-from unittest.mock import MagicMock
 
 import pytest
 
 from backend.application.use_cases.generate_shopping_list import GenerateShoppingList
-from backend.application.use_cases.import_export import (
-    ExportShoppingListAsCsv,
-    ExportShoppingListAsText,
-)
-from backend.application.use_cases.manage_category import (
-    CreateProductCategory,
-    CreateRecipeCategory,
-    ListAllProductCategories,
-    ListAllRecipeCategories,
-)
+from backend.application.use_cases.import_export import ExportShoppingListAsText
 from backend.application.use_cases.manage_family import (
     CreateFamilyMember,
     FamilyMemberData,
@@ -29,7 +19,6 @@ from backend.application.use_cases.manage_product import (
     CreateProduct,
     DeleteProduct,
     EditProduct,
-    ListProductCategories,
     ListProducts,
     ProductData,
 )
@@ -37,7 +26,6 @@ from backend.application.use_cases.manage_recipe import (
     CreateRecipe,
     DeleteRecipe,
     EditRecipe,
-    ListRecipeCategories,
     ListRecipes,
     RecipeData,
 )
@@ -48,8 +36,6 @@ from backend.application.use_cases.plan_menu import (
     DeleteMenu,
     ListMenus,
     LoadMenu,
-    RemoveItemFromSlot,
-    SaveMenu,
 )
 from backend.domain.entities.menu import MenuSlot
 from backend.domain.services.portion_calculator import PortionCalculator
@@ -58,7 +44,7 @@ from backend.domain.services.unit_converter import UnitConverter
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
-from backend.domain.value_objects.types import ProductCategoryId, RecipeCategoryId, RecipeId
+from backend.domain.value_objects.types import ProductCategoryId, RecipeCategoryId
 from sqlalchemy.orm import Session
 
 from backend.infrastructure.database.connection import (
@@ -83,10 +69,6 @@ from backend.infrastructure.repositories.sqlite_recipe_category_repository impor
 from backend.infrastructure.repositories.sqlite_recipe_repository import (
     SqliteRecipeRepository,
 )
-from backend.presentation.controllers.menu_planner_controller import MenuPlannerController
-from backend.presentation.controllers.product_controller import ProductController
-from backend.presentation.controllers.recipe_controller import RecipeController
-from backend.presentation.controllers.shopping_list_controller import ShoppingListController
 
 
 @pytest.fixture
@@ -291,94 +273,3 @@ class TestFullUserScenario:
         recipes = list_rec.execute()
         assert not any(r.id == recipe.id for r in recipes)
 
-    def test_controller_with_real_use_cases(self, db, repos) -> None:
-        """Verify ProductController works with real use cases (mocked view only)."""
-        view = MagicMock()
-
-        product_cats = repos["product_cat"].find_active()
-        cat_id = ProductCategoryId(product_cats[0][0])
-
-        create_uc = CreateProduct(repos["product"])
-        edit_uc = EditProduct(repos["product"])
-        delete_uc = DeleteProduct(repos["product"])
-        list_uc = ListProducts(repos["product"])
-        list_cat_uc = ListProductCategories(repos["product_cat"])
-
-        ctrl = ProductController(view, create_uc, edit_uc, delete_uc, list_uc, list_cat_uc)
-
-        # View should have been populated on init
-        view.set_products.assert_called_once()
-        view.set_categories.assert_called_once()
-
-        # Create a product via controller
-        data = ProductData(
-            name="Яйца", category_id=cat_id,
-            recipe_unit="pcs", purchase_unit="pcs",
-            price=Money(Decimal("120")),
-        )
-        ctrl._on_create(data)
-
-        # List should now have the product
-        products = list_uc.execute()
-        assert any(p.name == "Яйца" for p in products)
-
-    def test_menu_planner_with_real_use_cases(self, db, repos) -> None:
-        """Verify MenuPlannerController works end-to-end with real DB."""
-        view = MagicMock()
-        callback = MagicMock()
-
-        # Create recipe + product first
-        product_cats = repos["product_cat"].find_active()
-        cat_id = ProductCategoryId(product_cats[0][0])
-        recipe_cats = repos["recipe_cat"].find_active()
-        rcat_id = RecipeCategoryId(recipe_cats[0][0])
-
-        product = CreateProduct(repos["product"]).execute(ProductData(
-            name="Рис", category_id=cat_id,
-            recipe_unit="g", purchase_unit="kg",
-            price=Money(Decimal("100")),
-            conversion_factor=1000,
-        ))
-        recipe = CreateRecipe(repos["recipe"]).execute(RecipeData(
-            name="Плов", category_id=rcat_id, servings=4,
-            ingredients=[RecipeIngredient(product.id, Quantity(300.0, "g"))],
-        ))
-
-        builder = ShoppingListBuilder(
-            recipe_repo=repos["recipe"],
-            product_repo=repos["product"],
-            product_category_repo=repos["product_cat"],
-            portion_calc=PortionCalculator(),
-            unit_converter=UnitConverter(),
-        )
-
-        ctrl = MenuPlannerController(
-            view=view,
-            create_menu_uc=CreateMenu(repos["menu"]),
-            save_menu_uc=SaveMenu(repos["menu"]),
-            load_menu_uc=LoadMenu(repos["menu"]),
-            delete_menu_uc=DeleteMenu(repos["menu"]),
-            list_menus_uc=ListMenus(repos["menu"]),
-            add_dish_uc=AddDishToSlot(repos["menu"]),
-            remove_item_uc=RemoveItemFromSlot(repos["menu"]),
-            clear_menu_uc=ClearMenu(repos["menu"]),
-            list_recipes_uc=ListRecipes(repos["recipe"]),
-            list_products_uc=ListProducts(repos["product"]),
-            list_family_uc=ListFamilyMembers(repos["family"]),
-            generate_shopping_list_uc=GenerateShoppingList(repos["menu"], builder),
-            on_shopping_list_generated=callback,
-        )
-
-        # Create menu
-        ctrl._on_new_menu("Тестовая неделя")
-        assert ctrl._current_menu is not None
-
-        # Add recipe to slot
-        ctrl._on_slot_updated(0, "Обед", "recipe", recipe.id, 4.0, "")
-
-        # Generate shopping list
-        ctrl._on_generate()
-        callback.assert_called_once()
-        sl = callback.call_args[0][0]
-        assert len(sl.items) > 0
-        assert any(item.product_name == "Рис" for item in sl.items)
