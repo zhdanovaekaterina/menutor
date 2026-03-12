@@ -15,7 +15,9 @@ from backend.application.use_cases.manage_product import (
 from backend.domain.entities.product import Product
 from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.value_objects.money import Money
-from backend.domain.value_objects.types import ProductCategoryId, ProductId
+from backend.domain.value_objects.types import ProductCategoryId, ProductId, UserId
+
+UID = UserId(1)
 
 
 def _data(**kwargs) -> ProductData:
@@ -42,6 +44,7 @@ def _saved_product(id: int = 1) -> Product:
         price_per_purchase_unit=Money(Decimal("80")),
         conversion_factor=1000,
         category_id=ProductCategoryId(1),
+        user_id=UID,
     )
 
 
@@ -51,7 +54,7 @@ def test_create_product_calls_save() -> None:
     repo = MagicMock()
     repo.save.return_value = _saved_product()
 
-    result = CreateProduct(repo).execute(_data())
+    result = CreateProduct(repo).execute(_data(), UID)
 
     repo.save.assert_called_once()
     assert result == _saved_product()
@@ -61,7 +64,7 @@ def test_create_product_builds_entity_correctly() -> None:
     repo = MagicMock()
     repo.save.side_effect = lambda p: p
 
-    result = CreateProduct(repo).execute(_data(name="Сахар", conversion_factor=1000))
+    result = CreateProduct(repo).execute(_data(name="Сахар", conversion_factor=1000), UID)
 
     assert result.name == "Сахар"
     assert result.conversion_factor == 1000
@@ -74,7 +77,7 @@ def test_edit_product_updates_fields() -> None:
     repo.get_by_id.return_value = _saved_product()
     repo.save.side_effect = lambda p: p
 
-    result = EditProduct(repo).execute(ProductId(1), _data(name="Сахар"))
+    result = EditProduct(repo).execute(ProductId(1), _data(name="Сахар"), UID)
 
     assert result.name == "Сахар"
     assert result.id == ProductId(1)
@@ -85,15 +88,16 @@ def test_edit_product_raises_when_not_found() -> None:
     repo.get_by_id.return_value = None
 
     with pytest.raises(EntityNotFoundError, match="не найден"):
-        EditProduct(repo).execute(ProductId(999), _data())
+        EditProduct(repo).execute(ProductId(999), _data(), UID)
 
 
 # ---- DeleteProduct ----
 
 def test_delete_product_calls_repo_delete() -> None:
     repo = MagicMock()
+    repo.get_by_id.return_value = _saved_product()
 
-    DeleteProduct(repo).execute(ProductId(1))
+    DeleteProduct(repo).execute(ProductId(1), UID)
 
     repo.delete.assert_called_once_with(ProductId(1))
 
@@ -106,7 +110,7 @@ def test_update_price_changes_price_and_saves() -> None:
     repo.save.side_effect = lambda p: p
     new_price = Money(Decimal("120"))
 
-    result = UpdateProductPrice(repo).execute(ProductId(1), new_price)
+    result = UpdateProductPrice(repo).execute(ProductId(1), new_price, UID)
 
     assert result.price_per_purchase_unit == new_price
     repo.save.assert_called_once()
@@ -117,7 +121,7 @@ def test_update_price_raises_when_not_found() -> None:
     repo.get_by_id.return_value = None
 
     with pytest.raises(EntityNotFoundError, match="не найден"):
-        UpdateProductPrice(repo).execute(ProductId(999), Money(Decimal("100")))
+        UpdateProductPrice(repo).execute(ProductId(999), Money(Decimal("100")), UID)
 
 
 # ---- GetProduct / ListProducts ----
@@ -125,10 +129,10 @@ def test_update_price_raises_when_not_found() -> None:
 def test_get_product_returns_entity() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = _saved_product()
-    assert GetProduct(repo).execute(ProductId(1)) == _saved_product()
+    assert GetProduct(repo).execute(ProductId(1), UID) == _saved_product()
 
 
 def test_list_products_returns_all() -> None:
     repo = MagicMock()
     repo.find_all.return_value = [_saved_product(1), _saved_product(2)]
-    assert len(ListProducts(repo).execute()) == 2
+    assert len(ListProducts(repo).execute(UID)) == 2

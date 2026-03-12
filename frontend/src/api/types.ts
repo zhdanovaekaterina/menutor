@@ -130,3 +130,37 @@ export interface ShoppingList {
   items: ShoppingListItem[]
   total_cost: Money
 }
+
+/* Auth */
+export interface RegisterRequest {
+  email: string
+  password: string
+  nickname?: string
+}
+
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface TokenResponse {
+  access_token: string
+  refresh_token: string
+  token_type: string
+}
+
+export interface RefreshRequest {
+  refresh_token: string
+}
+
+export interface UserResponse {
+  id: number
+  email: string
+  nickname: string
+  created_at: string
+}
+
+export interface UpdateProfileRequest {
+  nickname?: string
+  password?: string
+}

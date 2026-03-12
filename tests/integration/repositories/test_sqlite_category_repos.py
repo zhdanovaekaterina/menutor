@@ -140,8 +140,8 @@ def test_product_category_hard_delete_removes_linked_products(conn) -> None:
     repo = SqliteProductCategoryRepository(conn)
     new_id = repo.save("С продуктами")
     conn.execute(
-        text("INSERT INTO products (name, brand, supplier, category_id, recipe_unit, purchase_unit) "
-             "VALUES ('Тест-продукт', '', '', :cat_id, 'g', 'kg')"),
+        text("INSERT INTO products (name, brand, supplier, category_id, recipe_unit, purchase_unit, user_id) "
+             "VALUES ('Тест-продукт', '', '', :cat_id, 'g', 'kg', 1)"),
         {"cat_id": new_id},
     )
     conn.commit()
@@ -165,8 +165,8 @@ def test_product_category_is_used_true(conn) -> None:
     repo = SqliteProductCategoryRepository(conn)
     new_id = repo.save("С продуктами")
     conn.execute(
-        text("INSERT INTO products (name, brand, supplier, category_id, recipe_unit, purchase_unit) "
-             "VALUES ('Тест', '', '', :cat_id, 'g', 'kg')"),
+        text("INSERT INTO products (name, brand, supplier, category_id, recipe_unit, purchase_unit, user_id) "
+             "VALUES ('Тест', '', '', :cat_id, 'g', 'kg', 1)"),
         {"cat_id": new_id},
     )
     conn.commit()
@@ -228,7 +228,7 @@ def test_recipe_category_hard_delete_removes_linked_recipes(conn) -> None:
     repo = SqliteRecipeCategoryRepository(conn)
     new_id = repo.save("С рецептами")
     conn.execute(
-        text("INSERT INTO recipes (name, category_id, servings) VALUES ('Тест-рецепт', :cat_id, 1)"),
+        text("INSERT INTO recipes (name, category_id, servings, user_id) VALUES ('Тест-рецепт', :cat_id, 1, 1)"),
         {"cat_id": new_id},
     )
     conn.commit()
@@ -252,7 +252,7 @@ def test_recipe_category_is_used_true(conn) -> None:
     repo = SqliteRecipeCategoryRepository(conn)
     new_id = repo.save("С рецептами")
     conn.execute(
-        text("INSERT INTO recipes (name, category_id, servings) VALUES ('Тест', :cat_id, 1)"),
+        text("INSERT INTO recipes (name, category_id, servings, user_id) VALUES ('Тест', :cat_id, 1, 1)"),
         {"cat_id": new_id},
     )
     conn.commit()

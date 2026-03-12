@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.ports.menu_repository import MenuRepository
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId
+from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, UserId
 from backend.infrastructure.database.models import MenuRow, MenuSlotRow
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
@@ -25,7 +25,7 @@ class SqliteMenuRepository(
         return MenuId(raw_id)
 
     def _make_new_row(self, entity: WeeklyMenu) -> MenuRow:
-        row = MenuRow(name=entity.name)
+        row = MenuRow(user_id=int(entity.user_id), name=entity.name)
         row.slots = [self._slot_to_row(s) for s in entity.slots]
         return row
 
@@ -49,7 +49,16 @@ class SqliteMenuRepository(
                 )
                 for s in row.slots
             ],
+            user_id=UserId(row.user_id),
         )
+
+    def find_all(self, user_id: UserId) -> list[WeeklyMenu]:
+        rows = (
+            self._session.query(MenuRow)
+            .filter(MenuRow.user_id == int(user_id))
+            .all()
+        )
+        return [self._row_to_entity(r) for r in rows]
 
     @staticmethod
     def _slot_to_row(slot: MenuSlot) -> MenuSlotRow:

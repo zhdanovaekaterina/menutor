@@ -5,8 +5,10 @@ Repositories map between these rows and domain entities.
 """
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Column,
+    DateTime,
     Float,
     ForeignKey,
     Integer,
@@ -17,6 +19,36 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 
 class Base(DeclarativeBase):
     pass
+
+
+class UserRow(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String, unique=True, nullable=False)
+    nickname = Column(String, nullable=False, default="", server_default="")
+    hashed_password = Column(String, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+
+    refresh_tokens = relationship(
+        "RefreshTokenRow",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+
+class RefreshTokenRow(Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    token_hash = Column(String, unique=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    revoked = Column(Boolean, nullable=False, default=False, server_default="0")
+
+    user = relationship("UserRow", back_populates="refresh_tokens")
 
 
 class UnitRow(Base):
@@ -46,6 +78,9 @@ class ProductRow(Base):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     name = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey("product_categories.id"), nullable=False)
     brand = Column(String, nullable=False, default="", server_default="")
@@ -61,6 +96,9 @@ class RecipeRow(Base):
     __tablename__ = "recipes"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     name = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey("recipe_categories.id"), nullable=False)
     dietary_tags = Column(String, nullable=False, default="[]", server_default="[]")
@@ -108,6 +146,9 @@ class FamilyMemberRow(Base):
     __tablename__ = "family_members"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     name = Column(String, nullable=False)
     portion_multiplier = Column(Float, nullable=False, default=1.0, server_default="1.0")
     dietary_restrictions = Column(String, nullable=False, default="", server_default="")
@@ -118,6 +159,9 @@ class MenuRow(Base):
     __tablename__ = "menus"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     name = Column(String, nullable=False)
 
     slots = relationship(

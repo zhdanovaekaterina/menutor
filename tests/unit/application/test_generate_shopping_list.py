@@ -6,7 +6,9 @@ from backend.application.use_cases.generate_shopping_list import GenerateShoppin
 from backend.domain.entities.menu import WeeklyMenu
 from backend.domain.entities.shopping_list import ShoppingList
 from backend.domain.exceptions import EntityNotFoundError
-from backend.domain.value_objects.types import MenuId
+from backend.domain.value_objects.types import MenuId, UserId
+
+UID = UserId(1)
 
 
 def _uc(menu_repo: MagicMock, builder: MagicMock) -> GenerateShoppingList:
@@ -14,7 +16,7 @@ def _uc(menu_repo: MagicMock, builder: MagicMock) -> GenerateShoppingList:
 
 
 def test_generate_calls_builder_with_menu() -> None:
-    menu = WeeklyMenu(MenuId(1), "Неделя", [])
+    menu = WeeklyMenu(MenuId(1), "Неделя", [], user_id=UID)
     shopping_list = ShoppingList()
 
     menu_repo = MagicMock()
@@ -22,7 +24,7 @@ def test_generate_calls_builder_with_menu() -> None:
     builder = MagicMock()
     builder.build.return_value = shopping_list
 
-    result = _uc(menu_repo, builder).execute(MenuId(1))
+    result = _uc(menu_repo, builder).execute(MenuId(1), UID)
 
     builder.build.assert_called_once_with(menu)
     assert result is shopping_list
@@ -34,4 +36,4 @@ def test_generate_raises_when_menu_not_found() -> None:
     builder = MagicMock()
 
     with pytest.raises(EntityNotFoundError, match="не найдено"):
-        _uc(menu_repo, builder).execute(MenuId(999))
+        _uc(menu_repo, builder).execute(MenuId(999), UID)

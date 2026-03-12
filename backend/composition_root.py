@@ -9,6 +9,13 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from backend.application.use_cases.auth import (
+    GetCurrentUser,
+    LoginUser,
+    LogoutUser,
+    RefreshAccessToken,
+    RegisterUser,
+)
 from backend.application.use_cases.generate_shopping_list import GenerateShoppingList
 from backend.application.use_cases.import_export import (
     ExportShoppingListAsCsv,
@@ -60,6 +67,7 @@ from backend.application.use_cases.plan_menu import (
     RemoveItemFromSlot,
     SaveMenu,
 )
+from backend.domain.services.password_hasher import PasswordHasher
 from backend.domain.services.portion_calculator import PortionCalculator
 from backend.domain.services.shopping_list_builder import ShoppingListBuilder
 from backend.domain.services.unit_converter import UnitConverter
@@ -70,6 +78,8 @@ from backend.infrastructure.database.connection import (
     get_engine,
     seed_defaults,
 )
+from backend.infrastructure.auth.bcrypt_password_hasher import BcryptPasswordHasher
+from backend.infrastructure.auth.jwt_token_service import JwtTokenService
 from backend.infrastructure.export.csv_exporter import ShoppingListCsvExporter
 from backend.infrastructure.export.text_exporter import ShoppingListTextExporter
 from backend.infrastructure.repositories.sqlite_family_member_repository import (
@@ -88,6 +98,12 @@ from backend.infrastructure.repositories.sqlite_recipe_category_repository impor
 from backend.infrastructure.repositories.sqlite_recipe_repository import (
     SqliteRecipeRepository,
 )
+from backend.infrastructure.repositories.sqlite_refresh_token_repository import (
+    SqliteRefreshTokenRepository,
+)
+from backend.infrastructure.repositories.sqlite_user_repository import (
+    SqliteUserRepository,
+)
 
 
 class ApplicationContainer:
@@ -103,6 +119,15 @@ class ApplicationContainer:
         apply_schema(engine)
         session = Session(engine)
         seed_defaults(session)
+
+        user_repo = SqliteUserRepository(session)
+        refresh_token_repo = SqliteRefreshTokenRepository(session)
+
+        jwt_secret = os.environ.get(
+            "JWT_SECRET_KEY", "change-me-in-production-use-a-long-random-string!"
+        )
+        password_hasher: PasswordHasher = BcryptPasswordHasher()
+        token_service = JwtTokenService(jwt_secret)
 
         recipe_repo = SqliteRecipeRepository(session)
         product_repo = SqliteProductRepository(session)
@@ -124,6 +149,21 @@ class ApplicationContainer:
             portion_calc=portion_calc,
             unit_converter=unit_converter,
         )
+
+        # ── Application — Auth ──────────────────────────────────────────
+        self.register_user = RegisterUser(user_repo, password_hasher)
+        self.login_user = LoginUser(
+            user_repo, password_hasher, token_service, refresh_token_repo
+        )
+        self.refresh_access_token = RefreshAccessToken(
+            token_service, refresh_token_repo, user_repo
+        )
+        self.get_current_user = GetCurrentUser(token_service, user_repo)
+        self.logout_user = LogoutUser(token_service, refresh_token_repo)
+
+        # Expose for PATCH /auth/me
+        self.password_hasher = password_hasher
+        self.user_repo = user_repo
 
         # ── Application — Recipes ─────────────────────────────────────
         self.create_recipe = CreateRecipe(recipe_repo)

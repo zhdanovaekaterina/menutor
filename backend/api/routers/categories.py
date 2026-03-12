@@ -7,6 +7,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from backend.api.auth import get_current_user
 from backend.api.converters import category_to_response
 from backend.api.deps import get_container
 from backend.api.schemas.category import (
@@ -15,6 +16,7 @@ from backend.api.schemas.category import (
     CategoryUsedResponse,
 )
 from backend.composition_root import ApplicationContainer
+from backend.domain.entities.user import User
 
 router = APIRouter(tags=["categories"])
 
@@ -25,6 +27,7 @@ router = APIRouter(tags=["categories"])
 @router.get("/product-categories", response_model=list[CategoryResponse])
 def list_product_categories(
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> list[CategoryResponse]:
     categories = container.list_all_product_categories.execute()
     return [category_to_response(c) for c in categories]
@@ -38,6 +41,7 @@ def list_product_categories(
 def create_product_category(
     body: CategoryCreate,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> dict[str, int]:
     category_id = container.create_product_category.execute(body.name)
     return {"id": category_id}
@@ -48,6 +52,7 @@ def edit_product_category(
     category_id: int,
     body: CategoryCreate,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> dict[str, int]:
     result_id = container.edit_product_category.execute(category_id, body.name)
     return {"id": result_id}
@@ -60,6 +65,7 @@ def delete_product_category(
     category_id: int,
     hard: bool = False,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> None:
     if hard:
         container.hard_delete_product_category.execute(category_id)
@@ -74,6 +80,7 @@ def delete_product_category(
 def activate_product_category(
     category_id: int,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> None:
     container.activate_product_category.execute(category_id)
 
@@ -84,6 +91,7 @@ def activate_product_category(
 def check_product_category_used(
     category_id: int,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> CategoryUsedResponse:
     used = container.check_product_category_used.execute(category_id)
     return CategoryUsedResponse(used=used)
@@ -95,6 +103,7 @@ def check_product_category_used(
 @router.get("/recipe-categories", response_model=list[CategoryResponse])
 def list_recipe_categories(
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> list[CategoryResponse]:
     categories = container.list_all_recipe_categories.execute()
     return [category_to_response(c) for c in categories]
@@ -108,6 +117,7 @@ def list_recipe_categories(
 def create_recipe_category(
     body: CategoryCreate,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> dict[str, int]:
     category_id = container.create_recipe_category.execute(body.name)
     return {"id": category_id}
@@ -118,6 +128,7 @@ def edit_recipe_category(
     category_id: int,
     body: CategoryCreate,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> dict[str, int]:
     result_id = container.edit_recipe_category.execute(category_id, body.name)
     return {"id": result_id}
@@ -130,6 +141,7 @@ def delete_recipe_category(
     category_id: int,
     hard: bool = False,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> None:
     if hard:
         container.hard_delete_recipe_category.execute(category_id)
@@ -144,6 +156,7 @@ def delete_recipe_category(
 def activate_recipe_category(
     category_id: int,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> None:
     container.activate_recipe_category.execute(category_id)
 
@@ -154,6 +167,7 @@ def activate_recipe_category(
 def check_recipe_category_used(
     category_id: int,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> CategoryUsedResponse:
     used = container.check_recipe_category_used.execute(category_id)
     return CategoryUsedResponse(used=used)

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from backend.api.auth import get_current_user
 from backend.api.converters import family_member_to_response
 from backend.api.deps import get_container
 from backend.api.schemas.family import (
@@ -9,6 +10,7 @@ from backend.api.schemas.family import (
 )
 from backend.application.use_cases.manage_family import FamilyMemberData
 from backend.composition_root import ApplicationContainer
+from backend.domain.entities.user import User
 from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.value_objects.types import FamilyMemberId
 
@@ -27,8 +29,9 @@ def _to_family_data(body: FamilyMemberCreate | FamilyMemberUpdate) -> FamilyMemb
 @router.get("", response_model=list[FamilyMemberResponse])
 def list_family_members(
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> list[FamilyMemberResponse]:
-    members = container.list_family_members.execute()
+    members = container.list_family_members.execute(user.id)
     return [family_member_to_response(m) for m in members]
 
 
@@ -38,9 +41,10 @@ def list_family_members(
 def create_family_member(
     body: FamilyMemberCreate,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> FamilyMemberResponse:
     data = _to_family_data(body)
-    member = container.create_family_member.execute(data)
+    member = container.create_family_member.execute(data, user.id)
     return family_member_to_response(member)
 
 
@@ -49,11 +53,12 @@ def update_family_member(
     member_id: int,
     body: FamilyMemberUpdate,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> FamilyMemberResponse:
     data = _to_family_data(body)
     try:
         member = container.edit_family_member.execute(
-            FamilyMemberId(member_id), data
+            FamilyMemberId(member_id), data, user.id
         )
     except EntityNotFoundError as exc:
         raise HTTPException(
@@ -66,5 +71,6 @@ def update_family_member(
 def delete_family_member(
     member_id: int,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> None:
-    container.delete_family_member.execute(FamilyMemberId(member_id))
+    container.delete_family_member.execute(FamilyMemberId(member_id), user.id)

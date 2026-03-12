@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from backend.domain.exceptions import InvalidEntityError
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId
+from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, UserId
 
 
 @dataclass
@@ -28,3 +28,4 @@ class WeeklyMenu:
     id: MenuId
     name: str
     slots: list[MenuSlot] = field(default_factory=list)
+    user_id: UserId = field(default=UserId(0))

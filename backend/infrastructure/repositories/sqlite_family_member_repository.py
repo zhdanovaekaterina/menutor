@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.ports.family_member_repository import FamilyMemberRepository
-from backend.domain.value_objects.types import FamilyMemberId
+from backend.domain.value_objects.types import FamilyMemberId, UserId
 from backend.infrastructure.database.models import FamilyMemberRow
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
@@ -26,6 +26,7 @@ class SqliteFamilyMemberRepository(
 
     def _make_new_row(self, entity: FamilyMember) -> FamilyMemberRow:
         return FamilyMemberRow(
+            user_id=int(entity.user_id),
             name=entity.name,
             portion_multiplier=entity.portion_multiplier,
             dietary_restrictions=entity.dietary_restrictions,
@@ -45,4 +46,13 @@ class SqliteFamilyMemberRepository(
             portion_multiplier=row.portion_multiplier,
             dietary_restrictions=row.dietary_restrictions or "",
             comment=row.comment or "",
+            user_id=UserId(row.user_id),
         )
+
+    def find_all(self, user_id: UserId) -> list[FamilyMember]:
+        rows = (
+            self._session.query(FamilyMemberRow)
+            .filter(FamilyMemberRow.user_id == int(user_id))
+            .all()
+        )
+        return [self._row_to_entity(r) for r in rows]

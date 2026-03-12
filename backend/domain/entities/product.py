@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.quantity import Quantity
-from backend.domain.value_objects.types import ProductCategoryId, ProductId
+from backend.domain.value_objects.types import ProductCategoryId, ProductId, UserId
 
 
 @dataclass
@@ -17,6 +17,7 @@ class Product:
     weight_per_piece_g: float | None = field(default=None)
     conversion_factor: float = field(default=1.0)
     category_id: ProductCategoryId = field(default=ProductCategoryId(0))
+    user_id: UserId = field(default=UserId(0))
 
     def compute_purchase(self, recipe_amount: float) -> tuple[Quantity, Money]:
         """Конвертирует количество в единицах рецепта в закупочную единицу и стоимость."""

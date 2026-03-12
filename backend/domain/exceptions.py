@@ -35,6 +35,17 @@ class EntityNotFoundError(AppError):
     """Requested entity does not exist."""
 
 
+# --- Authentication errors ---
+
+
+class AuthenticationError(AppError):
+    """Invalid credentials or token."""
+
+
+class UserAlreadyExistsError(AppError):
+    """Attempt to register with an already-used email."""
+
+
 # --- Infrastructure-layer errors ---
 
 

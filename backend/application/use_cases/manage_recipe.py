@@ -7,7 +7,7 @@ from backend.domain.ports.recipe_repository import RecipeRepository
 from backend.domain.value_objects.category import ActiveCategory
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
-from backend.domain.value_objects.types import RecipeCategoryId, RecipeId
+from backend.domain.value_objects.types import RecipeCategoryId, RecipeId, UserId
 
 
 @dataclass
@@ -24,7 +24,7 @@ class CreateRecipe:
     def __init__(self, repo: RecipeRepository) -> None:
         self._repo = repo
 
-    def execute(self, data: RecipeData) -> Recipe:
+    def execute(self, data: RecipeData, user_id: UserId) -> Recipe:
         recipe = Recipe(
             id=RecipeId(0),
             name=data.name,
@@ -33,6 +33,7 @@ class CreateRecipe:
             steps=list(data.steps),
             category_id=data.category_id,
             weight=data.weight,
+            user_id=user_id,
         )
         return self._repo.save(recipe)
 
@@ -41,8 +42,9 @@ class EditRecipe:
     def __init__(self, repo: RecipeRepository) -> None:
         self._repo = repo
 
-    def execute(self, id: RecipeId, data: RecipeData) -> Recipe:
-        if self._repo.get_by_id(id) is None:
+    def execute(self, id: RecipeId, data: RecipeData, user_id: UserId) -> Recipe:
+        existing = self._repo.get_by_id(id)
+        if existing is None or existing.user_id != user_id:
             raise EntityNotFoundError(f"Рецепт {id} не найден")
         recipe = Recipe(
             id=id,
@@ -52,6 +54,7 @@ class EditRecipe:
             steps=list(data.steps),
             category_id=data.category_id,
             weight=data.weight,
+            user_id=user_id,
         )
         return self._repo.save(recipe)
 
@@ -60,24 +63,29 @@ class DeleteRecipe:
     def __init__(self, repo: RecipeRepository) -> None:
         self._repo = repo
 
-    def execute(self, id: RecipeId) -> None:
-        self._repo.delete(id)
+    def execute(self, id: RecipeId, user_id: UserId) -> None:
+        existing = self._repo.get_by_id(id)
+        if existing is not None and existing.user_id == user_id:
+            self._repo.delete(id)
 
 
 class GetRecipe:
     def __init__(self, repo: RecipeRepository) -> None:
         self._repo = repo
 
-    def execute(self, id: RecipeId) -> Recipe | None:
-        return self._repo.get_by_id(id)
+    def execute(self, id: RecipeId, user_id: UserId) -> Recipe | None:
+        recipe = self._repo.get_by_id(id)
+        if recipe is not None and recipe.user_id != user_id:
+            return None
+        return recipe
 
 
 class ListRecipes:
     def __init__(self, repo: RecipeRepository) -> None:
         self._repo = repo
 
-    def execute(self) -> list[Recipe]:
-        return self._repo.find_all()
+    def execute(self, user_id: UserId) -> list[Recipe]:
+        return self._repo.find_all(user_id)
 
 
 class ListRecipeCategories:

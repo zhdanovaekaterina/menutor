@@ -7,14 +7,16 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.api.routers import categories, family, menus, products, recipes
+from backend.api.routers import auth, categories, family, menus, products, recipes
 from backend.api.routers import shopping_list as shopping_list_router
 from backend.composition_root import ApplicationContainer
 from backend.domain.exceptions import (
     AppError,
+    AuthenticationError,
     DomainError,
     EntityNotFoundError,
     RepositoryError,
+    UserAlreadyExistsError,
 )
 
 
@@ -41,6 +43,24 @@ app.add_middleware(
 
 
 # ── Exception handlers ────────────────────────────────────────────
+
+
+@app.exception_handler(AuthenticationError)
+async def authentication_error_handler(
+    request: Request, exc: AuthenticationError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=401,
+        content={"detail": str(exc)},
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+@app.exception_handler(UserAlreadyExistsError)
+async def user_exists_handler(
+    request: Request, exc: UserAlreadyExistsError
+) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
 
 
 @app.exception_handler(EntityNotFoundError)
@@ -71,6 +91,7 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 
 # ── Routers ────────────────────────────────────────────────────────
 
+app.include_router(auth.router, prefix="/api")
 app.include_router(recipes.router, prefix="/api")
 app.include_router(products.router, prefix="/api")
 app.include_router(menus.router, prefix="/api")

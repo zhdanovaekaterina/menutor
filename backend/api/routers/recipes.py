@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from backend.api.auth import get_current_user
 from backend.api.converters import active_category_to_response, recipe_to_response
 from backend.api.deps import get_container
 from backend.api.schemas.category import ActiveCategoryResponse
 from backend.api.schemas.recipe import RecipeCreate, RecipeResponse, RecipeUpdate
 from backend.application.use_cases.manage_recipe import RecipeData
 from backend.composition_root import ApplicationContainer
+from backend.domain.entities.user import User
 from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.quantity import Quantity
@@ -38,14 +40,16 @@ def _to_recipe_data(body: RecipeCreate | RecipeUpdate) -> RecipeData:
 @router.get("", response_model=list[RecipeResponse])
 def list_recipes(
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> list[RecipeResponse]:
-    recipes = container.list_recipes.execute()
+    recipes = container.list_recipes.execute(user.id)
     return [recipe_to_response(r) for r in recipes]
 
 
 @router.get("/categories", response_model=list[ActiveCategoryResponse])
 def list_recipe_categories(
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> list[ActiveCategoryResponse]:
     categories = container.list_recipe_categories.execute()
     return [active_category_to_response(c) for c in categories]
@@ -55,8 +59,9 @@ def list_recipe_categories(
 def get_recipe(
     recipe_id: int,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> RecipeResponse:
-    recipe = container.get_recipe.execute(RecipeId(recipe_id))
+    recipe = container.get_recipe.execute(RecipeId(recipe_id), user.id)
     if recipe is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -69,9 +74,10 @@ def get_recipe(
 def create_recipe(
     body: RecipeCreate,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> RecipeResponse:
     data = _to_recipe_data(body)
-    recipe = container.create_recipe.execute(data)
+    recipe = container.create_recipe.execute(data, user.id)
     return recipe_to_response(recipe)
 
 
@@ -80,10 +86,11 @@ def update_recipe(
     recipe_id: int,
     body: RecipeUpdate,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> RecipeResponse:
     data = _to_recipe_data(body)
     try:
-        recipe = container.edit_recipe.execute(RecipeId(recipe_id), data)
+        recipe = container.edit_recipe.execute(RecipeId(recipe_id), data, user.id)
     except EntityNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
@@ -95,5 +102,6 @@ def update_recipe(
 def delete_recipe(
     recipe_id: int,
     container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
 ) -> None:
-    container.delete_recipe.execute(RecipeId(recipe_id))
+    container.delete_recipe.execute(RecipeId(recipe_id), user.id)

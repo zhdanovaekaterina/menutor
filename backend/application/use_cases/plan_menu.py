@@ -1,15 +1,15 @@
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.ports.menu_repository import MenuRepository
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId
+from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, UserId
 
 
 class CreateMenu:
     def __init__(self, repo: MenuRepository) -> None:
         self._repo = repo
 
-    def execute(self, name: str) -> WeeklyMenu:
-        menu = WeeklyMenu(id=MenuId(0), name=name, slots=[])
+    def execute(self, name: str, user_id: UserId) -> WeeklyMenu:
+        menu = WeeklyMenu(id=MenuId(0), name=name, slots=[], user_id=user_id)
         return self._repo.save(menu)
 
 
@@ -25,24 +25,29 @@ class LoadMenu:
     def __init__(self, repo: MenuRepository) -> None:
         self._repo = repo
 
-    def execute(self, menu_id: MenuId) -> WeeklyMenu | None:
-        return self._repo.get_by_id(menu_id)
+    def execute(self, menu_id: MenuId, user_id: UserId) -> WeeklyMenu | None:
+        menu = self._repo.get_by_id(menu_id)
+        if menu is not None and menu.user_id != user_id:
+            return None
+        return menu
 
 
 class DeleteMenu:
     def __init__(self, repo: MenuRepository) -> None:
         self._repo = repo
 
-    def execute(self, menu_id: MenuId) -> None:
-        self._repo.delete(menu_id)
+    def execute(self, menu_id: MenuId, user_id: UserId) -> None:
+        menu = self._repo.get_by_id(menu_id)
+        if menu is not None and menu.user_id == user_id:
+            self._repo.delete(menu_id)
 
 
 class ListMenus:
     def __init__(self, repo: MenuRepository) -> None:
         self._repo = repo
 
-    def execute(self) -> list[WeeklyMenu]:
-        return self._repo.find_all()
+    def execute(self, user_id: UserId) -> list[WeeklyMenu]:
+        return self._repo.find_all(user_id)
 
 
 class AddDishToSlot:
@@ -56,9 +61,9 @@ class AddDishToSlot:
     def __init__(self, repo: MenuRepository) -> None:
         self._repo = repo
 
-    def execute(self, menu_id: MenuId, slot: MenuSlot) -> WeeklyMenu:
+    def execute(self, menu_id: MenuId, slot: MenuSlot, user_id: UserId) -> WeeklyMenu:
         menu = self._repo.get_by_id(menu_id)
-        if menu is None:
+        if menu is None or menu.user_id != user_id:
             raise EntityNotFoundError(f"Меню {menu_id} не найдено")
 
         menu.slots = [s for s in menu.slots if not self._same_item(s, slot)]
@@ -82,9 +87,11 @@ class RemoveDishFromSlot:
     def __init__(self, repo: MenuRepository) -> None:
         self._repo = repo
 
-    def execute(self, menu_id: MenuId, day: int, meal_type: str) -> WeeklyMenu:
+    def execute(
+        self, menu_id: MenuId, day: int, meal_type: str, user_id: UserId
+    ) -> WeeklyMenu:
         menu = self._repo.get_by_id(menu_id)
-        if menu is None:
+        if menu is None or menu.user_id != user_id:
             raise EntityNotFoundError(f"Меню {menu_id} не найдено")
         menu.slots = [
             s for s in menu.slots
@@ -104,11 +111,12 @@ class RemoveItemFromSlot:
         menu_id: MenuId,
         day: int,
         meal_type: str,
+        user_id: UserId,
         recipe_id: RecipeId | None = None,
         product_id: ProductId | None = None,
     ) -> WeeklyMenu:
         menu = self._repo.get_by_id(menu_id)
-        if menu is None:
+        if menu is None or menu.user_id != user_id:
             raise EntityNotFoundError(f"Меню {menu_id} не найдено")
 
         def _matches(s: MenuSlot) -> bool:
@@ -128,9 +136,9 @@ class ClearMenu:
     def __init__(self, repo: MenuRepository) -> None:
         self._repo = repo
 
-    def execute(self, menu_id: MenuId) -> WeeklyMenu:
+    def execute(self, menu_id: MenuId, user_id: UserId) -> WeeklyMenu:
         menu = self._repo.get_by_id(menu_id)
-        if menu is None:
+        if menu is None or menu.user_id != user_id:
             raise EntityNotFoundError(f"Меню {menu_id} не найдено")
         menu.slots = []
         return self._repo.save(menu)

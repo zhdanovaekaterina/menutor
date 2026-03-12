@@ -7,6 +7,8 @@ Covers the main user journey:
 from decimal import Decimal
 
 import pytest
+from sqlalchemy import text as sa_text
+from sqlalchemy.orm import Session
 
 from backend.application.use_cases.generate_shopping_list import GenerateShoppingList
 from backend.application.use_cases.import_export import ExportShoppingListAsText
@@ -44,9 +46,7 @@ from backend.domain.services.unit_converter import UnitConverter
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
-from backend.domain.value_objects.types import ProductCategoryId, RecipeCategoryId
-from sqlalchemy.orm import Session
-
+from backend.domain.value_objects.types import ProductCategoryId, RecipeCategoryId, UserId
 from backend.infrastructure.database.connection import (
     apply_schema,
     get_engine,
@@ -70,6 +70,13 @@ from backend.infrastructure.repositories.sqlite_recipe_repository import (
     SqliteRecipeRepository,
 )
 
+TEST_USER_ID = UserId(1)
+
+_SEED_USER_SQL = (
+    "INSERT INTO users (email, nickname, hashed_password, created_at) "
+    "VALUES ('test@example.com', 'tester', 'hashed', '2025-01-01 00:00:00')"
+)
+
 
 @pytest.fixture
 def db():
@@ -78,6 +85,8 @@ def db():
     apply_schema(engine)
     session = Session(engine)
     seed_defaults(session)
+    session.execute(sa_text(_SEED_USER_SQL))
+    session.commit()
     yield session
     session.close()
     engine.dispose()
@@ -100,6 +109,8 @@ class TestFullUserScenario:
     """Scenario: Create products, create recipe, plan menu, generate shopping list."""
 
     def test_recipe_to_shopping_list_pipeline(self, db, repos) -> None:
+        uid = TEST_USER_ID
+
         # --- Step 1: Get default categories ---
         product_cats = repos["product_cat"].find_active()
         assert len(product_cats) > 0
@@ -117,7 +128,7 @@ class TestFullUserScenario:
             recipe_unit="g", purchase_unit="kg",
             price=Money(Decimal("80")),
             conversion_factor=1000,
-        ))
+        ), uid)
         assert flour.id != 0
 
         milk = create_product.execute(ProductData(
@@ -125,7 +136,7 @@ class TestFullUserScenario:
             recipe_unit="ml", purchase_unit="l",
             price=Money(Decimal("90")),
             conversion_factor=1000,
-        ))
+        ), uid)
         assert milk.id != 0
 
         # --- Step 3: Create recipe with ingredients ---
@@ -138,21 +149,21 @@ class TestFullUserScenario:
                 RecipeIngredient(flour.id, Quantity(200.0, "g")),
                 RecipeIngredient(milk.id, Quantity(500.0, "ml")),
             ],
-        ))
+        ), uid)
         assert recipe.id != 0
         assert len(recipe.ingredients) == 2
 
         # --- Step 4: Create family members ---
         create_member = CreateFamilyMember(repos["family"])
-        create_member.execute(FamilyMemberData(name="Взрослый", portion_multiplier=1.0))
-        create_member.execute(FamilyMemberData(name="Ребёнок", portion_multiplier=0.5))
+        create_member.execute(FamilyMemberData(name="Взрослый", portion_multiplier=1.0), uid)
+        create_member.execute(FamilyMemberData(name="Ребёнок", portion_multiplier=0.5), uid)
 
-        members = ListFamilyMembers(repos["family"]).execute()
+        members = ListFamilyMembers(repos["family"]).execute(uid)
         assert len(members) == 2
 
         # --- Step 5: Create menu and add recipe ---
         create_menu = CreateMenu(repos["menu"])
-        menu = create_menu.execute("Неделя 1")
+        menu = create_menu.execute("Неделя 1", uid)
         assert menu.id != 0
 
         add_dish = AddDishToSlot(repos["menu"])
@@ -160,7 +171,7 @@ class TestFullUserScenario:
             day=0, meal_type="Завтрак",
             recipe_id=recipe.id, servings_override=4.0,
         )
-        menu = add_dish.execute(menu.id, slot)
+        menu = add_dish.execute(menu.id, slot, uid)
         assert len(menu.slots) == 1
 
         # --- Step 6: Generate shopping list ---
@@ -172,7 +183,7 @@ class TestFullUserScenario:
             unit_converter=UnitConverter(),
         )
         generate = GenerateShoppingList(repos["menu"], builder)
-        shopping_list = generate.execute(menu.id)
+        shopping_list = generate.execute(menu.id, uid)
 
         assert len(shopping_list.items) == 2
         names = {item.product_name for item in shopping_list.items}
@@ -188,6 +199,7 @@ class TestFullUserScenario:
 
     def test_menu_crud_lifecycle(self, db, repos) -> None:
         """Create → Load → Clear → Delete menu."""
+        uid = TEST_USER_ID
         create_menu = CreateMenu(repos["menu"])
         load_menu = LoadMenu(repos["menu"])
         clear_menu = ClearMenu(repos["menu"])
@@ -195,29 +207,30 @@ class TestFullUserScenario:
         list_menus = ListMenus(repos["menu"])
 
         # Create
-        menu = create_menu.execute("Тестовое меню")
+        menu = create_menu.execute("Тестовое меню", uid)
         assert menu.name == "Тестовое меню"
 
         # Load
-        loaded = load_menu.execute(menu.id)
+        loaded = load_menu.execute(menu.id, uid)
         assert loaded is not None
         assert loaded.name == "Тестовое меню"
 
         # Clear
-        cleared = clear_menu.execute(menu.id)
+        cleared = clear_menu.execute(menu.id, uid)
         assert cleared.slots == []
 
         # List
-        menus = list_menus.execute()
+        menus = list_menus.execute(uid)
         assert any(m.id == menu.id for m in menus)
 
         # Delete
-        delete_menu.execute(menu.id)
-        menus = list_menus.execute()
+        delete_menu.execute(menu.id, uid)
+        menus = list_menus.execute(uid)
         assert not any(m.id == menu.id for m in menus)
 
     def test_product_recipe_crud(self, db, repos) -> None:
         """Create, edit, list, delete products and recipes."""
+        uid = TEST_USER_ID
         product_cats = repos["product_cat"].find_active()
         cat_id = ProductCategoryId(product_cats[0][0])
 
@@ -234,22 +247,21 @@ class TestFullUserScenario:
             name="Сахар", category_id=cat_id,
             recipe_unit="g", purchase_unit="kg",
             price=Money(Decimal("60")),
-        ))
+        ), uid)
         assert product.name == "Сахар"
 
-        from backend.application.use_cases.manage_product import ProductData as PD
-        edited = edit_prod.execute(product.id, PD(
+        edited = edit_prod.execute(product.id, ProductData(
             name="Сахар-песок", category_id=cat_id,
             recipe_unit="g", purchase_unit="kg",
             price=Money(Decimal("65")),
-        ))
+        ), uid)
         assert edited.name == "Сахар-песок"
 
-        products = list_prod.execute()
+        products = list_prod.execute(uid)
         assert any(p.name == "Сахар-песок" for p in products)
 
-        delete_prod.execute(product.id)
-        products = list_prod.execute()
+        delete_prod.execute(product.id, uid)
+        products = list_prod.execute(uid)
         assert not any(p.id == product.id for p in products)
 
         # --- Recipe CRUD ---
@@ -260,16 +272,15 @@ class TestFullUserScenario:
 
         recipe = create_rec.execute(RecipeData(
             name="Каша", category_id=rcat_id, servings=2,
-        ))
+        ), uid)
         assert recipe.name == "Каша"
 
         edited_r = edit_rec.execute(recipe.id, RecipeData(
             name="Овсяная каша", category_id=rcat_id, servings=3,
-        ))
+        ), uid)
         assert edited_r.name == "Овсяная каша"
         assert edited_r.servings == 3
 
-        delete_rec.execute(recipe.id)
-        recipes = list_rec.execute()
+        delete_rec.execute(recipe.id, uid)
+        recipes = list_rec.execute(uid)
         assert not any(r.id == recipe.id for r in recipes)
-

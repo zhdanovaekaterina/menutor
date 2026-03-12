@@ -1,9 +1,11 @@
 from collections.abc import Generator
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import Session
 
+from backend.domain.value_objects.types import UserId
 from backend.infrastructure.database.connection import apply_schema
 
 _SEED_SQL = [
@@ -22,6 +24,13 @@ _SEED_SQL = [
     "INSERT OR IGNORE INTO product_categories (name, active) VALUES ('Мясо',     1)",
 ]
 
+_SEED_USER_SQL = (
+    "INSERT INTO users (email, nickname, hashed_password, created_at) "
+    "VALUES ('test@example.com', 'tester', 'hashed', '2025-01-01 00:00:00')"
+)
+
+TEST_USER_ID = UserId(1)
+
 
 @pytest.fixture
 def conn() -> Generator[Session, None, None]:
@@ -35,7 +44,13 @@ def conn() -> Generator[Session, None, None]:
     session = Session(engine)
     for stmt in _SEED_SQL:
         session.execute(text(stmt))
+    session.execute(text(_SEED_USER_SQL))
     session.commit()
     yield session
     session.close()
     engine.dispose()
+
+
+@pytest.fixture
+def user_id() -> UserId:
+    return TEST_USER_ID

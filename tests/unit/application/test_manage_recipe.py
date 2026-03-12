@@ -15,7 +15,9 @@ from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
-from backend.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
+from backend.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId, UserId
+
+UID = UserId(1)
 
 
 def _data(**kwargs) -> RecipeData:
@@ -37,6 +39,7 @@ def _saved_recipe(id: int = 1) -> Recipe:
         servings=4,
         ingredients=[RecipeIngredient(ProductId(1), Quantity(200.0, "g"))],
         category_id=RecipeCategoryId(1),
+        user_id=UID,
     )
 
 
@@ -46,7 +49,7 @@ def test_create_recipe_calls_save_and_returns_result() -> None:
     repo = MagicMock()
     repo.save.return_value = _saved_recipe()
 
-    result = CreateRecipe(repo).execute(_data())
+    result = CreateRecipe(repo).execute(_data(), UID)
 
     repo.save.assert_called_once()
     assert result == _saved_recipe()
@@ -56,7 +59,7 @@ def test_create_recipe_builds_entity_with_correct_fields() -> None:
     repo = MagicMock()
     repo.save.side_effect = lambda r: r
 
-    result = CreateRecipe(repo).execute(_data(name="Борщ", servings=6))
+    result = CreateRecipe(repo).execute(_data(name="Борщ", servings=6), UID)
 
     assert result.name == "Борщ"
     assert result.servings == 6
@@ -69,7 +72,7 @@ def test_edit_recipe_updates_fields_and_saves() -> None:
     repo.get_by_id.return_value = _saved_recipe()
     repo.save.side_effect = lambda r: r
 
-    result = EditRecipe(repo).execute(RecipeId(1), _data(name="Новое имя"))
+    result = EditRecipe(repo).execute(RecipeId(1), _data(name="Новое имя"), UID)
 
     repo.save.assert_called_once()
     assert result.name == "Новое имя"
@@ -81,15 +84,16 @@ def test_edit_recipe_raises_when_not_found() -> None:
     repo.get_by_id.return_value = None
 
     with pytest.raises(EntityNotFoundError, match="не найден"):
-        EditRecipe(repo).execute(RecipeId(999), _data())
+        EditRecipe(repo).execute(RecipeId(999), _data(), UID)
 
 
 # ---- DeleteRecipe ----
 
 def test_delete_recipe_calls_repo_delete() -> None:
     repo = MagicMock()
+    repo.get_by_id.return_value = _saved_recipe()
 
-    DeleteRecipe(repo).execute(RecipeId(1))
+    DeleteRecipe(repo).execute(RecipeId(1), UID)
 
     repo.delete.assert_called_once_with(RecipeId(1))
 
@@ -100,7 +104,7 @@ def test_get_recipe_returns_entity() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = _saved_recipe()
 
-    result = GetRecipe(repo).execute(RecipeId(1))
+    result = GetRecipe(repo).execute(RecipeId(1), UID)
 
     assert result == _saved_recipe()
 
@@ -109,7 +113,7 @@ def test_get_recipe_returns_none_when_not_found() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = None
 
-    assert GetRecipe(repo).execute(RecipeId(999)) is None
+    assert GetRecipe(repo).execute(RecipeId(999), UID) is None
 
 
 # ---- ListRecipes ----
@@ -118,6 +122,6 @@ def test_list_recipes_returns_all() -> None:
     repo = MagicMock()
     repo.find_all.return_value = [_saved_recipe(1), _saved_recipe(2)]
 
-    result = ListRecipes(repo).execute()
+    result = ListRecipes(repo).execute(UID)
 
     assert len(result) == 2

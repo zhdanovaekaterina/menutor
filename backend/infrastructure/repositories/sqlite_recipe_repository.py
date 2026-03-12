@@ -7,7 +7,7 @@ from backend.domain.ports.recipe_repository import RecipeRepository
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
-from backend.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
+from backend.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId, UserId
 from backend.infrastructure.database.models import (
     CookingStepRow,
     RecipeIngredientRow,
@@ -33,6 +33,7 @@ class SqliteRecipeRepository(
 
     def _make_new_row(self, entity: Recipe) -> RecipeRow:
         row = RecipeRow(
+            user_id=int(entity.user_id),
             name=entity.name,
             category_id=entity.category_id,
             servings=entity.servings,
@@ -88,12 +89,26 @@ class SqliteRecipeRepository(
             ],
             category_id=RecipeCategoryId(row.category_id),
             weight=row.weight,
+            user_id=UserId(row.user_id),
         )
 
-    def find_by_category_id(self, category_id: RecipeCategoryId) -> list[Recipe]:
+    def find_all(self, user_id: UserId) -> list[Recipe]:
         rows = (
             self._session.query(RecipeRow)
-            .filter(RecipeRow.category_id == category_id)
+            .filter(RecipeRow.user_id == int(user_id))
+            .all()
+        )
+        return [self._row_to_entity(r) for r in rows]
+
+    def find_by_category_id(
+        self, category_id: RecipeCategoryId, user_id: UserId
+    ) -> list[Recipe]:
+        rows = (
+            self._session.query(RecipeRow)
+            .filter(
+                RecipeRow.category_id == category_id,
+                RecipeRow.user_id == int(user_id),
+            )
             .all()
         )
         return [self._row_to_entity(r) for r in rows]
