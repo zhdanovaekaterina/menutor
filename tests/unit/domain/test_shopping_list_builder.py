@@ -1,16 +1,16 @@
 from decimal import Decimal
 from unittest.mock import MagicMock
 
-from src.domain.entities.menu import MenuSlot, WeeklyMenu
-from src.domain.entities.product import Product
-from src.domain.entities.recipe import Recipe
-from src.domain.services.portion_calculator import PortionCalculator
-from src.domain.services.shopping_list_builder import ShoppingListBuilder
-from src.domain.services.unit_converter import UnitConverter
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.quantity import Quantity
-from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import (
+from backend.domain.entities.menu import MenuSlot, WeeklyMenu
+from backend.domain.entities.product import Product
+from backend.domain.entities.recipe import Recipe
+from backend.domain.services.portion_calculator import PortionCalculator
+from backend.domain.services.shopping_list_builder import ShoppingListBuilder
+from backend.domain.services.unit_converter import UnitConverter
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.quantity import Quantity
+from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
+from backend.domain.value_objects.types import (
     MenuId,
     ProductCategoryId,
     ProductId,

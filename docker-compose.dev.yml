@@ -1,0 +1,69 @@
+services:
+
+  frontend:
+    build:
+      dockerfile: .docker/dev/frontend.dockerfile
+    image: zhdanovaekaterina/menutor:frontend-dev
+    container_name: frontend
+    ports:
+      - '5173:5173'
+    environment:
+      - API_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./frontend:/app:delegated
+
+  backend:
+    build:
+      dockerfile: .docker/dev/backend.dockerfile
+    image: zhdanovaekaterina/menutor:backend-dev
+    container_name: backend
+    ports:
+      - '8000:8000'
+    env_file:
+      - .config/.env
+    depends_on:
+      test-backend:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/code/backend:delegated
+      - ./alembic.ini:/code/alembic.ini:delegated
+    healthcheck:
+      test: curl -f http://localhost:8000/api/ping || exit 1
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  test-backend:
+    build:
+      dockerfile: .docker/dev/test-backend.dockerfile
+    image: zhdanovaekaterina/menutor:backend-test
+    container_name: test-backend
+    volumes:
+      - ./backend:/code/backend:delegated
+      - ./tests:/code/tests:delegated
+      - ./pyproject.toml:/code/pyproject.toml:delegated
+
+  postgres:
+    image: postgres:18.3
+    container_name: postgres
+    volumes:
+      - ./.docker/volumes/db:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+    depends_on:
+      test-backend:
+        condition: service_completed_successfully
+    healthcheck:
+      test: pg_isready --dbname=$$POSTGRES_DB --host=127.0.0.1 --port=5432
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    env_file:
+      - .config/.env

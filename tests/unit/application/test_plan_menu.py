@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.application.use_cases.plan_menu import (
+from backend.application.use_cases.plan_menu import (
     AddDishToSlot,
     ClearMenu,
     CreateMenu,
@@ -13,13 +13,15 @@ from src.application.use_cases.plan_menu import (
     RemoveItemFromSlot,
     SaveMenu,
 )
-from src.domain.entities.menu import MenuSlot, WeeklyMenu
-from src.domain.exceptions import EntityNotFoundError
-from src.domain.value_objects.types import MenuId, ProductId, RecipeId
+from backend.domain.entities.menu import MenuSlot, WeeklyMenu
+from backend.domain.exceptions import EntityNotFoundError
+from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, UserId
+
+UID = UserId(1)
 
 
 def _menu(id: int = 1, slots: list[MenuSlot] | None = None) -> WeeklyMenu:
-    return WeeklyMenu(MenuId(id), "Неделя", slots or [])
+    return WeeklyMenu(MenuId(id), "Неделя", slots or [], user_id=UID)
 
 
 def _slot(day: int = 0, meal: str = "обед", recipe_id: int = 1) -> MenuSlot:
@@ -38,7 +40,7 @@ def test_create_menu_saves_empty_menu() -> None:
     repo = MagicMock()
     repo.save.side_effect = lambda m: m
 
-    result = CreateMenu(repo).execute("Моё меню")
+    result = CreateMenu(repo).execute("Моё меню", UID)
 
     repo.save.assert_called_once()
     assert result.name == "Моё меню"
@@ -64,7 +66,7 @@ def test_load_menu_returns_menu() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = _menu()
 
-    result = LoadMenu(repo).execute(MenuId(1))
+    result = LoadMenu(repo).execute(MenuId(1), UID)
 
     assert result is not None
     assert result.id == MenuId(1)
@@ -74,15 +76,16 @@ def test_load_menu_returns_none_when_not_found() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = None
 
-    assert LoadMenu(repo).execute(MenuId(999)) is None
+    assert LoadMenu(repo).execute(MenuId(999), UID) is None
 
 
 # ---- DeleteMenu ----
 
 def test_delete_menu_calls_repo_delete() -> None:
     repo = MagicMock()
+    repo.get_by_id.return_value = _menu()
 
-    DeleteMenu(repo).execute(MenuId(1))
+    DeleteMenu(repo).execute(MenuId(1), UID)
 
     repo.delete.assert_called_once_with(MenuId(1))
 
@@ -93,7 +96,7 @@ def test_list_menus_returns_all() -> None:
     repo = MagicMock()
     repo.find_all.return_value = [_menu(1), _menu(2)]
 
-    assert len(ListMenus(repo).execute()) == 2
+    assert len(ListMenus(repo).execute(UID)) == 2
 
 
 # ---- AddDishToSlot ----
@@ -103,7 +106,7 @@ def test_add_slot_appends_new_slot() -> None:
     repo.get_by_id.return_value = _menu()
     repo.save.side_effect = lambda m: m
 
-    result = AddDishToSlot(repo).execute(MenuId(1), _slot(day=0, meal="обед"))
+    result = AddDishToSlot(repo).execute(MenuId(1), _slot(day=0, meal="обед"), UID)
 
     assert len(result.slots) == 1
     assert result.slots[0].day == 0
@@ -117,7 +120,7 @@ def test_add_slot_appends_different_items_to_same_cell() -> None:
     repo.get_by_id.return_value = _menu(slots=[existing])
     repo.save.side_effect = lambda m: m
 
-    result = AddDishToSlot(repo).execute(MenuId(1), new_item)
+    result = AddDishToSlot(repo).execute(MenuId(1), new_item, UID)
 
     assert len(result.slots) == 2
     ids = {s.recipe_id for s in result.slots}
@@ -134,7 +137,7 @@ def test_add_slot_replaces_duplicate_recipe_in_same_cell() -> None:
     repo.get_by_id.return_value = _menu(slots=[existing])
     repo.save.side_effect = lambda m: m
 
-    result = AddDishToSlot(repo).execute(MenuId(1), updated)
+    result = AddDishToSlot(repo).execute(MenuId(1), updated, UID)
 
     assert len(result.slots) == 1
     assert result.slots[0].servings_override == 3.0
@@ -148,7 +151,7 @@ def test_add_slot_replaces_duplicate_product_in_same_cell() -> None:
     repo.get_by_id.return_value = _menu(slots=[existing])
     repo.save.side_effect = lambda m: m
 
-    result = AddDishToSlot(repo).execute(MenuId(1), updated)
+    result = AddDishToSlot(repo).execute(MenuId(1), updated, UID)
 
     assert len(result.slots) == 1
     assert result.slots[0].quantity == 250.0
@@ -162,7 +165,7 @@ def test_add_slot_same_recipe_different_cell_no_conflict() -> None:
     repo.get_by_id.return_value = _menu(slots=[existing])
     repo.save.side_effect = lambda m: m
 
-    result = AddDishToSlot(repo).execute(MenuId(1), new_item)
+    result = AddDishToSlot(repo).execute(MenuId(1), new_item, UID)
 
     assert len(result.slots) == 2
 
@@ -172,7 +175,7 @@ def test_add_product_slot() -> None:
     repo.get_by_id.return_value = _menu()
     repo.save.side_effect = lambda m: m
 
-    result = AddDishToSlot(repo).execute(MenuId(1), _product_slot(day=0, meal="обед"))
+    result = AddDishToSlot(repo).execute(MenuId(1), _product_slot(day=0, meal="обед"), UID)
 
     assert len(result.slots) == 1
     assert result.slots[0].product_id == ProductId(1)
@@ -184,7 +187,7 @@ def test_add_slot_raises_when_menu_not_found() -> None:
     repo.get_by_id.return_value = None
 
     with pytest.raises(EntityNotFoundError, match="не найдено"):
-        AddDishToSlot(repo).execute(MenuId(999), _slot())
+        AddDishToSlot(repo).execute(MenuId(999), _slot(), UID)
 
 
 # ---- RemoveDishFromSlot ----
@@ -194,7 +197,7 @@ def test_remove_slot_removes_matching_day_and_meal() -> None:
     repo.get_by_id.return_value = _menu(slots=[_slot(0, "обед"), _slot(1, "ужин")])
     repo.save.side_effect = lambda m: m
 
-    result = RemoveDishFromSlot(repo).execute(MenuId(1), day=0, meal_type="обед")
+    result = RemoveDishFromSlot(repo).execute(MenuId(1), day=0, meal_type="обед", user_id=UID)
 
     assert len(result.slots) == 1
     assert result.slots[0].day == 1
@@ -205,7 +208,7 @@ def test_remove_slot_no_op_when_slot_absent() -> None:
     repo.get_by_id.return_value = _menu(slots=[_slot(1, "ужин")])
     repo.save.side_effect = lambda m: m
 
-    result = RemoveDishFromSlot(repo).execute(MenuId(1), day=0, meal_type="обед")
+    result = RemoveDishFromSlot(repo).execute(MenuId(1), day=0, meal_type="обед", user_id=UID)
 
     assert len(result.slots) == 1
 
@@ -215,7 +218,7 @@ def test_remove_slot_raises_when_menu_not_found() -> None:
     repo.get_by_id.return_value = None
 
     with pytest.raises(EntityNotFoundError, match="не найдено"):
-        RemoveDishFromSlot(repo).execute(MenuId(999), 0, "обед")
+        RemoveDishFromSlot(repo).execute(MenuId(999), 0, "обед", user_id=UID)
 
 
 # ---- RemoveItemFromSlot ----
@@ -229,7 +232,7 @@ def test_remove_item_removes_specific_recipe() -> None:
     repo.save.side_effect = lambda m: m
 
     result = RemoveItemFromSlot(repo).execute(
-        MenuId(1), day=0, meal_type="обед", recipe_id=RecipeId(1)
+        MenuId(1), day=0, meal_type="обед", user_id=UID, recipe_id=RecipeId(1)
     )
 
     assert len(result.slots) == 1
@@ -245,7 +248,7 @@ def test_remove_item_removes_specific_product() -> None:
     repo.save.side_effect = lambda m: m
 
     result = RemoveItemFromSlot(repo).execute(
-        MenuId(1), day=0, meal_type="обед", product_id=ProductId(5)
+        MenuId(1), day=0, meal_type="обед", user_id=UID, product_id=ProductId(5)
     )
 
     assert len(result.slots) == 1
@@ -257,7 +260,9 @@ def test_remove_item_raises_when_menu_not_found() -> None:
     repo.get_by_id.return_value = None
 
     with pytest.raises(EntityNotFoundError, match="не найдено"):
-        RemoveItemFromSlot(repo).execute(MenuId(999), 0, "обед", recipe_id=RecipeId(1))
+        RemoveItemFromSlot(repo).execute(
+            MenuId(999), 0, "обед", user_id=UID, recipe_id=RecipeId(1)
+        )
 
 
 # ---- ClearMenu ----
@@ -267,7 +272,7 @@ def test_clear_menu_removes_all_slots() -> None:
     repo.get_by_id.return_value = _menu(slots=[_slot(0), _slot(1), _slot(2)])
     repo.save.side_effect = lambda m: m
 
-    result = ClearMenu(repo).execute(MenuId(1))
+    result = ClearMenu(repo).execute(MenuId(1), UID)
 
     assert result.slots == []
     repo.save.assert_called_once()
@@ -278,4 +283,4 @@ def test_clear_menu_raises_when_not_found() -> None:
     repo.get_by_id.return_value = None
 
     with pytest.raises(EntityNotFoundError, match="не найдено"):
-        ClearMenu(repo).execute(MenuId(999))
+        ClearMenu(repo).execute(MenuId(999), UID)

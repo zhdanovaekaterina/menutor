@@ -3,7 +3,7 @@
 source .venv3-14/bin/activate
 
 pytest -v
-isort src
-mypy src
+isort backend
+mypy backend
 
 deactivate

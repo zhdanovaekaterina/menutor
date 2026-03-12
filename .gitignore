@@ -5,9 +5,9 @@ CLAUDE.md
 .vscode
 .pytest_cache
 .coverage
-pyproject.toml
 .mypy_cache
 .claude
 *_PLAN.md
 __pycache__
 data
+.env

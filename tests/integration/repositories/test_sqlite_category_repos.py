@@ -1,7 +1,9 @@
-from src.infrastructure.repositories.sqlite_product_category_repository import (
+from sqlalchemy import text
+
+from backend.infrastructure.repositories.sqlite_product_category_repository import (
     SqliteProductCategoryRepository,
 )
-from src.infrastructure.repositories.sqlite_recipe_category_repository import (
+from backend.infrastructure.repositories.sqlite_recipe_category_repository import (
     SqliteRecipeCategoryRepository,
 )
 
@@ -24,9 +26,9 @@ def test_product_category_repo_returns_id_name_tuples(conn) -> None:
 
 
 def test_product_category_repo_excludes_inactive(conn) -> None:
-    conn.execute(
+    conn.execute(text(
         "INSERT INTO product_categories (name, active) VALUES ('Архив', 0)"
-    )
+    ))
     conn.commit()
 
     repo = SqliteProductCategoryRepository(conn)
@@ -61,9 +63,9 @@ def test_recipe_category_repo_returns_id_name_tuples(conn) -> None:
 
 
 def test_recipe_category_repo_excludes_inactive(conn) -> None:
-    conn.execute(
+    conn.execute(text(
         "INSERT INTO recipe_categories (name, active) VALUES ('Старые', 0)"
-    )
+    ))
     conn.commit()
 
     repo = SqliteRecipeCategoryRepository(conn)
@@ -84,9 +86,9 @@ def test_recipe_category_repo_sorted(conn) -> None:
 
 
 def test_product_category_find_all_includes_inactive(conn) -> None:
-    conn.execute(
+    conn.execute(text(
         "INSERT INTO product_categories (name, active) VALUES ('Архив', 0)"
-    )
+    ))
     conn.commit()
 
     repo = SqliteProductCategoryRepository(conn)
@@ -138,17 +140,18 @@ def test_product_category_hard_delete_removes_linked_products(conn) -> None:
     repo = SqliteProductCategoryRepository(conn)
     new_id = repo.save("С продуктами")
     conn.execute(
-        "INSERT INTO products (name, category_id, recipe_unit, purchase_unit) "
-        "VALUES ('Тест-продукт', ?, 'g', 'kg')",
-        (new_id,),
+        text("INSERT INTO products (name, brand, supplier, category_id, recipe_unit, purchase_unit, user_id) "
+             "VALUES ('Тест-продукт', '', '', :cat_id, 'g', 'kg', 1)"),
+        {"cat_id": new_id},
     )
     conn.commit()
     repo.hard_delete(new_id)
     all_names = [name for _, name, _ in repo.find_all()]
     assert "С продуктами" not in all_names
     count = conn.execute(
-        "SELECT COUNT(*) FROM products WHERE category_id = ?", (new_id,)
-    ).fetchone()[0]
+        text("SELECT COUNT(*) FROM products WHERE category_id = :cat_id"),
+        {"cat_id": new_id},
+    ).scalar()
     assert count == 0
 
 
@@ -162,18 +165,18 @@ def test_product_category_is_used_true(conn) -> None:
     repo = SqliteProductCategoryRepository(conn)
     new_id = repo.save("С продуктами")
     conn.execute(
-        "INSERT INTO products (name, category_id, recipe_unit, purchase_unit) "
-        "VALUES ('Тест', ?, 'g', 'kg')",
-        (new_id,),
+        text("INSERT INTO products (name, brand, supplier, category_id, recipe_unit, purchase_unit, user_id) "
+             "VALUES ('Тест', '', '', :cat_id, 'g', 'kg', 1)"),
+        {"cat_id": new_id},
     )
     conn.commit()
     assert repo.is_used(new_id) is True
 
 
 def test_recipe_category_find_all_includes_inactive(conn) -> None:
-    conn.execute(
+    conn.execute(text(
         "INSERT INTO recipe_categories (name, active) VALUES ('Старые', 0)"
-    )
+    ))
     conn.commit()
 
     repo = SqliteRecipeCategoryRepository(conn)
@@ -225,16 +228,17 @@ def test_recipe_category_hard_delete_removes_linked_recipes(conn) -> None:
     repo = SqliteRecipeCategoryRepository(conn)
     new_id = repo.save("С рецептами")
     conn.execute(
-        "INSERT INTO recipes (name, category_id, servings) VALUES ('Тест-рецепт', ?, 1)",
-        (new_id,),
+        text("INSERT INTO recipes (name, category_id, servings, user_id) VALUES ('Тест-рецепт', :cat_id, 1, 1)"),
+        {"cat_id": new_id},
     )
     conn.commit()
     repo.hard_delete(new_id)
     all_names = [name for _, name, _ in repo.find_all()]
     assert "С рецептами" not in all_names
     count = conn.execute(
-        "SELECT COUNT(*) FROM recipes WHERE category_id = ?", (new_id,)
-    ).fetchone()[0]
+        text("SELECT COUNT(*) FROM recipes WHERE category_id = :cat_id"),
+        {"cat_id": new_id},
+    ).scalar()
     assert count == 0
 
 
@@ -248,8 +252,8 @@ def test_recipe_category_is_used_true(conn) -> None:
     repo = SqliteRecipeCategoryRepository(conn)
     new_id = repo.save("С рецептами")
     conn.execute(
-        "INSERT INTO recipes (name, category_id, servings) VALUES ('Тест', ?, 1)",
-        (new_id,),
+        text("INSERT INTO recipes (name, category_id, servings, user_id) VALUES ('Тест', :cat_id, 1, 1)"),
+        {"cat_id": new_id},
     )
     conn.commit()
     assert repo.is_used(new_id) is True

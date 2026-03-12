@@ -1,10 +1,10 @@
 from decimal import Decimal
 
-from src.domain.entities.shopping_list import ShoppingList, ShoppingListItem
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.quantity import Quantity
-from src.domain.value_objects.types import ProductId
-from src.infrastructure.export.text_exporter import ShoppingListTextExporter
+from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.quantity import Quantity
+from backend.domain.value_objects.types import ProductId
+from backend.infrastructure.export.text_exporter import ShoppingListTextExporter
 
 
 def _item(name: str, category: str, qty: float, unit: str, cost: float) -> ShoppingListItem:

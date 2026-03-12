@@ -1,0 +1,28 @@
+[project]
+name = "menutor"
+version = "0.2.0"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.18",
+    "bcrypt>=4.0",
+    "fastapi>=0.115",
+    "psycopg2-binary>=2.9",
+    "PyJWT>=2.8",
+    "python-dotenv>=1.2",
+    "SQLAlchemy>=2.0",
+    "uvicorn>=0.34",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=26.1",
+    "httpx>=0.28",
+    "isort>=8.0",
+    "mypy>=1.19",
+    "pylint>=4.0",
+    "pytest>=9.0",
+    "pytest-cov>=7.0",
+]
+
+[tool.isort]
+profile = "black"

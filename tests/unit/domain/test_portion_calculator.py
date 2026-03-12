@@ -1,6 +1,6 @@
-from src.domain.entities.family_member import FamilyMember
-from src.domain.services.portion_calculator import PortionCalculator
-from src.domain.value_objects.types import FamilyMemberId
+from backend.domain.entities.family_member import FamilyMember
+from backend.domain.services.portion_calculator import PortionCalculator
+from backend.domain.value_objects.types import FamilyMemberId
 
 
 def _member(id: int, multiplier: float) -> FamilyMember:

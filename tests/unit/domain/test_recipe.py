@@ -1,8 +1,8 @@
-from src.domain.entities.recipe import Recipe
-from src.domain.value_objects.cooking_step import CookingStep
-from src.domain.value_objects.quantity import Quantity
-from src.domain.value_objects.recipe_ingredient import RecipeIngredient
-from src.domain.value_objects.types import ProductId, RecipeId
+from backend.domain.entities.recipe import Recipe
+from backend.domain.value_objects.cooking_step import CookingStep
+from backend.domain.value_objects.quantity import Quantity
+from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
+from backend.domain.value_objects.types import ProductId, RecipeId
 
 
 def _make_recipe(servings: int = 2) -> Recipe:

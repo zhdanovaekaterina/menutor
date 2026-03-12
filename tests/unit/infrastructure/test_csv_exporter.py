@@ -4,11 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from src.domain.entities.shopping_list import ShoppingList, ShoppingListItem
-from src.domain.value_objects.money import Money
-from src.domain.value_objects.quantity import Quantity
-from src.domain.value_objects.types import ProductId
-from src.infrastructure.export.csv_exporter import ShoppingListCsvExporter
+from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
+from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.quantity import Quantity
+from backend.domain.value_objects.types import ProductId
+from backend.infrastructure.export.csv_exporter import ShoppingListCsvExporter
 
 
 def _item(name: str = "Мука", category: str = "Сыпучие",
