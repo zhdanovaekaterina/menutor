@@ -24,7 +24,6 @@ from backend.domain.value_objects.category import ActiveCategory, Category
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.quantity import Quantity
 
-
 # ── Recipe ─────────────────────────────────────────────────────────
 
 def recipe_to_response(recipe: Recipe) -> RecipeResponse:

@@ -7,7 +7,12 @@ from backend.domain.ports.recipe_repository import RecipeRepository
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
-from backend.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId, UserId
+from backend.domain.value_objects.types import (
+    ProductId,
+    RecipeCategoryId,
+    RecipeId,
+    UserId,
+)
 from backend.infrastructure.database.models import (
     CookingStepRow,
     RecipeIngredientRow,

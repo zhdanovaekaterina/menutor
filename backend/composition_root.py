@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+from sqlalchemy.orm import Session
 
 from backend.application.use_cases.auth import (
     GetCurrentUser,
@@ -71,21 +72,21 @@ from backend.domain.services.password_hasher import PasswordHasher
 from backend.domain.services.portion_calculator import PortionCalculator
 from backend.domain.services.shopping_list_builder import ShoppingListBuilder
 from backend.domain.services.unit_converter import UnitConverter
-from sqlalchemy.orm import Session
-
+from backend.infrastructure.auth.bcrypt_password_hasher import BcryptPasswordHasher
+from backend.infrastructure.auth.jwt_token_service import JwtTokenService
 from backend.infrastructure.database.connection import (
     apply_schema,
     get_engine,
     seed_defaults,
 )
-from backend.infrastructure.auth.bcrypt_password_hasher import BcryptPasswordHasher
-from backend.infrastructure.auth.jwt_token_service import JwtTokenService
 from backend.infrastructure.export.csv_exporter import ShoppingListCsvExporter
 from backend.infrastructure.export.text_exporter import ShoppingListTextExporter
 from backend.infrastructure.repositories.sqlite_family_member_repository import (
     SqliteFamilyMemberRepository,
 )
-from backend.infrastructure.repositories.sqlite_menu_repository import SqliteMenuRepository
+from backend.infrastructure.repositories.sqlite_menu_repository import (
+    SqliteMenuRepository,
+)
 from backend.infrastructure.repositories.sqlite_product_category_repository import (
     SqliteProductCategoryRepository,
 )
