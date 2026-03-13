@@ -8,8 +8,8 @@ from backend.domain.value_objects.category import ActiveCategory, Category
 
 
 class BaseOrmCategoryRepository:
-    _cat_class: ClassVar[type]     # ORM row class for the category table
-    _linked_class: ClassVar[type]  # ORM row class with a category_id FK
+    _cat_class: ClassVar[Any]     # ORM row class for the category table
+    _linked_class: ClassVar[Any]  # ORM row class with a category_id FK
     _linked_fk_col: ClassVar[str]  # Attribute name on _linked_class, e.g. "category_id"
 
     def __init__(self, session: Session) -> None:
@@ -27,7 +27,7 @@ class BaseOrmCategoryRepository:
     # ------------------------------------------------------------------
 
     def find_active(self) -> list[ActiveCategory]:
-        rows = (
+        rows: list[Any] = (
             self._session.query(self._cat_class)
             .filter(self._cat_class.active == 1)
             .order_by(self._cat_class.name)
@@ -36,7 +36,7 @@ class BaseOrmCategoryRepository:
         return [ActiveCategory(r.id, r.name) for r in rows]
 
     def find_all(self) -> list[Category]:
-        rows = (
+        rows: list[Any] = (
             self._session.query(self._cat_class)
             .order_by(self._cat_class.name)
             .all()

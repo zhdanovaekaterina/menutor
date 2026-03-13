@@ -12,7 +12,7 @@ from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
-from backend.domain.value_objects.types import RecipeCategoryId, RecipeId
+from backend.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -24,7 +24,7 @@ def _to_recipe_data(body: RecipeCreate | RecipeUpdate) -> RecipeData:
         servings=body.servings,
         ingredients=[
             RecipeIngredient(
-                product_id=ing.product_id,
+                product_id=ProductId(ing.product_id),
                 quantity=Quantity(ing.quantity_amount, ing.quantity_unit),
             )
             for ing in body.ingredients

@@ -7,8 +7,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.api.routers import auth, categories, family, menus, products, recipes, system
+from backend.api.routers import auth, categories, family, menus, products, recipes
 from backend.api.routers import shopping_list as shopping_list_router
+from backend.api.routers import system
 from backend.composition_root import ApplicationContainer
 from backend.domain.exceptions import (
     AppError,

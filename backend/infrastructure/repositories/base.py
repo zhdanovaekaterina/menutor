@@ -12,7 +12,7 @@ I = TypeVar("I", bound=int)  # Typed ID (NewType over int)
 
 
 class BaseOrmRepository(Generic[E, I]):
-    _row_class: type  # SQLAlchemy ORM model class, e.g. RecipeRow
+    _row_class: Any  # SQLAlchemy ORM model class, e.g. RecipeRow
 
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -86,6 +86,3 @@ class BaseOrmRepository(Generic[E, I]):
         self._session.refresh(row)
         return self._row_to_entity(row)
 
-    def find_all(self) -> list[E]:
-        rows = self._session.query(self._row_class).all()
-        return [self._row_to_entity(r) for r in rows]
