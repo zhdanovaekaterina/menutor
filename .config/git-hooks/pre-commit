@@ -1,9 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 
 source .venv3-14/bin/activate
+source .config/.env
 
-pytest -v
-isort backend
-mypy backend
+models_changed=$(git diff --quiet HEAD -- $MODELS_PATH >/dev/null 2>&1; echo $?)
+have_new_migration=$(git diff --quiet HEAD -- $MIGRATION_PATH >/dev/null 2>&1; echo $?)
+
+if [[ (($models_changed != 0)) && (($have_new_migration == 0)) ]]; then
+    echo "ERROR: Please generate a migration before commiting!"
+    exit 1
+fi
+
+pytest -v && isort backend && mypy backend
 
 deactivate
