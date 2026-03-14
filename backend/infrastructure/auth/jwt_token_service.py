@@ -1,4 +1,5 @@
 import hashlib
+import os
 import secrets
 from datetime import UTC, datetime, timedelta
 
@@ -6,8 +7,6 @@ import jwt
 
 from backend.domain.services.token_service import TokenService
 from backend.domain.value_objects.types import UserId
-
-ACCESS_TOKEN_MINUTES = 30
 
 
 class JwtTokenService(TokenService):
@@ -17,7 +16,7 @@ class JwtTokenService(TokenService):
     def create_access_token(self, user_id: UserId) -> str:
         payload = {
             "sub": str(int(user_id)),
-            "exp": datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_MINUTES),
+            "exp": datetime.now(UTC) + timedelta(minutes=int(os.environ.get("ACCESS_TOKEN_MINUTES", 30))),
             "type": "access",
         }
         return jwt.encode(payload, self._secret, algorithm="HS256")
