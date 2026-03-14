@@ -153,7 +153,7 @@ class ApplicationContainer:
         )
 
         # ── Application — Auth ──────────────────────────────────────────
-        self.register_user = RegisterUser(user_repo, password_hasher)
+        self.register_user = RegisterUser(user_repo, password_hasher, family_repo)
         self.login_user = LoginUser(
             user_repo, password_hasher, token_service, refresh_token_repo
         )
