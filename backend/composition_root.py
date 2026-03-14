@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 
 from backend.application.use_cases.auth import (
+    ChangePassword,
     GetCurrentUser,
     LoginUser,
     LogoutUser,
@@ -161,6 +162,7 @@ class ApplicationContainer:
         )
         self.get_current_user = GetCurrentUser(token_service, user_repo)
         self.logout_user = LogoutUser(token_service, refresh_token_repo)
+        self.change_password = ChangePassword(user_repo, password_hasher)
 
         # Expose for PATCH /auth/me
         self.password_hasher = password_hasher

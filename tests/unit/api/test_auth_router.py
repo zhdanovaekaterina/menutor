@@ -218,3 +218,43 @@ class TestUpdateMe:
     ) -> None:
         resp = unauth_client.patch("/api/auth/me", json={"nickname": "new"})
         assert resp.status_code == 401
+
+
+# ---- POST /api/auth/me/password ----
+
+
+class TestChangePassword:
+    def test_returns_204_on_success(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.change_password.execute.return_value = None
+        body = {"current_password": "oldpass", "new_password": "newpass123"}
+        resp = client.post("/api/auth/me/password", json=body)
+        assert resp.status_code == 204
+        container.change_password.execute.assert_called_once()
+
+    def test_returns_400_on_wrong_current_password(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        from backend.domain.exceptions import AuthenticationError
+
+        container.change_password.execute.side_effect = AuthenticationError(
+            "Неверный текущий пароль"
+        )
+        body = {"current_password": "wrong", "new_password": "newpass123"}
+        resp = client.post("/api/auth/me/password", json=body)
+        assert resp.status_code == 400
+        assert "Неверный текущий пароль" in resp.json()["detail"]
+
+    def test_returns_401_without_auth(
+        self, unauth_client: TestClient, container: MagicMock
+    ) -> None:
+        body = {"current_password": "old", "new_password": "new"}
+        resp = unauth_client.post("/api/auth/me/password", json=body)
+        assert resp.status_code == 401
+
+    def test_returns_422_on_missing_fields(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        resp = client.post("/api/auth/me/password", json={"current_password": "old"})
+        assert resp.status_code == 422

@@ -146,6 +146,24 @@ class GetCurrentUser:
         return user
 
 
+@dataclass
+class ChangePasswordData:
+    current_password: str
+    new_password: str
+
+
+class ChangePassword:
+    def __init__(self, user_repo: UserRepository, hasher: PasswordHasher) -> None:
+        self._user_repo = user_repo
+        self._hasher = hasher
+
+    def execute(self, user: User, data: ChangePasswordData) -> None:
+        if not self._hasher.verify(data.current_password, user.hashed_password):
+            raise AuthenticationError("Неверный текущий пароль")
+        user.hashed_password = self._hasher.hash(data.new_password)
+        self._user_repo.save(user)
+
+
 class LogoutUser:
     def __init__(
         self,

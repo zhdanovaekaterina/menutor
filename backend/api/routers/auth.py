@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from backend.api.auth import get_current_user
 from backend.api.deps import get_container
 from backend.api.schemas.auth import (
+    ChangePasswordRequest,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
@@ -10,7 +11,11 @@ from backend.api.schemas.auth import (
     UpdateProfileRequest,
     UserResponse,
 )
-from backend.application.use_cases.auth import LoginData, RegisterData
+from backend.application.use_cases.auth import (
+    ChangePasswordData,
+    LoginData,
+    RegisterData,
+)
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
 from backend.domain.exceptions import AuthenticationError, UserAlreadyExistsError
@@ -97,6 +102,25 @@ def get_me(user: User = Depends(get_current_user)) -> UserResponse:
         nickname=user.nickname,
         created_at=user.created_at,
     )
+
+
+@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    body: ChangePasswordRequest,
+    user: User = Depends(get_current_user),
+    container: ApplicationContainer = Depends(get_container),
+) -> None:
+    try:
+        container.change_password.execute(
+            user, ChangePasswordData(
+                current_password=body.current_password,
+                new_password=body.new_password,
+            )
+        )
+    except AuthenticationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
 
 
 @router.patch("/me", response_model=UserResponse)
