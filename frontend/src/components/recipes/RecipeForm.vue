@@ -120,7 +120,7 @@ function onSave() {
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Вес (г)</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Вес готового блюда (г)</label>
         <input v-model.number="weight" type="number" min="0"
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
       </div>

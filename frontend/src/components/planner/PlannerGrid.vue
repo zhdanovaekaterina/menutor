@@ -19,7 +19,7 @@ const meals = ['Завтрак', 'Обед', 'Ужин']
 </script>
 
 <template>
-  <div class="grid grid-cols-[auto_repeat(7,1fr)] gap-px bg-gray-200 rounded-lg overflow-hidden text-sm">
+  <div class="h-full grid grid-cols-[auto_repeat(7,1fr)] grid-rows-[auto_repeat(3,1fr)] gap-px bg-gray-200 rounded-lg overflow-hidden text-sm">
     <!-- Header row -->
     <div class="bg-gray-100" />
     <div

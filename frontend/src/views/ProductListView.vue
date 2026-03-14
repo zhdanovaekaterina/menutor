@@ -39,6 +39,7 @@ async function onSave(data: ProductCreate, id: number | null) {
       const created = await store.create(data)
       selectedId.value = created.id
     }
+    formOpen.value = false
   } catch (e: any) {
     toast.show(e?.response?.data?.detail ?? 'Ошибка сохранения', 'error')
   }

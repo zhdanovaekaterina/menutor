@@ -72,6 +72,7 @@ async function onAddItem(day: number, mealType: string, data: { type: 'recipe' |
     product_id: data.type === 'product' ? data.id : null,
     quantity: data.type === 'product' ? 1 : null,
     unit: data.type === 'product' ? (productStore.products.find((p) => p.id === data.id)?.recipe_unit ?? null) : null,
+    servings_override: data.type === 'recipe' ? 1 : null,
   }
   await menuStore.addSlotToMenu(slot)
 }
