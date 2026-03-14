@@ -25,6 +25,7 @@ const weight = ref(0)
 const ingredients = ref<{ product_id: number | null; quantity_amount: number; quantity_unit: string }[]>([])
 const steps = ref<{ order: number; description: string }[]>([])
 const newStep = ref('')
+const editingStepIdx = ref<number | null>(null)
 
 watch(
   () => props.recipe,
@@ -157,8 +158,24 @@ function onSave() {
       </summary>
       <div class="pt-2 space-y-2">
         <ol class="list-decimal list-inside text-sm space-y-1">
-          <li v-for="s in steps" :key="s.order" class="px-2 py-1 rounded hover:bg-gray-100">
-            {{ s.description }}
+          <li v-for="(s, i) in steps" :key="s.order" class="group flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100">
+            <template v-if="editingStepIdx === i">
+              <input
+                v-model="s.description"
+                class="flex-1 border border-blue-300 rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                @keydown.enter="editingStepIdx = null"
+                @blur="editingStepIdx = null"
+                autofocus
+              />
+            </template>
+            <template v-else>
+              <span class="flex-1">{{ s.description }}</span>
+              <button
+                class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-500 shrink-0"
+                title="Редактировать"
+                @click="editingStepIdx = i"
+              >✎</button>
+            </template>
           </li>
         </ol>
         <div class="flex gap-2">
