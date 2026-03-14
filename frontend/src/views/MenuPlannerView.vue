@@ -40,6 +40,11 @@ onMounted(async () => {
 const selectedId = computed(() => menuStore.current?.id ?? null)
 const slots = computed(() => menuStore.current?.slots ?? [])
 
+const totalFamilyPortions = computed(() => {
+  const sum = familyStore.members.reduce((acc, m) => acc + m.portion_multiplier, 0)
+  return sum > 0 ? sum : 1
+})
+
 const recipeNames = computed(() =>
   Object.fromEntries(recipeStore.recipes.map((r) => [r.id, r.name])),
 )
@@ -72,7 +77,7 @@ async function onAddItem(day: number, mealType: string, data: { type: 'recipe' |
     product_id: data.type === 'product' ? data.id : null,
     quantity: data.type === 'product' ? 1 : null,
     unit: data.type === 'product' ? (productStore.products.find((p) => p.id === data.id)?.recipe_unit ?? null) : null,
-    servings_override: data.type === 'recipe' ? 1 : null,
+    servings_override: data.type === 'recipe' ? totalFamilyPortions.value : null,
   }
   await menuStore.addSlotToMenu(slot)
 }

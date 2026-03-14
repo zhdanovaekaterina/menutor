@@ -32,7 +32,7 @@ function itemName(slot: MenuSlot) {
 function itemDetail(slot: MenuSlot) {
   if (slot.recipe_id != null) {
     const s = slot.servings_override ?? slot.quantity
-    return s != null ? `${s} п.` : ''
+    return s != null ? `${Number(s).toFixed(1)} п.` : ''
   }
   if (slot.product_id != null && slot.quantity != null) {
     return `${slot.quantity} ${slot.unit ?? ''}`
