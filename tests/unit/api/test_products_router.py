@@ -21,7 +21,6 @@ def _product(id: int = 1) -> Product:
         price_per_purchase_unit=Money(Decimal("80")),
         brand="Макфа",
         supplier="Магнит",
-        weight_per_piece_g=None,
         conversion_factor=1000.0,
         category_id=ProductCategoryId(1),
     )

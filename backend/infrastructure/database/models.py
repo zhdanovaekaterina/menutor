@@ -88,7 +88,6 @@ class ProductRow(Base):
     recipe_unit = Column(String, ForeignKey("units.name"), nullable=False)
     purchase_unit = Column(String, ForeignKey("units.name"), nullable=False)
     price_per_purchase_unit = Column(Float, nullable=False, default=0.0, server_default="0")
-    weight_per_piece_g = Column(Float, nullable=True)
     conversion_factor = Column(Float, nullable=False, default=1.0, server_default="1.0")
 
 

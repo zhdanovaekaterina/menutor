@@ -28,7 +28,6 @@ def _data(**kwargs) -> ProductData:
         purchase_unit="kg",
         price=Money(Decimal("80")),
         brand="",
-        weight_per_piece_g=None,
         conversion_factor=1000,
     )
     defaults.update(kwargs)

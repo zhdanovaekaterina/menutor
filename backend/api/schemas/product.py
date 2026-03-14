@@ -12,7 +12,7 @@ class ProductCreate(BaseModel):
     price_currency: str = "RUB"
     brand: str = ""
     supplier: str = ""
-    weight_per_piece_g: float | None = None
+
     conversion_factor: float = 1.0
 
 
@@ -25,7 +25,7 @@ class ProductUpdate(BaseModel):
     price_currency: str = "RUB"
     brand: str = ""
     supplier: str = ""
-    weight_per_piece_g: float | None = None
+
     conversion_factor: float = 1.0
 
 
@@ -44,5 +44,4 @@ class ProductResponse(BaseModel):
     price_currency: str
     brand: str
     supplier: str
-    weight_per_piece_g: float | None
     conversion_factor: float

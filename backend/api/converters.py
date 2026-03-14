@@ -61,7 +61,6 @@ def product_to_response(product: Product) -> ProductResponse:
         price_currency=product.price_per_purchase_unit.currency,
         brand=product.brand,
         supplier=product.supplier,
-        weight_per_piece_g=product.weight_per_piece_g,
         conversion_factor=product.conversion_factor,
     )
 

@@ -29,7 +29,6 @@ def _to_product_data(body: ProductCreate | ProductUpdate) -> ProductData:
         price=Money(body.price_amount, body.price_currency),
         brand=body.brand,
         supplier=body.supplier,
-        weight_per_piece_g=body.weight_per_piece_g,
         conversion_factor=body.conversion_factor,
     )
 

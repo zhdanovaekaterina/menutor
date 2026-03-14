@@ -89,9 +89,8 @@ def test_update_existing_product(repo: SqliteProductRepository, user_id: UserId)
     assert result.price_per_purchase_unit == Money(Decimal("120"))
 
 
-def test_brand_and_weight_per_piece_persisted(repo: SqliteProductRepository, user_id: UserId) -> None:
-    saved = repo.save(_flour(user_id, brand="Аладушкин", weight_per_piece_g=1000.0))
+def test_brand_persisted(repo: SqliteProductRepository, user_id: UserId) -> None:
+    saved = repo.save(_flour(user_id, brand="Аладушкин"))
     retrieved = repo.get_by_id(saved.id)
     assert retrieved is not None
     assert retrieved.brand == "Аладушкин"
-    assert retrieved.weight_per_piece_g == pytest.approx(1000.0)

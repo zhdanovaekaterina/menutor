@@ -28,7 +28,6 @@ CREATE TABLE IF NOT EXISTS products (
     recipe_unit             TEXT    NOT NULL REFERENCES units(name),
     purchase_unit           TEXT    NOT NULL REFERENCES units(name),
     price_per_purchase_unit REAL    NOT NULL DEFAULT 0,
-    weight_per_piece_g      REAL,
     conversion_factor       REAL    NOT NULL DEFAULT 1.0
 );
 
