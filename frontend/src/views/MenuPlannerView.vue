@@ -41,15 +41,15 @@ const selectedId = computed(() => menuStore.current?.id ?? null)
 const slots = computed(() => menuStore.current?.slots ?? [])
 
 const totalFamilyPortions = computed(() => {
-  const sum = familyStore.members.reduce((acc, m) => acc + m.portion_multiplier, 0)
+  const sum = familyStore.items.reduce((acc, m) => acc + m.portion_multiplier, 0)
   return sum > 0 ? sum : 1
 })
 
 const recipeNames = computed(() =>
-  Object.fromEntries(recipeStore.recipes.map((r) => [r.id, r.name])),
+  Object.fromEntries(recipeStore.items.map((r) => [r.id, r.name])),
 )
 const productNames = computed(() =>
-  Object.fromEntries(productStore.products.map((p) => [p.id, p.name])),
+  Object.fromEntries(productStore.items.map((p) => [p.id, p.name])),
 )
 
 async function onSelectMenu(id: number) {
@@ -76,7 +76,7 @@ async function onAddItem(day: number, mealType: string, data: { type: 'recipe' |
     recipe_id: data.type === 'recipe' ? data.id : null,
     product_id: data.type === 'product' ? data.id : null,
     quantity: data.type === 'product' ? 1 : null,
-    unit: data.type === 'product' ? (productStore.products.find((p) => p.id === data.id)?.recipe_unit ?? null) : null,
+    unit: data.type === 'product' ? (productStore.items.find((p) => p.id === data.id)?.recipe_unit ?? null) : null,
     servings_override: data.type === 'recipe' ? totalFamilyPortions.value : null,
   }
   await menuStore.addSlotToMenu(slot)
@@ -173,9 +173,9 @@ async function onGenerateShoppingList() {
       <!-- Right: source panel -->
       <div class="w-56 shrink-0">
         <SourcePanel
-          :recipes="recipeStore.recipes"
-          :products="productStore.products"
-          :family-members="familyStore.members"
+          :recipes="recipeStore.items"
+          :products="productStore.items"
+          :family-members="familyStore.items"
         />
       </div>
     </div>

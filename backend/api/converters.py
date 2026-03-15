@@ -1,11 +1,12 @@
 """Конвертеры между доменными объектами и Pydantic-схемами."""
 
 from backend.api.schemas.category import ActiveCategoryResponse, CategoryResponse
-from backend.api.schemas.family import FamilyMemberResponse
+from backend.api.schemas.family import FamilyMemberCreate, FamilyMemberResponse
 from backend.api.schemas.menu import MenuResponse, MenuSlotSchema
-from backend.api.schemas.product import ProductResponse
+from backend.api.schemas.product import ProductCreate, ProductResponse
 from backend.api.schemas.recipe import (
     CookingStepSchema,
+    RecipeCreate,
     RecipeIngredientSchema,
     RecipeResponse,
 )
@@ -15,14 +16,25 @@ from backend.api.schemas.shopping_list import (
     ShoppingListItemResponse,
     ShoppingListResponse,
 )
+from backend.application.use_cases.manage_family import FamilyMemberData
+from backend.application.use_cases.manage_product import ProductData
+from backend.application.use_cases.manage_recipe import RecipeData
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.entities.product import Product
 from backend.domain.entities.recipe import Recipe
 from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
 from backend.domain.value_objects.category import ActiveCategory, Category
+from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.quantity import Quantity
+from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
+from backend.domain.value_objects.types import (
+    ProductCategoryId,
+    ProductId,
+    RecipeCategoryId,
+    RecipeId,
+)
 
 # ── Recipe ─────────────────────────────────────────────────────────
 
@@ -139,4 +151,60 @@ def shopping_list_to_response(sl: ShoppingList) -> ShoppingListResponse:
     return ShoppingListResponse(
         items=[shopping_item_to_response(item) for item in sl.items],
         total_cost=money_to_schema(sl.total_cost()),
+    )
+
+
+# ── Schema → Domain Data ─────────────────────────────────────────
+
+def schema_to_recipe_data(body: RecipeCreate) -> RecipeData:
+    return RecipeData(
+        name=body.name,
+        category_id=RecipeCategoryId(body.category_id),
+        servings=body.servings,
+        ingredients=[
+            RecipeIngredient(
+                product_id=ProductId(ing.product_id),
+                quantity=Quantity(ing.quantity_amount, ing.quantity_unit),
+            )
+            for ing in body.ingredients
+        ],
+        steps=[
+            CookingStep(order=s.order, description=s.description)
+            for s in body.steps
+        ],
+        weight=body.weight,
+    )
+
+
+def schema_to_product_data(body: ProductCreate) -> ProductData:
+    return ProductData(
+        name=body.name,
+        category_id=ProductCategoryId(body.category_id),
+        recipe_unit=body.recipe_unit,
+        purchase_unit=body.purchase_unit,
+        price=Money(body.price_amount, body.price_currency),
+        brand=body.brand,
+        supplier=body.supplier,
+        conversion_factor=body.conversion_factor,
+    )
+
+
+def schema_to_family_data(body: FamilyMemberCreate) -> FamilyMemberData:
+    return FamilyMemberData(
+        name=body.name,
+        portion_multiplier=body.portion_multiplier,
+        dietary_restrictions=body.dietary_restrictions,
+        comment=body.comment,
+    )
+
+
+def schema_to_menu_slot(s: MenuSlotSchema) -> MenuSlot:
+    return MenuSlot(
+        day=s.day,
+        meal_type=s.meal_type,
+        recipe_id=RecipeId(s.recipe_id) if s.recipe_id is not None else None,
+        product_id=ProductId(s.product_id) if s.product_id is not None else None,
+        quantity=s.quantity,
+        unit=s.unit,
+        servings_override=s.servings_override,
     )

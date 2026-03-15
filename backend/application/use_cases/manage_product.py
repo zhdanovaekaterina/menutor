@@ -1,7 +1,15 @@
 from dataclasses import dataclass, field
+from typing import Any
 
+from backend.application.use_cases.crud_base import (
+    CreateEntity,
+    DeleteEntity,
+    EditEntity,
+    GetEntity,
+    ListEntities,
+    load_owned,
+)
 from backend.domain.entities.product import Product
-from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.ports.product_category_repository import ProductCategoryRepository
 from backend.domain.ports.product_repository import ProductRepository
 from backend.domain.value_objects.category import ActiveCategory
@@ -21,57 +29,42 @@ class ProductData:
     conversion_factor: float = field(default=1.0)
 
 
-class CreateProduct:
+def _build_product(id: ProductId, data: ProductData, user_id: UserId) -> Product:
+    return Product(
+        id=id,
+        name=data.name,
+        recipe_unit=data.recipe_unit,
+        purchase_unit=data.purchase_unit,
+        price_per_purchase_unit=data.price,
+        brand=data.brand,
+        supplier=data.supplier,
+        conversion_factor=data.conversion_factor,
+        category_id=data.category_id,
+        user_id=user_id,
+    )
+
+
+class CreateProduct(CreateEntity):
     def __init__(self, repo: ProductRepository) -> None:
-        self._repo = repo
+        super().__init__(repo)
 
-    def execute(self, data: ProductData, user_id: UserId) -> Product:
-        product = Product(
-            id=ProductId(0),
-            name=data.name,
-            recipe_unit=data.recipe_unit,
-            purchase_unit=data.purchase_unit,
-            price_per_purchase_unit=data.price,
-            brand=data.brand,
-            supplier=data.supplier,
-            conversion_factor=data.conversion_factor,
-            category_id=data.category_id,
-            user_id=user_id,
-        )
-        return self._repo.save(product)
+    def _build_entity(self, data: Any, user_id: UserId) -> Product:
+        return _build_product(ProductId(0), data, user_id)
 
 
-class EditProduct:
+class EditProduct(EditEntity):
+    _label = "Продукт"
+
     def __init__(self, repo: ProductRepository) -> None:
-        self._repo = repo
+        super().__init__(repo)
 
-    def execute(self, id: ProductId, data: ProductData, user_id: UserId) -> Product:
-        existing = self._repo.get_by_id(id)
-        if existing is None or existing.user_id != user_id:
-            raise EntityNotFoundError(f"Продукт {id} не найден")
-        product = Product(
-            id=id,
-            name=data.name,
-            recipe_unit=data.recipe_unit,
-            purchase_unit=data.purchase_unit,
-            price_per_purchase_unit=data.price,
-            brand=data.brand,
-            supplier=data.supplier,
-            conversion_factor=data.conversion_factor,
-            category_id=data.category_id,
-            user_id=user_id,
-        )
-        return self._repo.save(product)
+    def _build_entity(self, id: Any, data: Any, user_id: UserId) -> Product:
+        return _build_product(id, data, user_id)
 
 
-class DeleteProduct:
-    def __init__(self, repo: ProductRepository) -> None:
-        self._repo = repo
-
-    def execute(self, id: ProductId, user_id: UserId) -> None:
-        existing = self._repo.get_by_id(id)
-        if existing is not None and existing.user_id == user_id:
-            self._repo.delete(id)
+DeleteProduct = DeleteEntity
+GetProduct = GetEntity
+ListProducts = ListEntities
 
 
 class UpdateProductPrice:
@@ -79,30 +72,9 @@ class UpdateProductPrice:
         self._repo = repo
 
     def execute(self, id: ProductId, price: Money, user_id: UserId) -> Product:
-        product = self._repo.get_by_id(id)
-        if product is None or product.user_id != user_id:
-            raise EntityNotFoundError(f"Продукт {id} не найден")
+        product = load_owned(self._repo, id, user_id, "Продукт")
         product.price_per_purchase_unit = price
         return self._repo.save(product)
-
-
-class GetProduct:
-    def __init__(self, repo: ProductRepository) -> None:
-        self._repo = repo
-
-    def execute(self, id: ProductId, user_id: UserId) -> Product | None:
-        product = self._repo.get_by_id(id)
-        if product is not None and product.user_id != user_id:
-            return None
-        return product
-
-
-class ListProducts:
-    def __init__(self, repo: ProductRepository) -> None:
-        self._repo = repo
-
-    def execute(self, user_id: UserId) -> list[Product]:
-        return self._repo.find_all(user_id)
 
 
 class ListProductCategories:

@@ -21,13 +21,7 @@ class RecipeCreate(BaseModel):
     weight: int = 0
 
 
-class RecipeUpdate(BaseModel):
-    name: str
-    category_id: int
-    servings: int
-    ingredients: list[RecipeIngredientSchema] = []
-    steps: list[CookingStepSchema] = []
-    weight: int = 0
+RecipeUpdate = RecipeCreate
 
 
 class RecipeResponse(BaseModel):

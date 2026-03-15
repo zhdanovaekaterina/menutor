@@ -191,7 +191,6 @@ class TestUpdateMe:
     def test_update_nickname(
         self, client: TestClient, container: MagicMock
     ) -> None:
-        # client auto-injects TEST_USER
         updated = User(
             id=UserId(1),
             email="test@example.com",
@@ -199,19 +198,19 @@ class TestUpdateMe:
             hashed_password="hashed",
             created_at=datetime(2025, 1, 1, tzinfo=UTC),
         )
-        container.user_repo.save.return_value = updated
+        container.update_profile.execute.return_value = updated
         resp = client.patch("/api/auth/me", json={"nickname": "new_nick"})
         assert resp.status_code == 200
         assert resp.json()["nickname"] == "new_nick"
+        container.update_profile.execute.assert_called_once()
 
     def test_update_password(
         self, client: TestClient, container: MagicMock
     ) -> None:
-        container.password_hasher.hash.return_value = "new_hashed"
-        container.user_repo.save.return_value = _user()
+        container.update_profile.execute.return_value = _user()
         resp = client.patch("/api/auth/me", json={"password": "newpass123"})
         assert resp.status_code == 200
-        container.password_hasher.hash.assert_called_once_with("newpass123")
+        container.update_profile.execute.assert_called_once()
 
     def test_returns_401_without_auth(
         self, unauth_client: TestClient, container: MagicMock

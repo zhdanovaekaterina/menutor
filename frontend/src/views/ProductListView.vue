@@ -18,7 +18,7 @@ const formOpen = ref(false)
 onMounted(() => store.load())
 
 const selectedProduct = computed(() =>
-  store.products.find((p) => p.id === selectedId.value) ?? null,
+  store.items.find((p) => p.id === selectedId.value) ?? null,
 )
 
 function onSelect(id: number) {
@@ -82,7 +82,7 @@ function onClear() {
 
     <div class="flex-1 min-h-0">
       <ProductTable
-        :products="store.products"
+        :products="store.items"
         :categories="store.categories"
         :selected-id="selectedId"
         @select="onSelect"

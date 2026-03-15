@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
   addSlot,
   clearMenu,
@@ -14,8 +14,17 @@ import { useToastStore } from './toast'
 
 export const useMenuStore = defineStore('menus', () => {
   const menus = ref<Menu[]>([])
-  const current = ref<Menu | null>(null)
+  const selectedId = ref<number | null>(null)
   const loading = ref(false)
+
+  const current = computed(() =>
+    menus.value.find((m) => m.id === selectedId.value) ?? null,
+  )
+
+  function _updateMenu(menu: Menu) {
+    const idx = menus.value.findIndex((m) => m.id === menu.id)
+    if (idx !== -1) menus.value[idx] = menu
+  }
 
   async function load() {
     loading.value = true
@@ -31,7 +40,9 @@ export const useMenuStore = defineStore('menus', () => {
   async function select(id: number) {
     loading.value = true
     try {
-      current.value = await fetchMenu(id)
+      const menu = await fetchMenu(id)
+      _updateMenu(menu)
+      selectedId.value = id
     } catch {
       useToastStore().show('Ошибка загрузки меню', 'error')
     } finally {
@@ -42,7 +53,7 @@ export const useMenuStore = defineStore('menus', () => {
   async function create(name: string) {
     const menu = await createMenu(name)
     menus.value.push(menu)
-    current.value = menu
+    selectedId.value = menu.id
     useToastStore().show('Меню создано', 'success')
     return menu
   }
@@ -50,25 +61,28 @@ export const useMenuStore = defineStore('menus', () => {
   async function remove(id: number) {
     await deleteMenu(id)
     menus.value = menus.value.filter((m) => m.id !== id)
-    if (current.value?.id === id) current.value = null
+    if (selectedId.value === id) selectedId.value = null
     useToastStore().show('Меню удалено', 'success')
   }
 
   async function addSlotToMenu(slot: MenuSlot) {
     if (!current.value) return
-    current.value = await addSlot(current.value.id, slot)
+    const updated = await addSlot(current.value.id, slot)
+    _updateMenu(updated)
   }
 
   async function removeSlotFromMenu(data: RemoveItemRequest) {
     if (!current.value) return
-    current.value = await removeSlot(current.value.id, data)
+    const updated = await removeSlot(current.value.id, data)
+    _updateMenu(updated)
   }
 
   async function clear() {
     if (!current.value) return
-    current.value = await clearMenu(current.value.id)
+    const updated = await clearMenu(current.value.id)
+    _updateMenu(updated)
     useToastStore().show('Меню очищено', 'success')
   }
 
-  return { menus, current, loading, load, select, create, remove, addSlotToMenu, removeSlotFromMenu, clear }
+  return { menus, current, selectedId, loading, load, select, create, remove, addSlotToMenu, removeSlotFromMenu, clear }
 })

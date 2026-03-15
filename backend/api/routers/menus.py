@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.api.auth import get_current_user
-from backend.api.converters import menu_to_response
+from backend.api.converters import menu_to_response, schema_to_menu_slot
 from backend.api.deps import get_container
 from backend.api.schemas.menu import (
     MenuCreate,
@@ -10,24 +10,10 @@ from backend.api.schemas.menu import (
     RemoveItemRequest,
 )
 from backend.composition_root import ApplicationContainer
-from backend.domain.entities.menu import MenuSlot
 from backend.domain.entities.user import User
-from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.value_objects.types import MenuId, ProductId, RecipeId
 
 router = APIRouter(prefix="/menus", tags=["menus"])
-
-
-def _schema_to_slot(s: MenuSlotSchema) -> MenuSlot:
-    return MenuSlot(
-        day=s.day,
-        meal_type=s.meal_type,
-        recipe_id=RecipeId(s.recipe_id) if s.recipe_id is not None else None,
-        product_id=ProductId(s.product_id) if s.product_id is not None else None,
-        quantity=s.quantity,
-        unit=s.unit,
-        servings_override=s.servings_override,
-    )
 
 
 @router.get("", response_model=list[MenuResponse])
@@ -80,13 +66,8 @@ def add_slot(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> MenuResponse:
-    slot = _schema_to_slot(body)
-    try:
-        menu = container.add_dish_to_slot.execute(MenuId(menu_id), slot, user.id)
-    except EntityNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
-        ) from exc
+    slot = schema_to_menu_slot(body)
+    menu = container.add_dish_to_slot.execute(MenuId(menu_id), slot, user.id)
     return menu_to_response(menu)
 
 
@@ -97,21 +78,16 @@ def remove_slot(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> MenuResponse:
-    try:
-        menu = container.remove_item_from_slot.execute(
-            menu_id=MenuId(menu_id),
-            day=body.day,
-            meal_type=body.meal_type,
-            user_id=user.id,
-            recipe_id=RecipeId(body.recipe_id) if body.recipe_id is not None else None,
-            product_id=(
-                ProductId(body.product_id) if body.product_id is not None else None
-            ),
-        )
-    except EntityNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
-        ) from exc
+    menu = container.remove_item_from_slot.execute(
+        menu_id=MenuId(menu_id),
+        day=body.day,
+        meal_type=body.meal_type,
+        user_id=user.id,
+        recipe_id=RecipeId(body.recipe_id) if body.recipe_id is not None else None,
+        product_id=(
+            ProductId(body.product_id) if body.product_id is not None else None
+        ),
+    )
     return menu_to_response(menu)
 
 
@@ -121,10 +97,5 @@ def clear_menu(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> MenuResponse:
-    try:
-        menu = container.clear_menu.execute(MenuId(menu_id), user.id)
-    except EntityNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
-        ) from exc
+    menu = container.clear_menu.execute(MenuId(menu_id), user.id)
     return menu_to_response(menu)

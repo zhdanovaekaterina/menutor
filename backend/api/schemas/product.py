@@ -12,21 +12,10 @@ class ProductCreate(BaseModel):
     price_currency: str = "RUB"
     brand: str = ""
     supplier: str = ""
-
     conversion_factor: float = 1.0
 
 
-class ProductUpdate(BaseModel):
-    name: str
-    category_id: int
-    recipe_unit: str
-    purchase_unit: str
-    price_amount: Decimal
-    price_currency: str = "RUB"
-    brand: str = ""
-    supplier: str = ""
-
-    conversion_factor: float = 1.0
+ProductUpdate = ProductCreate
 
 
 class PriceUpdate(BaseModel):

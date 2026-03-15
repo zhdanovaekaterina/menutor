@@ -92,7 +92,7 @@ async function onConfirmDelete() {
         </thead>
         <tbody class="divide-y">
           <tr
-            v-for="m in store.members"
+            v-for="m in store.items"
             :key="m.id"
             :class="m.id === selectedId ? 'bg-blue-50' : 'hover:bg-gray-50'"
             class="cursor-pointer"

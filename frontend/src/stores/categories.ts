@@ -32,26 +32,33 @@ export const useCategoryStore = defineStore('categories', () => {
   }
 
   async function create(type: 'product' | 'recipe', name: string) {
-    await createCategory(type, name)
-    await load(type)
+    const result = await createCategory(type, name)
+    list(type).value.push({ id: result.id, name, active: true })
     useToastStore().show('Категория создана', 'success')
   }
 
   async function edit(type: 'product' | 'recipe', id: number, name: string) {
     await editCategory(type, id, name)
-    await load(type)
+    const cat = list(type).value.find((c) => c.id === id)
+    if (cat) cat.name = name
     useToastStore().show('Категория обновлена', 'success')
   }
 
   async function remove(type: 'product' | 'recipe', id: number, hard = false) {
     await deleteCategoryApi(type, id, hard)
-    await load(type)
+    if (hard) {
+      list(type).value = list(type).value.filter((c) => c.id !== id)
+    } else {
+      const cat = list(type).value.find((c) => c.id === id)
+      if (cat) cat.active = false
+    }
     useToastStore().show(hard ? 'Категория удалена' : 'Категория скрыта', 'success')
   }
 
   async function activate(type: 'product' | 'recipe', id: number) {
     await activateCategory(type, id)
-    await load(type)
+    const cat = list(type).value.find((c) => c.id === id)
+    if (cat) cat.active = true
     useToastStore().show('Категория активирована', 'success')
   }
 

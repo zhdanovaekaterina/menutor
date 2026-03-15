@@ -5,7 +5,9 @@ main.py создаёт ApplicationContainer и передаёт его в MainWi
 """
 
 import os
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
@@ -17,26 +19,14 @@ from backend.application.use_cases.auth import (
     LogoutUser,
     RefreshAccessToken,
     RegisterUser,
+    UpdateProfile,
 )
 from backend.application.use_cases.generate_shopping_list import GenerateShoppingList
 from backend.application.use_cases.import_export import (
     ExportShoppingListAsCsv,
     ExportShoppingListAsText,
 )
-from backend.application.use_cases.manage_category import (
-    ActivateCategory,
-    CheckProductCategoryUsed,
-    CheckRecipeCategoryUsed,
-    CreateProductCategory,
-    CreateRecipeCategory,
-    DeleteProductCategory,
-    DeleteRecipeCategory,
-    EditProductCategory,
-    EditRecipeCategory,
-    HardDeleteCategory,
-    ListAllProductCategories,
-    ListAllRecipeCategories,
-)
+from backend.application.use_cases.manage_category import CategoryBundle
 from backend.application.use_cases.manage_family import (
     CreateFamilyMember,
     DeleteFamilyMember,
@@ -108,131 +98,153 @@ from backend.infrastructure.repositories.sqlite_user_repository import (
 )
 
 
+@dataclass
+class _Infrastructure:
+    """Holds all infrastructure objects created during startup."""
+
+    engine: Any
+    session: Session
+    user_repo: SqliteUserRepository
+    refresh_token_repo: SqliteRefreshTokenRepository
+    password_hasher: PasswordHasher
+    token_service: JwtTokenService
+    recipe_repo: SqliteRecipeRepository
+    product_repo: SqliteProductRepository
+    menu_repo: SqliteMenuRepository
+    family_repo: SqliteFamilyMemberRepository
+    product_category_repo: SqliteProductCategoryRepository
+    recipe_category_repo: SqliteRecipeCategoryRepository
+    text_exporter: ShoppingListTextExporter
+    csv_exporter: ShoppingListCsvExporter
+    builder: ShoppingListBuilder
+
+
+def _create_infrastructure(db_url: str | None) -> _Infrastructure:
+    """Build all infrastructure-layer objects: DB, repos, services."""
+    if db_url is None:
+        _env_path = Path(__file__).resolve().parents[1] / ".config" / ".env"
+        load_dotenv(_env_path)
+        db_url = os.environ.get("DATABASE_URL", "sqlite:///data/menutor.db")
+
+    engine = get_engine(db_url)
+    apply_schema(engine)
+    session = Session(engine)
+    seed_defaults(session)
+
+    recipe_repo = SqliteRecipeRepository(session)
+    product_repo = SqliteProductRepository(session)
+    product_category_repo = SqliteProductCategoryRepository(session)
+
+    return _Infrastructure(
+        engine=engine,
+        session=session,
+        user_repo=SqliteUserRepository(session),
+        refresh_token_repo=SqliteRefreshTokenRepository(session),
+        password_hasher=BcryptPasswordHasher(),
+        token_service=JwtTokenService(
+            os.environ.get(
+                "JWT_SECRET_KEY",
+                "change-me-in-production-use-a-long-random-string!",
+            )
+        ),
+        recipe_repo=recipe_repo,
+        product_repo=product_repo,
+        menu_repo=SqliteMenuRepository(session),
+        family_repo=SqliteFamilyMemberRepository(session),
+        product_category_repo=product_category_repo,
+        recipe_category_repo=SqliteRecipeCategoryRepository(session),
+        text_exporter=ShoppingListTextExporter(),
+        csv_exporter=ShoppingListCsvExporter(),
+        builder=ShoppingListBuilder(
+            recipe_repo=recipe_repo,
+            product_repo=product_repo,
+            product_category_repo=product_category_repo,
+            portion_calc=PortionCalculator(),
+            unit_converter=UnitConverter(),
+        ),
+    )
+
+
 class ApplicationContainer:
     """Граф зависимостей всего приложения. Создаётся один раз в main()."""
 
     def __init__(self, db_url: str | None = None) -> None:
-        # ── Infrastructure ────────────────────────────────────────────
-        if db_url is None:
-            _env_path = Path(__file__).resolve().parents[1] / ".config" / ".env"
-            load_dotenv(_env_path)
-            db_url = os.environ.get("DATABASE_URL", "sqlite:///data/menutor.db")
-        engine = get_engine(db_url)
-        apply_schema(engine)
-        session = Session(engine)
-        seed_defaults(session)
+        infra = _create_infrastructure(db_url)
 
-        user_repo = SqliteUserRepository(session)
-        refresh_token_repo = SqliteRefreshTokenRepository(session)
-
-        jwt_secret = os.environ.get(
-            "JWT_SECRET_KEY", "change-me-in-production-use-a-long-random-string!"
+        # ── Auth ─────────────────────────────────────────────────────
+        self.register_user = RegisterUser(
+            infra.user_repo, infra.password_hasher, infra.family_repo
         )
-        password_hasher: PasswordHasher = BcryptPasswordHasher()
-        token_service = JwtTokenService(jwt_secret)
-
-        recipe_repo = SqliteRecipeRepository(session)
-        product_repo = SqliteProductRepository(session)
-        menu_repo = SqliteMenuRepository(session)
-        family_repo = SqliteFamilyMemberRepository(session)
-        product_category_repo = SqliteProductCategoryRepository(session)
-        recipe_category_repo = SqliteRecipeCategoryRepository(session)
-
-        text_exporter = ShoppingListTextExporter()
-        csv_exporter = ShoppingListCsvExporter()
-
-        # ── Domain Services ───────────────────────────────────────────
-        unit_converter = UnitConverter()
-        portion_calc = PortionCalculator()
-        builder = ShoppingListBuilder(
-            recipe_repo=recipe_repo,
-            product_repo=product_repo,
-            product_category_repo=product_category_repo,
-            portion_calc=portion_calc,
-            unit_converter=unit_converter,
-        )
-
-        # ── Application — Auth ──────────────────────────────────────────
-        self.register_user = RegisterUser(user_repo, password_hasher, family_repo)
         self.login_user = LoginUser(
-            user_repo, password_hasher, token_service, refresh_token_repo
+            infra.user_repo, infra.password_hasher,
+            infra.token_service, infra.refresh_token_repo,
         )
         self.refresh_access_token = RefreshAccessToken(
-            token_service, refresh_token_repo, user_repo
+            infra.token_service, infra.refresh_token_repo, infra.user_repo
         )
-        self.get_current_user = GetCurrentUser(token_service, user_repo)
-        self.logout_user = LogoutUser(token_service, refresh_token_repo)
-        self.change_password = ChangePassword(user_repo, password_hasher)
-
-        # Expose for PATCH /auth/me
-        self.password_hasher = password_hasher
-        self.user_repo = user_repo
-
-        # ── Application — Recipes ─────────────────────────────────────
-        self.create_recipe = CreateRecipe(recipe_repo)
-        self.edit_recipe = EditRecipe(recipe_repo)
-        self.delete_recipe = DeleteRecipe(recipe_repo)
-        self.get_recipe = GetRecipe(recipe_repo)
-        self.list_recipes = ListRecipes(recipe_repo)
-        self.list_recipe_categories = ListRecipeCategories(recipe_category_repo)
-
-        # ── Application — Products ────────────────────────────────────
-        self.create_product = CreateProduct(product_repo)
-        self.edit_product = EditProduct(product_repo)
-        self.delete_product = DeleteProduct(product_repo)
-        self.update_product_price = UpdateProductPrice(product_repo)
-        self.list_products = ListProducts(product_repo)
-        self.list_product_categories = ListProductCategories(product_category_repo)
-
-        # ── Application — Menu ────────────────────────────────────────
-        self.create_menu = CreateMenu(menu_repo)
-        self.save_menu = SaveMenu(menu_repo)
-        self.load_menu = LoadMenu(menu_repo)
-        self.delete_menu = DeleteMenu(menu_repo)
-        self.list_menus = ListMenus(menu_repo)
-        self.add_dish_to_slot = AddDishToSlot(menu_repo)
-        self.remove_item_from_slot = RemoveItemFromSlot(menu_repo)
-        self.clear_menu = ClearMenu(menu_repo)
-
-        # ── Application — Categories ──────────────────────────────────
-        self.list_all_product_categories = ListAllProductCategories(
-            product_category_repo
+        self.get_current_user = GetCurrentUser(
+            infra.token_service, infra.user_repo
         )
-        self.create_product_category = CreateProductCategory(product_category_repo)
-        self.edit_product_category = EditProductCategory(product_category_repo)
-        self.delete_product_category = DeleteProductCategory(product_category_repo)
-        self.hard_delete_product_category = HardDeleteCategory(product_category_repo)
-        self.activate_product_category = ActivateCategory(product_category_repo)
-        self.check_product_category_used = CheckProductCategoryUsed(
-            product_category_repo
+        self.logout_user = LogoutUser(
+            infra.token_service, infra.refresh_token_repo
+        )
+        self.change_password = ChangePassword(
+            infra.user_repo, infra.password_hasher
+        )
+        self.update_profile = UpdateProfile(
+            infra.user_repo, infra.password_hasher
         )
 
-        self.list_all_recipe_categories = ListAllRecipeCategories(
-            recipe_category_repo
-        )
-        self.create_recipe_category = CreateRecipeCategory(recipe_category_repo)
-        self.edit_recipe_category = EditRecipeCategory(recipe_category_repo)
-        self.delete_recipe_category = DeleteRecipeCategory(recipe_category_repo)
-        self.hard_delete_recipe_category = HardDeleteCategory(recipe_category_repo)
-        self.activate_recipe_category = ActivateCategory(recipe_category_repo)
-        self.check_recipe_category_used = CheckRecipeCategoryUsed(
-            recipe_category_repo
+        # ── Recipes ──────────────────────────────────────────────────
+        self.create_recipe = CreateRecipe(infra.recipe_repo)
+        self.edit_recipe = EditRecipe(infra.recipe_repo)
+        self.delete_recipe = DeleteRecipe(infra.recipe_repo)
+        self.get_recipe = GetRecipe(infra.recipe_repo)
+        self.list_recipes = ListRecipes(infra.recipe_repo)
+        self.list_recipe_categories = ListRecipeCategories(
+            infra.recipe_category_repo
         )
 
-        # ── Application — Family ──────────────────────────────────────
-        self.create_family_member = CreateFamilyMember(family_repo)
-        self.edit_family_member = EditFamilyMember(family_repo)
-        self.delete_family_member = DeleteFamilyMember(family_repo)
-        self.list_family_members = ListFamilyMembers(family_repo)
+        # ── Products ─────────────────────────────────────────────────
+        self.create_product = CreateProduct(infra.product_repo)
+        self.edit_product = EditProduct(infra.product_repo)
+        self.delete_product = DeleteProduct(infra.product_repo)
+        self.update_product_price = UpdateProductPrice(infra.product_repo)
+        self.list_products = ListProducts(infra.product_repo)
+        self.list_product_categories = ListProductCategories(
+            infra.product_category_repo
+        )
 
-        # ── Application — Shopping List ───────────────────────────────
+        # ── Menu ─────────────────────────────────────────────────────
+        self.create_menu = CreateMenu(infra.menu_repo)
+        self.save_menu = SaveMenu(infra.menu_repo)
+        self.load_menu = LoadMenu(infra.menu_repo)
+        self.delete_menu = DeleteMenu(infra.menu_repo)
+        self.list_menus = ListMenus(infra.menu_repo)
+        self.add_dish_to_slot = AddDishToSlot(infra.menu_repo)
+        self.remove_item_from_slot = RemoveItemFromSlot(infra.menu_repo)
+        self.clear_menu = ClearMenu(infra.menu_repo)
+
+        # ── Categories ───────────────────────────────────────────────
+        self.product_categories = CategoryBundle(infra.product_category_repo)
+        self.recipe_categories = CategoryBundle(infra.recipe_category_repo)
+
+        # ── Family ───────────────────────────────────────────────────
+        self.create_family_member = CreateFamilyMember(infra.family_repo)
+        self.edit_family_member = EditFamilyMember(infra.family_repo)
+        self.delete_family_member = DeleteFamilyMember(infra.family_repo)
+        self.list_family_members = ListFamilyMembers(infra.family_repo)
+
+        # ── Shopping List ────────────────────────────────────────────
         self.generate_shopping_list = GenerateShoppingList(
-            menu_repo=menu_repo,
-            builder=builder,
+            menu_repo=infra.menu_repo, builder=infra.builder,
         )
-        self.export_shopping_list_as_text = ExportShoppingListAsText(text_exporter)
-        self.export_shopping_list_as_csv = ExportShoppingListAsCsv(csv_exporter)
+        self.export_shopping_list_as_text = ExportShoppingListAsText(
+            infra.text_exporter
+        )
+        self.export_shopping_list_as_csv = ExportShoppingListAsCsv(
+            infra.csv_exporter
+        )
 
-        # Keep engine and session alive for the process lifetime
-        self._engine = engine
-        self._session = session
+        self._engine = infra.engine
+        self._session = infra.session
