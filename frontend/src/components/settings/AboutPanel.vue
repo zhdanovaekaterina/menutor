@@ -5,5 +5,12 @@
     <p class="text-sm text-gray-600 mt-2">
       Menutor — планировщик семейного меню.
     </p>
+    <p class="text-sm mt-4">
+      <a
+        href="https://github.com/zhdanovaekaterina/menutor/blob/master/docs/user_guide.md"
+        target="_blank"
+        class="text-blue-600 hover:text-blue-800 underline"
+      >Руководство пользователя</a>
+    </p>
   </div>
 </template>
