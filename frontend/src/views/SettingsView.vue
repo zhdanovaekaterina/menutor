@@ -5,6 +5,7 @@ const links = [
   { to: '/settings/family', label: 'Члены семьи' },
   { to: '/settings/product-categories', label: 'Категории продуктов' },
   { to: '/settings/recipe-categories', label: 'Категории рецептов' },
+  { to: '/settings/password', label: 'Настройки аккаунта' },
   { to: '/settings/about', label: 'О программе' },
 ]
 </script>

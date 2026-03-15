@@ -22,7 +22,7 @@ onMounted(async () => {
 })
 
 const selectedRecipe = computed(() =>
-  store.recipes.find((r) => r.id === selectedId.value) ?? null,
+  store.items.find((r) => r.id === selectedId.value) ?? null,
 )
 
 function onSelect(id: number) {
@@ -43,6 +43,7 @@ async function onSave(data: RecipeCreate, id: number | null) {
       const created = await store.create(data)
       selectedId.value = created.id
     }
+    formOpen.value = false
   } catch (e: any) {
     toast.show(e?.response?.data?.detail ?? 'Ошибка сохранения', 'error')
   }
@@ -85,7 +86,7 @@ function onClear() {
 
     <div class="flex-1 min-h-0">
       <RecipeTable
-        :recipes="store.recipes"
+        :recipes="store.items"
         :categories="store.categories"
         :selected-id="selectedId"
         @select="onSelect"
@@ -100,7 +101,7 @@ function onClear() {
       <RecipeForm
         :recipe="selectedRecipe"
         :categories="store.categories"
-        :products="productStore.products"
+        :products="productStore.items"
         @save="onSave"
         @remove="onRemove"
         @clear="onClear"

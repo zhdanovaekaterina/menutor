@@ -1,14 +1,16 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from backend.domain.entities.family_member import FamilyMember
 from backend.domain.entities.refresh_token import RefreshToken
 from backend.domain.entities.user import User
 from backend.domain.exceptions import AuthenticationError, UserAlreadyExistsError
+from backend.domain.ports.family_member_repository import FamilyMemberRepository
 from backend.domain.ports.refresh_token_repository import RefreshTokenRepository
 from backend.domain.ports.user_repository import UserRepository
 from backend.domain.services.password_hasher import PasswordHasher
 from backend.domain.services.token_service import TokenService
-from backend.domain.value_objects.types import RefreshTokenId, UserId
+from backend.domain.value_objects.types import FamilyMemberId, RefreshTokenId, UserId
 
 REFRESH_TOKEN_DAYS = 30
 
@@ -37,9 +39,11 @@ class RegisterUser:
         self,
         user_repo: UserRepository,
         hasher: PasswordHasher,
+        family_repo: FamilyMemberRepository,
     ) -> None:
         self._user_repo = user_repo
         self._hasher = hasher
+        self._family_repo = family_repo
 
     def execute(self, data: RegisterData) -> User:
         existing = self._user_repo.get_by_email(data.email)
@@ -53,7 +57,14 @@ class RegisterUser:
             nickname=data.nickname or data.email.split("@")[0],
             hashed_password=self._hasher.hash(data.password),
         )
-        return self._user_repo.save(user)
+        saved_user = self._user_repo.save(user)
+        self._family_repo.save(FamilyMember(
+            id=FamilyMemberId(0),
+            name=saved_user.nickname,
+            portion_multiplier=1.0,
+            user_id=saved_user.id,
+        ))
+        return saved_user
 
 
 class LoginUser:
@@ -144,6 +155,43 @@ class GetCurrentUser:
         if user is None:
             raise AuthenticationError("Пользователь не найден")
         return user
+
+
+@dataclass
+class ChangePasswordData:
+    current_password: str
+    new_password: str
+
+
+class ChangePassword:
+    def __init__(self, user_repo: UserRepository, hasher: PasswordHasher) -> None:
+        self._user_repo = user_repo
+        self._hasher = hasher
+
+    def execute(self, user: User, data: ChangePasswordData) -> None:
+        if not self._hasher.verify(data.current_password, user.hashed_password):
+            raise AuthenticationError("Неверный текущий пароль")
+        user.hashed_password = self._hasher.hash(data.new_password)
+        self._user_repo.save(user)
+
+
+@dataclass
+class UpdateProfileData:
+    nickname: str | None = None
+    password: str | None = None
+
+
+class UpdateProfile:
+    def __init__(self, user_repo: UserRepository, hasher: PasswordHasher) -> None:
+        self._user_repo = user_repo
+        self._hasher = hasher
+
+    def execute(self, user: User, data: UpdateProfileData) -> User:
+        if data.nickname is not None:
+            user.nickname = data.nickname
+        if data.password is not None:
+            user.hashed_password = self._hasher.hash(data.password)
+        return self._user_repo.save(user)
 
 
 class LogoutUser:

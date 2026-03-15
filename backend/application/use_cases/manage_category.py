@@ -58,15 +58,14 @@ class CheckCategoryUsed:
         return self._repo.is_used(category_id)
 
 
-# Backwards-compatible aliases
-ListAllProductCategories = ListAllCategories
-CreateProductCategory = CreateCategory
-EditProductCategory = EditCategory
-DeleteProductCategory = DeleteCategory
-CheckProductCategoryUsed = CheckCategoryUsed
+class CategoryBundle:
+    """Groups all category use cases for one category type."""
 
-ListAllRecipeCategories = ListAllCategories
-CreateRecipeCategory = CreateCategory
-EditRecipeCategory = EditCategory
-DeleteRecipeCategory = DeleteCategory
-CheckRecipeCategoryUsed = CheckCategoryUsed
+    def __init__(self, repo: CategoryRepository) -> None:
+        self.list_all = ListAllCategories(repo)
+        self.create = CreateCategory(repo)
+        self.edit = EditCategory(repo)
+        self.delete = DeleteCategory(repo)
+        self.hard_delete = HardDeleteCategory(repo)
+        self.activate = ActivateCategory(repo)
+        self.check_used = CheckCategoryUsed(repo)

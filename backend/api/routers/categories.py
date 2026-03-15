@@ -5,7 +5,7 @@
   /recipe-categories  — категории рецептов
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from backend.api.auth import get_current_user
 from backend.api.converters import category_to_response
@@ -15,10 +15,15 @@ from backend.api.schemas.category import (
     CategoryResponse,
     CategoryUsedResponse,
 )
+from backend.application.use_cases.manage_category import CategoryBundle
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
 
 router = APIRouter(tags=["categories"])
+
+
+def _bundle(container: ApplicationContainer, type: str) -> CategoryBundle:
+    return container.product_categories if type == "product" else container.recipe_categories
 
 
 # ── Product Categories ─────────────────────────────────────────────
@@ -29,8 +34,7 @@ def list_product_categories(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> list[CategoryResponse]:
-    categories = container.list_all_product_categories.execute()
-    return [category_to_response(c) for c in categories]
+    return [category_to_response(c) for c in _bundle(container, "product").list_all.execute()]
 
 
 @router.post(
@@ -43,8 +47,7 @@ def create_product_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> dict[str, int]:
-    category_id = container.create_product_category.execute(body.name)
-    return {"id": category_id}
+    return {"id": _bundle(container, "product").create.execute(body.name)}
 
 
 @router.put("/product-categories/{category_id}", response_model=dict[str, int])
@@ -54,8 +57,7 @@ def edit_product_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> dict[str, int]:
-    result_id = container.edit_product_category.execute(category_id, body.name)
-    return {"id": result_id}
+    return {"id": _bundle(container, "product").edit.execute(category_id, body.name)}
 
 
 @router.delete(
@@ -67,10 +69,8 @@ def delete_product_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> None:
-    if hard:
-        container.hard_delete_product_category.execute(category_id)
-    else:
-        container.delete_product_category.execute(category_id)
+    b = _bundle(container, "product")
+    (b.hard_delete if hard else b.delete).execute(category_id)
 
 
 @router.post(
@@ -82,7 +82,7 @@ def activate_product_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> None:
-    container.activate_product_category.execute(category_id)
+    _bundle(container, "product").activate.execute(category_id)
 
 
 @router.get(
@@ -93,8 +93,7 @@ def check_product_category_used(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> CategoryUsedResponse:
-    used = container.check_product_category_used.execute(category_id)
-    return CategoryUsedResponse(used=used)
+    return CategoryUsedResponse(used=_bundle(container, "product").check_used.execute(category_id))
 
 
 # ── Recipe Categories ──────────────────────────────────────────────
@@ -105,8 +104,7 @@ def list_recipe_categories(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> list[CategoryResponse]:
-    categories = container.list_all_recipe_categories.execute()
-    return [category_to_response(c) for c in categories]
+    return [category_to_response(c) for c in _bundle(container, "recipe").list_all.execute()]
 
 
 @router.post(
@@ -119,8 +117,7 @@ def create_recipe_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> dict[str, int]:
-    category_id = container.create_recipe_category.execute(body.name)
-    return {"id": category_id}
+    return {"id": _bundle(container, "recipe").create.execute(body.name)}
 
 
 @router.put("/recipe-categories/{category_id}", response_model=dict[str, int])
@@ -130,8 +127,7 @@ def edit_recipe_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> dict[str, int]:
-    result_id = container.edit_recipe_category.execute(category_id, body.name)
-    return {"id": result_id}
+    return {"id": _bundle(container, "recipe").edit.execute(category_id, body.name)}
 
 
 @router.delete(
@@ -143,10 +139,8 @@ def delete_recipe_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> None:
-    if hard:
-        container.hard_delete_recipe_category.execute(category_id)
-    else:
-        container.delete_recipe_category.execute(category_id)
+    b = _bundle(container, "recipe")
+    (b.hard_delete if hard else b.delete).execute(category_id)
 
 
 @router.post(
@@ -158,7 +152,7 @@ def activate_recipe_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> None:
-    container.activate_recipe_category.execute(category_id)
+    _bundle(container, "recipe").activate.execute(category_id)
 
 
 @router.get(
@@ -169,5 +163,4 @@ def check_recipe_category_used(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> CategoryUsedResponse:
-    used = container.check_recipe_category_used.execute(category_id)
-    return CategoryUsedResponse(used=used)
+    return CategoryUsedResponse(used=_bundle(container, "recipe").check_used.execute(category_id))

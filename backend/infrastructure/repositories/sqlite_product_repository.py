@@ -36,7 +36,6 @@ class SqliteProductRepository(
             recipe_unit=entity.recipe_unit,
             purchase_unit=entity.purchase_unit,
             price_per_purchase_unit=float(entity.price_per_purchase_unit.amount),
-            weight_per_piece_g=entity.weight_per_piece_g,
             conversion_factor=entity.conversion_factor,
         )
 
@@ -48,7 +47,6 @@ class SqliteProductRepository(
         row.recipe_unit = entity.recipe_unit
         row.purchase_unit = entity.purchase_unit
         row.price_per_purchase_unit = float(entity.price_per_purchase_unit.amount)
-        row.weight_per_piece_g = entity.weight_per_piece_g
         row.conversion_factor = entity.conversion_factor
 
     def _row_to_entity(self, row: Any) -> Product:
@@ -60,7 +58,6 @@ class SqliteProductRepository(
             price_per_purchase_unit=Money(Decimal(str(row.price_per_purchase_unit))),
             brand=row.brand or "",
             supplier=row.supplier or "",
-            weight_per_piece_g=row.weight_per_piece_g,
             conversion_factor=row.conversion_factor,
             category_id=ProductCategoryId(row.category_id),
             user_id=UserId(row.user_id),

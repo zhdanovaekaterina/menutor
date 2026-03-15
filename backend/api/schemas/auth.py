@@ -34,3 +34,8 @@ class UserResponse(BaseModel):
 class UpdateProfileRequest(BaseModel):
     nickname: str | None = None
     password: str | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str

@@ -84,6 +84,10 @@ function redirectToLogin() {
   }
 }
 
+/* Auth */
+export const changePassword = (current_password: string, new_password: string) =>
+  api.post('/auth/me/password', { current_password, new_password })
+
 /* Recipes */
 export const fetchRecipes = () => api.get<Recipe[]>('/recipes').then((r) => r.data)
 export const fetchRecipe = (id: number) => api.get<Recipe>(`/recipes/${id}`).then((r) => r.data)

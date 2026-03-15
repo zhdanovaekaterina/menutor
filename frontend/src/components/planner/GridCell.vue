@@ -32,7 +32,7 @@ function itemName(slot: MenuSlot) {
 function itemDetail(slot: MenuSlot) {
   if (slot.recipe_id != null) {
     const s = slot.servings_override ?? slot.quantity
-    return s != null ? `${s} п.` : ''
+    return s != null ? `${Number(s).toFixed(1)} п.` : ''
   }
   if (slot.product_id != null && slot.quantity != null) {
     return `${slot.quantity} ${slot.unit ?? ''}`
@@ -54,7 +54,7 @@ function onDrop(e: DragEvent) {
 <template>
   <div
     :class="dragOver ? 'ring-2 ring-blue-300 bg-blue-50/50' : 'bg-white'"
-    class="min-h-[80px] p-1 flex flex-col gap-1"
+    class="h-full p-1 flex flex-col gap-1"
     @dragover.prevent="dragOver = true"
     @dragleave="dragOver = false"
     @drop.prevent="onDrop"

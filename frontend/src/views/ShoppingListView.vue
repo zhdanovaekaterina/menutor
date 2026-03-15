@@ -89,7 +89,7 @@ function onExportCsv() {
 }
 
 function onAddProduct(productId: number, quantity: number) {
-  const product = productStore.products.find((p) => p.id === productId)
+  const product = productStore.items.find((p) => p.id === productId)
   if (!product) return
   const item: ShoppingListItem = {
     product_id: product.id,
@@ -135,7 +135,7 @@ function onAddProduct(productId: number, quantity: number) {
           @export-csv="onExportCsv"
         />
         <AddProductForm
-          :products="productStore.products"
+          :products="productStore.items"
           :existing-ids="existingIds"
           @add="onAddProduct"
         />

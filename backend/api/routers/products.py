@@ -1,7 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from backend.api.auth import get_current_user
-from backend.api.converters import active_category_to_response, product_to_response
+from backend.api.converters import (
+    active_category_to_response,
+    product_to_response,
+    schema_to_product_data,
+)
 from backend.api.deps import get_container
 from backend.api.schemas.category import ActiveCategoryResponse
 from backend.api.schemas.product import (
@@ -10,28 +14,12 @@ from backend.api.schemas.product import (
     ProductResponse,
     ProductUpdate,
 )
-from backend.application.use_cases.manage_product import ProductData
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
-from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.value_objects.money import Money
-from backend.domain.value_objects.types import ProductCategoryId, ProductId
+from backend.domain.value_objects.types import ProductId
 
 router = APIRouter(prefix="/products", tags=["products"])
-
-
-def _to_product_data(body: ProductCreate | ProductUpdate) -> ProductData:
-    return ProductData(
-        name=body.name,
-        category_id=ProductCategoryId(body.category_id),
-        recipe_unit=body.recipe_unit,
-        purchase_unit=body.purchase_unit,
-        price=Money(body.price_amount, body.price_currency),
-        brand=body.brand,
-        supplier=body.supplier,
-        weight_per_piece_g=body.weight_per_piece_g,
-        conversion_factor=body.conversion_factor,
-    )
 
 
 @router.get("", response_model=list[ProductResponse])
@@ -58,7 +46,7 @@ def create_product(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> ProductResponse:
-    data = _to_product_data(body)
+    data = schema_to_product_data(body)
     product = container.create_product.execute(data, user.id)
     return product_to_response(product)
 
@@ -70,13 +58,8 @@ def update_product(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> ProductResponse:
-    data = _to_product_data(body)
-    try:
-        product = container.edit_product.execute(ProductId(product_id), data, user.id)
-    except EntityNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
-        ) from exc
+    data = schema_to_product_data(body)
+    product = container.edit_product.execute(ProductId(product_id), data, user.id)
     return product_to_response(product)
 
 
@@ -87,14 +70,9 @@ def update_product_price(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> ProductResponse:
-    try:
-        product = container.update_product_price.execute(
-            ProductId(product_id), Money(body.amount, body.currency), user.id
-        )
-    except EntityNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
-        ) from exc
+    product = container.update_product_price.execute(
+        ProductId(product_id), Money(body.amount, body.currency), user.id
+    )
     return product_to_response(product)
 
 

@@ -1,29 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from backend.api.auth import get_current_user
-from backend.api.converters import family_member_to_response
+from backend.api.converters import family_member_to_response, schema_to_family_data
 from backend.api.deps import get_container
 from backend.api.schemas.family import (
     FamilyMemberCreate,
     FamilyMemberResponse,
     FamilyMemberUpdate,
 )
-from backend.application.use_cases.manage_family import FamilyMemberData
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
-from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.value_objects.types import FamilyMemberId
 
 router = APIRouter(prefix="/family-members", tags=["family"])
-
-
-def _to_family_data(body: FamilyMemberCreate | FamilyMemberUpdate) -> FamilyMemberData:
-    return FamilyMemberData(
-        name=body.name,
-        portion_multiplier=body.portion_multiplier,
-        dietary_restrictions=body.dietary_restrictions,
-        comment=body.comment,
-    )
 
 
 @router.get("", response_model=list[FamilyMemberResponse])
@@ -43,7 +32,7 @@ def create_family_member(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> FamilyMemberResponse:
-    data = _to_family_data(body)
+    data = schema_to_family_data(body)
     member = container.create_family_member.execute(data, user.id)
     return family_member_to_response(member)
 
@@ -55,15 +44,10 @@ def update_family_member(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> FamilyMemberResponse:
-    data = _to_family_data(body)
-    try:
-        member = container.edit_family_member.execute(
-            FamilyMemberId(member_id), data, user.id
-        )
-    except EntityNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
-        ) from exc
+    data = schema_to_family_data(body)
+    member = container.edit_family_member.execute(
+        FamilyMemberId(member_id), data, user.id
+    )
     return family_member_to_response(member)
 
 

@@ -22,7 +22,7 @@ class TestProductCategories:
     # ---- GET ----
 
     def test_list_returns_all(self, client: TestClient, container: MagicMock) -> None:
-        container.list_all_product_categories.execute.return_value = _categories()
+        container.product_categories.list_all.execute.return_value = _categories()
         resp = client.get("/api/product-categories")
         assert resp.status_code == 200
         data = resp.json()
@@ -35,7 +35,7 @@ class TestProductCategories:
     def test_create_returns_201(
         self, client: TestClient, container: MagicMock
     ) -> None:
-        container.create_product_category.execute.return_value = 4
+        container.product_categories.create.execute.return_value = 4
         resp = client.post("/api/product-categories", json={"name": "Напитки"})
         assert resp.status_code == 201
         assert resp.json() == {"id": 4}
@@ -43,7 +43,7 @@ class TestProductCategories:
     # ---- PUT ----
 
     def test_edit_returns_id(self, client: TestClient, container: MagicMock) -> None:
-        container.edit_product_category.execute.return_value = 1
+        container.product_categories.edit.execute.return_value = 1
         resp = client.put("/api/product-categories/1", json={"name": "Крупы"})
         assert resp.status_code == 200
         assert resp.json() == {"id": 1}
@@ -55,7 +55,7 @@ class TestProductCategories:
     ) -> None:
         resp = client.delete("/api/product-categories/1")
         assert resp.status_code == 204
-        container.delete_product_category.execute.assert_called_once_with(1)
+        container.product_categories.delete.execute.assert_called_once_with(1)
 
     # ---- DELETE (hard) ----
 
@@ -64,7 +64,7 @@ class TestProductCategories:
     ) -> None:
         resp = client.delete("/api/product-categories/1?hard=true")
         assert resp.status_code == 204
-        container.hard_delete_product_category.execute.assert_called_once_with(1)
+        container.product_categories.hard_delete.execute.assert_called_once_with(1)
 
     # ---- POST activate ----
 
@@ -73,14 +73,14 @@ class TestProductCategories:
     ) -> None:
         resp = client.post("/api/product-categories/3/activate")
         assert resp.status_code == 204
-        container.activate_product_category.execute.assert_called_once_with(3)
+        container.product_categories.activate.execute.assert_called_once_with(3)
 
     # ---- GET used ----
 
     def test_check_used_returns_true(
         self, client: TestClient, container: MagicMock
     ) -> None:
-        container.check_product_category_used.execute.return_value = True
+        container.product_categories.check_used.execute.return_value = True
         resp = client.get("/api/product-categories/1/used")
         assert resp.status_code == 200
         assert resp.json() == {"used": True}
@@ -88,7 +88,7 @@ class TestProductCategories:
     def test_check_used_returns_false(
         self, client: TestClient, container: MagicMock
     ) -> None:
-        container.check_product_category_used.execute.return_value = False
+        container.product_categories.check_used.execute.return_value = False
         resp = client.get("/api/product-categories/1/used")
         assert resp.json() == {"used": False}
 
@@ -99,7 +99,7 @@ class TestRecipeCategories:
     # ---- GET ----
 
     def test_list_returns_all(self, client: TestClient, container: MagicMock) -> None:
-        container.list_all_recipe_categories.execute.return_value = [
+        container.recipe_categories.list_all.execute.return_value = [
             Category(1, "Завтраки", True),
             Category(2, "Обеды", True),
         ]
@@ -112,7 +112,7 @@ class TestRecipeCategories:
     def test_create_returns_201(
         self, client: TestClient, container: MagicMock
     ) -> None:
-        container.create_recipe_category.execute.return_value = 3
+        container.recipe_categories.create.execute.return_value = 3
         resp = client.post("/api/recipe-categories", json={"name": "Десерты"})
         assert resp.status_code == 201
         assert resp.json() == {"id": 3}
@@ -120,7 +120,7 @@ class TestRecipeCategories:
     # ---- PUT ----
 
     def test_edit_returns_id(self, client: TestClient, container: MagicMock) -> None:
-        container.edit_recipe_category.execute.return_value = 1
+        container.recipe_categories.edit.execute.return_value = 1
         resp = client.put("/api/recipe-categories/1", json={"name": "Утренние"})
         assert resp.status_code == 200
         assert resp.json() == {"id": 1}
@@ -132,7 +132,7 @@ class TestRecipeCategories:
     ) -> None:
         resp = client.delete("/api/recipe-categories/1")
         assert resp.status_code == 204
-        container.delete_recipe_category.execute.assert_called_once_with(1)
+        container.recipe_categories.delete.execute.assert_called_once_with(1)
 
     # ---- DELETE (hard) ----
 
@@ -141,7 +141,7 @@ class TestRecipeCategories:
     ) -> None:
         resp = client.delete("/api/recipe-categories/1?hard=true")
         assert resp.status_code == 204
-        container.hard_delete_recipe_category.execute.assert_called_once_with(1)
+        container.recipe_categories.hard_delete.execute.assert_called_once_with(1)
 
     # ---- POST activate ----
 
@@ -150,12 +150,12 @@ class TestRecipeCategories:
     ) -> None:
         resp = client.post("/api/recipe-categories/2/activate")
         assert resp.status_code == 204
-        container.activate_recipe_category.execute.assert_called_once_with(2)
+        container.recipe_categories.activate.execute.assert_called_once_with(2)
 
     # ---- GET used ----
 
     def test_check_used(self, client: TestClient, container: MagicMock) -> None:
-        container.check_recipe_category_used.execute.return_value = False
+        container.recipe_categories.check_used.execute.return_value = False
         resp = client.get("/api/recipe-categories/1/used")
         assert resp.status_code == 200
         assert resp.json() == {"used": False}

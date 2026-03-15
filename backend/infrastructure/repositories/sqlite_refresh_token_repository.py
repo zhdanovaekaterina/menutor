@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 from backend.domain.entities.refresh_token import RefreshToken
@@ -10,6 +12,15 @@ class SqliteRefreshTokenRepository(RefreshTokenRepository):
     def __init__(self, session: Session) -> None:
         self._session = session
 
+    def _row_to_entity(self, row: Any) -> RefreshToken:
+        return RefreshToken(
+            id=RefreshTokenId(row.id),
+            user_id=UserId(row.user_id),
+            token_hash=row.token_hash,
+            expires_at=row.expires_at,
+            revoked=row.revoked,
+        )
+
     def save(self, token: RefreshToken) -> RefreshToken:
         row = RefreshTokenRow(
             user_id=int(token.user_id),
@@ -20,13 +31,7 @@ class SqliteRefreshTokenRepository(RefreshTokenRepository):
         self._session.add(row)
         self._session.flush()
         self._session.commit()
-        return RefreshToken(
-            id=RefreshTokenId(row.id),
-            user_id=UserId(row.user_id),
-            token_hash=row.token_hash,
-            expires_at=row.expires_at,
-            revoked=row.revoked,
-        )
+        return self._row_to_entity(row)
 
     def get_by_token_hash(self, token_hash: str) -> RefreshToken | None:
         row = (
@@ -36,16 +41,10 @@ class SqliteRefreshTokenRepository(RefreshTokenRepository):
         )
         if row is None:
             return None
-        return RefreshToken(
-            id=RefreshTokenId(row.id),
-            user_id=UserId(row.user_id),
-            token_hash=row.token_hash,
-            expires_at=row.expires_at,
-            revoked=row.revoked,
-        )
+        return self._row_to_entity(row)
 
     def revoke(self, token_hash: str) -> None:
-        row = (
+        row: Any = (
             self._session.query(RefreshTokenRow)
             .filter(RefreshTokenRow.token_hash == token_hash)
             .first()

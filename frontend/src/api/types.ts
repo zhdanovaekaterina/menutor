@@ -39,7 +39,6 @@ export interface ProductCreate {
   price_currency?: string
   brand?: string
   supplier?: string
-  weight_per_piece_g?: number | null
   conversion_factor?: number
 }
 
@@ -53,7 +52,6 @@ export interface Product {
   price_currency: string
   brand: string
   supplier: string
-  weight_per_piece_g: number | null
   conversion_factor: number
 }
 

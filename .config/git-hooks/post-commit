@@ -1,0 +1,28 @@
+#!/bin/bash
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "dev" = "$branch" ]; then
+    echo "Running post-commit actions for the dev branch..."
+
+    source .config/.env
+
+    have_new_dependencies=$(git diff --quiet HEAD -- $DEPENDENCIES_CFG_PATH >/dev/null 2>&1; echo $?)
+    if [[ (($have_new_dependencies != 0)) ]]; then
+        echo "INFO: Re-building containers..."
+        docker compose -f docker-compose.dev.yml build
+        echo "INFO: Done"
+    fi
+
+    have_new_migration=$(git diff --quiet HEAD -- $MIGRATION_PATH >/dev/null 2>&1; echo $?)
+    if [[ (($have_new_migration != 0)) ]]; then
+        echo "INFO: Applying migrations..."
+        docker compose -f docker-compose.dev.yml run backend alembic upgrade head
+        echo "INFO: Done"
+    fi
+
+else
+    echo "Post-commit hook skipped for branch: $branch"
+fi
+
+

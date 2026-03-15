@@ -31,8 +31,6 @@ const recipeUnit = ref('g')
 const purchaseUnit = ref('kg')
 const priceAmount = ref(0)
 const conversionFactor = ref(1)
-const hasWeight = ref(false)
-const weightPerPiece = ref(0)
 
 watch(
   () => props.product,
@@ -46,8 +44,6 @@ watch(
       purchaseUnit.value = p.purchase_unit
       priceAmount.value = Number(p.price_amount)
       conversionFactor.value = p.conversion_factor
-      hasWeight.value = p.weight_per_piece_g != null
-      weightPerPiece.value = p.weight_per_piece_g ?? 0
     }
   },
   { immediate: true },
@@ -62,8 +58,6 @@ function clearForm() {
   purchaseUnit.value = 'kg'
   priceAmount.value = 0
   conversionFactor.value = 1
-  hasWeight.value = false
-  weightPerPiece.value = 0
   emit('clear')
 }
 
@@ -77,7 +71,6 @@ function onSave() {
     price_amount: String(priceAmount.value),
     brand: brand.value,
     supplier: supplier.value,
-    weight_per_piece_g: hasWeight.value ? weightPerPiece.value : null,
     conversion_factor: conversionFactor.value,
   }
   emit('save', data, props.product?.id ?? null)
@@ -142,14 +135,6 @@ function onSave() {
         <input v-model.number="conversionFactor" type="number" min="0.001" step="0.001"
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
       </div>
-    </div>
-
-    <div class="flex items-center gap-3">
-      <input type="checkbox" v-model="hasWeight" class="rounded border-gray-300" />
-      <label class="text-sm">Вес одной штуки</label>
-      <input v-model.number="weightPerPiece" type="number" :disabled="!hasWeight" min="0" step="0.1"
-        class="w-24 border border-gray-300 rounded-lg px-2 py-1.5 text-sm disabled:opacity-40" />
-      <span class="text-sm text-gray-500">г</span>
     </div>
 
     <div class="flex gap-2 pt-4 border-t">

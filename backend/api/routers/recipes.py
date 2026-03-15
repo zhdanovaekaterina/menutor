@@ -1,40 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.api.auth import get_current_user
-from backend.api.converters import active_category_to_response, recipe_to_response
+from backend.api.converters import (
+    active_category_to_response,
+    recipe_to_response,
+    schema_to_recipe_data,
+)
 from backend.api.deps import get_container
 from backend.api.schemas.category import ActiveCategoryResponse
 from backend.api.schemas.recipe import RecipeCreate, RecipeResponse, RecipeUpdate
-from backend.application.use_cases.manage_recipe import RecipeData
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
-from backend.domain.exceptions import EntityNotFoundError
-from backend.domain.value_objects.cooking_step import CookingStep
-from backend.domain.value_objects.quantity import Quantity
-from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
-from backend.domain.value_objects.types import RecipeCategoryId, RecipeId
+from backend.domain.value_objects.types import RecipeId
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
-
-
-def _to_recipe_data(body: RecipeCreate | RecipeUpdate) -> RecipeData:
-    return RecipeData(
-        name=body.name,
-        category_id=RecipeCategoryId(body.category_id),
-        servings=body.servings,
-        ingredients=[
-            RecipeIngredient(
-                product_id=ing.product_id,
-                quantity=Quantity(ing.quantity_amount, ing.quantity_unit),
-            )
-            for ing in body.ingredients
-        ],
-        steps=[
-            CookingStep(order=s.order, description=s.description)
-            for s in body.steps
-        ],
-        weight=body.weight,
-    )
 
 
 @router.get("", response_model=list[RecipeResponse])
@@ -76,7 +55,7 @@ def create_recipe(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> RecipeResponse:
-    data = _to_recipe_data(body)
+    data = schema_to_recipe_data(body)
     recipe = container.create_recipe.execute(data, user.id)
     return recipe_to_response(recipe)
 
@@ -88,13 +67,8 @@ def update_recipe(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> RecipeResponse:
-    data = _to_recipe_data(body)
-    try:
-        recipe = container.edit_recipe.execute(RecipeId(recipe_id), data, user.id)
-    except EntityNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
-        ) from exc
+    data = schema_to_recipe_data(body)
+    recipe = container.edit_recipe.execute(RecipeId(recipe_id), data, user.id)
     return recipe_to_response(recipe)
 
 
