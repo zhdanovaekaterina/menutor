@@ -155,6 +155,62 @@ def test_product_category_hard_delete_removes_linked_products(conn) -> None:
     assert count == 0
 
 
+def test_product_category_hard_delete_cascades_to_recipe_ingredients(conn) -> None:
+    """Hard-deleting a product category must also remove recipe_ingredients
+    and menu_slots that reference the deleted products."""
+    repo = SqliteProductCategoryRepository(conn)
+    cat_id = repo.save("Каскад")
+
+    # Create a product in this category
+    conn.execute(
+        text("INSERT INTO products (id, name, brand, supplier, category_id, "
+             "recipe_unit, purchase_unit, user_id) "
+             "VALUES (9000, 'Каскад-продукт', '', '', :cat_id, 'g', 'kg', 1)"),
+        {"cat_id": cat_id},
+    )
+    # Create a recipe with that product as ingredient
+    recipe_cat_id = conn.execute(
+        text("SELECT id FROM recipe_categories LIMIT 1")
+    ).scalar()
+    conn.execute(
+        text("INSERT INTO recipes (id, name, category_id, servings, user_id) "
+             "VALUES (9000, 'Каскад-рецепт', :rcat, 1, 1)"),
+        {"rcat": recipe_cat_id},
+    )
+    conn.execute(
+        text("INSERT INTO recipe_ingredients (recipe_id, product_id, amount, unit) "
+             "VALUES (9000, 9000, 100, 'g')")
+    )
+    # Create a menu slot referencing the product
+    conn.execute(
+        text("INSERT INTO menus (id, name, user_id) VALUES (9000, 'Тест-меню', 1)")
+    )
+    conn.execute(
+        text("INSERT INTO menu_slots (menu_id, day, meal_type, product_id, slot_position) "
+             "VALUES (9000, 1, 'breakfast', 9000, 0)")
+    )
+    conn.commit()
+
+    repo.hard_delete(cat_id)
+
+    # Product gone
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM products WHERE id = 9000")
+    ).scalar() == 0
+    # Recipe ingredient gone
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM recipe_ingredients WHERE product_id = 9000")
+    ).scalar() == 0
+    # Menu slot gone
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM menu_slots WHERE product_id = 9000")
+    ).scalar() == 0
+    # Recipe itself still exists
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM recipes WHERE id = 9000")
+    ).scalar() == 1
+
+
 def test_product_category_is_used_false(conn) -> None:
     repo = SqliteProductCategoryRepository(conn)
     new_id = repo.save("Пустая")
@@ -240,6 +296,69 @@ def test_recipe_category_hard_delete_removes_linked_recipes(conn) -> None:
         {"cat_id": new_id},
     ).scalar()
     assert count == 0
+
+
+def test_recipe_category_hard_delete_cascades_to_menu_slots(conn) -> None:
+    """Hard-deleting a recipe category must also remove recipe_ingredients,
+    cooking_steps, and menu_slots that reference the deleted recipes."""
+    repo = SqliteRecipeCategoryRepository(conn)
+    cat_id = repo.save("Каскад-рец")
+
+    # Create a recipe in this category with ingredient and step
+    prod_cat_id = conn.execute(
+        text("SELECT id FROM product_categories LIMIT 1")
+    ).scalar()
+    conn.execute(
+        text("INSERT INTO products (id, name, brand, supplier, category_id, "
+             "recipe_unit, purchase_unit, user_id) "
+             "VALUES (9001, 'Каскад-прод', '', '', :pcat, 'g', 'kg', 1)"),
+        {"pcat": prod_cat_id},
+    )
+    conn.execute(
+        text("INSERT INTO recipes (id, name, category_id, servings, user_id) "
+             "VALUES (9001, 'Каскад-рецепт', :cat_id, 1, 1)"),
+        {"cat_id": cat_id},
+    )
+    conn.execute(
+        text("INSERT INTO recipe_ingredients (recipe_id, product_id, amount, unit) "
+             "VALUES (9001, 9001, 50, 'g')")
+    )
+    conn.execute(
+        text("INSERT INTO cooking_steps (recipe_id, step_order, description) "
+             "VALUES (9001, 1, 'Шаг 1')")
+    )
+    # Menu slot referencing the recipe
+    conn.execute(
+        text("INSERT INTO menus (id, name, user_id) VALUES (9001, 'Тест-меню', 1)")
+    )
+    conn.execute(
+        text("INSERT INTO menu_slots (menu_id, day, meal_type, recipe_id, slot_position) "
+             "VALUES (9001, 1, 'lunch', 9001, 0)")
+    )
+    conn.commit()
+
+    repo.hard_delete(cat_id)
+
+    # Recipe gone
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM recipes WHERE id = 9001")
+    ).scalar() == 0
+    # Ingredients gone
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM recipe_ingredients WHERE recipe_id = 9001")
+    ).scalar() == 0
+    # Steps gone
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM cooking_steps WHERE recipe_id = 9001")
+    ).scalar() == 0
+    # Menu slot gone
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM menu_slots WHERE recipe_id = 9001")
+    ).scalar() == 0
+    # Product still exists
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM products WHERE id = 9001")
+    ).scalar() == 1
 
 
 def test_recipe_category_is_used_false(conn) -> None:
