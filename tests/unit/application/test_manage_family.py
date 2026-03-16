@@ -78,7 +78,7 @@ def test_delete_member_calls_repo_delete() -> None:
 
     DeleteFamilyMember(repo).execute(FamilyMemberId(1), UID)
 
-    repo.delete.assert_called_once_with(FamilyMemberId(1))
+    repo.delete.assert_called_once_with([FamilyMemberId(1)])
 
 
 # ---- ListFamilyMembers ----

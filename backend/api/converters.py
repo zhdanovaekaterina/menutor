@@ -49,6 +49,7 @@ def recipe_to_response(recipe: Recipe) -> RecipeResponse:
                 product_id=int(ing.product_id),
                 quantity_amount=ing.quantity.amount,
                 quantity_unit=ing.quantity.unit,
+                order=ing.order,
             )
             for ing in recipe.ingredients
         ],
@@ -88,6 +89,7 @@ def menu_slot_to_schema(slot: MenuSlot) -> MenuSlotSchema:
         quantity=slot.quantity,
         unit=slot.unit,
         servings_override=slot.servings_override,
+        position=slot.position,
     )
 
 
@@ -165,6 +167,7 @@ def schema_to_recipe_data(body: RecipeCreate) -> RecipeData:
             RecipeIngredient(
                 product_id=ProductId(ing.product_id),
                 quantity=Quantity(ing.quantity_amount, ing.quantity_unit),
+                order=ing.order,
             )
             for ing in body.ingredients
         ],
@@ -207,4 +210,5 @@ def schema_to_menu_slot(s: MenuSlotSchema) -> MenuSlot:
         quantity=s.quantity,
         unit=s.unit,
         servings_override=s.servings_override,
+        position=s.position,
     )

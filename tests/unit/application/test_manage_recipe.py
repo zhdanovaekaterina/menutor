@@ -95,7 +95,7 @@ def test_delete_recipe_calls_repo_delete() -> None:
 
     DeleteRecipe(repo).execute(RecipeId(1), UID)
 
-    repo.delete.assert_called_once_with(RecipeId(1))
+    repo.delete.assert_called_once_with([RecipeId(1)])
 
 
 # ---- GetRecipe ----

@@ -1,4 +1,5 @@
 import {
+  batchDeleteRecipes,
   createRecipe,
   deleteRecipe,
   fetchRecipeCategories,
@@ -14,10 +15,12 @@ export const useRecipeStore = createCrudStore<Recipe, RecipeCreate>('recipes', {
   createItem: createRecipe,
   updateItem: updateRecipe,
   deleteItem: deleteRecipe,
+  batchDeleteItems: batchDeleteRecipes,
   messages: {
     loadError: 'Ошибка загрузки рецептов',
     created: 'Рецепт создан',
     updated: 'Рецепт обновлён',
     deleted: 'Рецепт удалён',
+    batchDeleted: 'Рецепты удалены',
   },
 })

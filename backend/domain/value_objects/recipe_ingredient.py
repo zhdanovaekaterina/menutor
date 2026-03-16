@@ -8,3 +8,4 @@ from backend.domain.value_objects.types import ProductId
 class RecipeIngredient:
     product_id: ProductId
     quantity: Quantity
+    order: int = 0

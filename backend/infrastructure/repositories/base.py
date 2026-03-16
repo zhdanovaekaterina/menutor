@@ -73,11 +73,18 @@ class BaseOrmRepository(Generic[E, I]):
             )
         return result
 
-    def delete(self, id: I) -> None:
-        row = self._session.get(self._row_class, int(id))
-        if row is not None:
-            self._session.delete(row)
+    def delete(self, ids: list[I]) -> None:
+        if not ids:
+            return
+        int_ids = [int(i) for i in ids]
+        try:
+            self._session.query(self._row_class).filter(
+                self._row_class.id.in_(int_ids)
+            ).delete(synchronize_session=False)
             self._session.commit()
+        except Exception:
+            self._session.rollback()
+            raise
 
     def get_by_id(self, id: I) -> E | None:
         row = self._session.get(self._row_class, int(id))

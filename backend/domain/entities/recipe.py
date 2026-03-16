@@ -23,6 +23,7 @@ class Recipe:
             RecipeIngredient(
                 product_id=ing.product_id,
                 quantity=Quantity(ing.quantity.amount * factor, ing.quantity.unit),
+                order=ing.order,
             )
             for ing in self.ingredients
         ]

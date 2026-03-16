@@ -7,6 +7,7 @@ from backend.api.schemas.menu import (
     MenuCreate,
     MenuResponse,
     MenuSlotSchema,
+    MoveSlotRequest,
     RemoveItemRequest,
 )
 from backend.composition_root import ApplicationContainer
@@ -68,6 +69,29 @@ def add_slot(
 ) -> MenuResponse:
     slot = schema_to_menu_slot(body)
     menu = container.add_dish_to_slot.execute(MenuId(menu_id), slot, user.id)
+    return menu_to_response(menu)
+
+
+@router.post("/{menu_id}/slots/move", response_model=MenuResponse)
+def move_slot(
+    menu_id: int,
+    body: MoveSlotRequest,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> MenuResponse:
+    menu = container.move_slot_in_menu.execute(
+        menu_id=MenuId(menu_id),
+        day=body.day,
+        meal_type=body.meal_type,
+        user_id=user.id,
+        to_day=body.to_day,
+        to_meal_type=body.to_meal_type,
+        to_position=body.to_position,
+        recipe_id=RecipeId(body.recipe_id) if body.recipe_id is not None else None,
+        product_id=(
+            ProductId(body.product_id) if body.product_id is not None else None
+        ),
+    )
     return menu_to_response(menu)
 
 

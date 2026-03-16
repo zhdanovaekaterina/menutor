@@ -39,7 +39,7 @@ class DeleteMenu:
     def execute(self, menu_id: MenuId, user_id: UserId) -> None:
         menu = self._repo.get_by_id(menu_id)
         if menu is not None and menu.user_id == user_id:
-            self._repo.delete(menu_id)
+            self._repo.delete([menu_id])
 
 
 class ListMenus:
@@ -59,6 +59,29 @@ class AddDishToSlot:
     def execute(self, menu_id: MenuId, slot: MenuSlot, user_id: UserId) -> WeeklyMenu:
         menu = load_owned(self._repo, menu_id, user_id, "Меню", not_found="не найдено")
         menu.add_or_replace_slot(slot)
+        return self._repo.save(menu)
+
+
+class MoveSlotInMenu:
+    """Move an item from one cell to another atomically."""
+
+    def __init__(self, repo: MenuRepository) -> None:
+        self._repo = repo
+
+    def execute(
+        self,
+        menu_id: MenuId,
+        day: int,
+        meal_type: str,
+        user_id: UserId,
+        to_day: int,
+        to_meal_type: str,
+        to_position: int,
+        recipe_id: RecipeId | None = None,
+        product_id: ProductId | None = None,
+    ) -> WeeklyMenu:
+        menu = load_owned(self._repo, menu_id, user_id, "Меню", not_found="не найдено")
+        menu.move_slot(day, meal_type, recipe_id, product_id, to_day, to_meal_type, to_position)
         return self._repo.save(menu)
 
 

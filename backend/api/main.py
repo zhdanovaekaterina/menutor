@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Menutor API",
     description="API планировщика меню",
-    version="0.3.1",
+    version="0.3.2",
     lifespan=lifespan,
 )
 

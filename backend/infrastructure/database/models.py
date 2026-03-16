@@ -125,6 +125,7 @@ class RecipeIngredientRow(Base):
     product_id = Column(Integer, ForeignKey("products.id"), primary_key=True)
     amount = Column(Float, nullable=False)
     unit = Column(String, ForeignKey("units.name"), nullable=False)
+    ingredient_order = Column(Integer, nullable=False, default=0, server_default="0")
 
     recipe = relationship("RecipeRow", back_populates="ingredients")
 
@@ -191,5 +192,6 @@ class MenuSlotRow(Base):
     quantity = Column(Float, nullable=True)
     unit = Column(String, nullable=True)
     servings_override = Column(Float, nullable=True)
+    slot_position = Column(Integer, nullable=False, default=0, server_default="0")
 
     menu = relationship("MenuRow", back_populates="slots")

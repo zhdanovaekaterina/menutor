@@ -13,6 +13,7 @@ class MenuSlot:
     quantity: float | None = field(default=None)
     unit: str | None = field(default=None)
     servings_override: float | None = field(default=None)
+    position: int = 0
 
     def __post_init__(self) -> None:
         has_recipe = self.recipe_id is not None
@@ -32,7 +33,65 @@ class WeeklyMenu:
 
     def add_or_replace_slot(self, slot: MenuSlot) -> None:
         """Add or replace an item (upsert by day+meal_type+item_id)."""
+        existing = next(
+            (s for s in self.slots if self._same_item(s, slot)), None
+        )
+        if existing is not None and slot.position == 0:
+            slot.position = existing.position
+        elif existing is None and slot.position == 0:
+            cell_slots = [
+                s
+                for s in self.slots
+                if s.day == slot.day and s.meal_type == slot.meal_type
+            ]
+            slot.position = max((s.position for s in cell_slots), default=-1) + 1
         self.slots = [s for s in self.slots if not self._same_item(s, slot)]
+        self.slots.append(slot)
+
+    def move_slot(
+        self,
+        day: int,
+        meal_type: str,
+        recipe_id: RecipeId | None,
+        product_id: ProductId | None,
+        to_day: int,
+        to_meal_type: str,
+        to_position: int,
+    ) -> None:
+        """Move an item from one cell to another (or reposition within the same cell)."""
+        slot = next(
+            (
+                s
+                for s in self.slots
+                if s.day == day
+                and s.meal_type == meal_type
+                and (
+                    (recipe_id is not None and s.recipe_id == recipe_id)
+                    or (product_id is not None and s.product_id == product_id)
+                )
+            ),
+            None,
+        )
+        if slot is None:
+            raise InvalidEntityError("Элемент не найден в указанном слоте")
+
+        # Remove from source cell
+        self.slots.remove(slot)
+
+        # Shift positions in target cell to make room
+        target_slots = [
+            s
+            for s in self.slots
+            if s.day == to_day and s.meal_type == to_meal_type
+        ]
+        for s in target_slots:
+            if s.position >= to_position:
+                s.position += 1
+
+        # Place the slot in the target cell
+        slot.day = to_day
+        slot.meal_type = to_meal_type
+        slot.position = to_position
         self.slots.append(slot)
 
     def remove_item(

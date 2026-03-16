@@ -14,7 +14,6 @@ const emit = defineEmits<{ remove: []; click: [] }>()
       ? 'bg-blue-50 border-l-2 border-blue-400'
       : 'bg-orange-50 border-l-2 border-orange-400'"
     class="flex items-center gap-1 px-2 py-1 rounded text-xs group cursor-pointer"
-    draggable="true"
     @click="emit('click')"
   >
     <span class="truncate flex-1">{{ name }}</span>

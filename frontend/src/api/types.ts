@@ -4,6 +4,7 @@ export interface RecipeIngredient {
   product_id: number
   quantity_amount: number
   quantity_unit: string
+  order: number
 }
 
 export interface CookingStep {
@@ -63,6 +64,7 @@ export interface MenuSlot {
   quantity?: number | null
   unit?: string | null
   servings_override?: number | null
+  position?: number
 }
 
 export interface Menu {
@@ -76,6 +78,16 @@ export interface RemoveItemRequest {
   meal_type: string
   recipe_id?: number | null
   product_id?: number | null
+}
+
+export interface MoveSlotRequest {
+  day: number
+  meal_type: string
+  recipe_id?: number | null
+  product_id?: number | null
+  to_day: number
+  to_meal_type: string
+  to_position: number
 }
 
 export interface FamilyMemberCreate {

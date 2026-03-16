@@ -151,6 +151,46 @@ class TestAddSlot:
         assert resp.status_code == 404
 
 
+# ---- POST /api/menus/{menu_id}/slots/move ----
+
+
+class TestMoveSlot:
+    def test_moves_slot(self, client: TestClient, container: MagicMock) -> None:
+        container.move_slot_in_menu.execute.return_value = _menu(
+            slots=[MenuSlot(day=1, meal_type="Обед", recipe_id=RecipeId(1), position=0)]
+        )
+        body = {
+            "day": 0,
+            "meal_type": "Завтрак",
+            "recipe_id": 1,
+            "to_day": 1,
+            "to_meal_type": "Обед",
+            "to_position": 0,
+        }
+        resp = client.post("/api/menus/1/slots/move", json=body)
+        assert resp.status_code == 200
+        assert resp.json()["slots"][0]["day"] == 1
+        assert resp.json()["slots"][0]["meal_type"] == "Обед"
+        container.move_slot_in_menu.execute.assert_called_once()
+
+    def test_returns_404_when_menu_not_found(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.move_slot_in_menu.execute.side_effect = EntityNotFoundError(
+            "Меню 999 не найдено"
+        )
+        body = {
+            "day": 0,
+            "meal_type": "Завтрак",
+            "recipe_id": 1,
+            "to_day": 1,
+            "to_meal_type": "Обед",
+            "to_position": 0,
+        }
+        resp = client.post("/api/menus/999/slots/move", json=body)
+        assert resp.status_code == 404
+
+
 # ---- DELETE /api/menus/{menu_id}/slots ----
 
 

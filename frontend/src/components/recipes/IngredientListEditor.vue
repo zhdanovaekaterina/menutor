@@ -5,8 +5,14 @@ const UNIT_MAP: Record<string, string> = {
   g: 'г', kg: 'кг', ml: 'мл', l: 'л', pcs: 'шт', box: 'кор', pack: 'уп',
 }
 
+const NEW_PRODUCT = -1
+
 const props = defineProps<{
   products: Product[]
+}>()
+
+const emit = defineEmits<{
+  'create-product': [index: number]
 }>()
 
 const ingredients = defineModel<{ product_id: number | null; quantity_amount: number; quantity_unit: string }[]>({
@@ -19,12 +25,27 @@ function productUnit(productId: number | null) {
   return p ? (UNIT_MAP[p.recipe_unit] ?? p.recipe_unit) : ''
 }
 
+function defaultQuantity(unit: string) {
+  return unit === 'g' ? 100 : 1
+}
+
+function onProductChange(ing: { product_id: number | null; quantity_amount: number; quantity_unit: string }, index: number) {
+  if (ing.product_id === NEW_PRODUCT) {
+    ing.product_id = null
+    emit('create-product', index)
+    return
+  }
+  const unit = props.products.find((p) => p.id === ing.product_id)?.recipe_unit ?? 'g'
+  ing.quantity_unit = unit
+  ing.quantity_amount = defaultQuantity(unit)
+}
+
 function add() {
   ingredients.value.push({ product_id: null, quantity_amount: 100, quantity_unit: 'g' })
 }
 
-function removeLast() {
-  ingredients.value.pop()
+function remove(index: number) {
+  ingredients.value.splice(index, 1)
 }
 </script>
 
@@ -37,17 +58,19 @@ function removeLast() {
       <div v-for="(ing, i) in ingredients" :key="i" class="flex gap-2 items-center">
         <select v-model="ing.product_id"
           class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs"
-          @change="ing.quantity_unit = products.find(p => p.id === ing.product_id)?.recipe_unit ?? 'g'">
+          @change="onProductChange(ing, i)">
           <option :value="null">Продукт...</option>
           <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
+          <option disabled>───────────</option>
+          <option :value="NEW_PRODUCT">+ Создать новый продукт...</option>
         </select>
         <input v-model.number="ing.quantity_amount" type="number" min="0.01" step="0.01"
           class="w-20 border border-gray-300 rounded px-2 py-1 text-xs" />
         <span class="text-xs text-gray-500 w-8">{{ productUnit(ing.product_id) }}</span>
+        <button class="p-1 text-gray-400 hover:text-red-600" title="Удалить" @click="remove(i)">&times;</button>
       </div>
-      <div class="flex gap-2">
+      <div>
         <button class="px-3 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" @click="add">+ Добавить</button>
-        <button class="px-3 py-1 text-xs rounded border border-gray-300 text-red-600 hover:bg-red-50" @click="removeLast">− Удалить</button>
       </div>
     </div>
   </details>

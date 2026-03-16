@@ -16,6 +16,7 @@ const categories = computed(() => store.list(props.type).value)
 const selectedId = ref<number | null>(null)
 const name = ref('')
 const confirmOpen = ref(false)
+const confirmDeleteOpen = ref(false)
 const confirmHardOpen = ref(false)
 const formOpen = ref(false)
 
@@ -56,7 +57,7 @@ async function onDelete() {
   if (used) {
     confirmHardOpen.value = true
   } else {
-    confirmOpen.value = true
+    confirmDeleteOpen.value = true
   }
 }
 
@@ -67,6 +68,13 @@ async function onConfirmSoft() {
   clearForm()
 }
 
+async function onConfirmDelete() {
+  confirmDeleteOpen.value = false
+  if (!selectedId.value) return
+  await store.remove(props.type, selectedId.value, true)
+  clearForm()
+}
+
 async function onConfirmHard() {
   confirmHardOpen.value = false
   if (!selectedId.value) return
@@ -74,11 +82,16 @@ async function onConfirmHard() {
   clearForm()
 }
 
-async function onHide() {
+async function onHideUsed() {
   confirmHardOpen.value = false
   if (!selectedId.value) return
   await store.remove(props.type, selectedId.value, false)
   clearForm()
+}
+
+async function onHideActive() {
+  if (!selectedId.value) return
+  confirmOpen.value = true
 }
 
 async function onActivate() {
@@ -155,15 +168,20 @@ const title = computed(() =>
           <button class="w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" @click="onSave">
             Сохранить
           </button>
-          <button v-if="selectedId"
-            class="w-full px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
-            @click="onDelete">
-            Удалить
+          <button v-if="selectedId && !isInactive"
+            class="w-full px-4 py-2 rounded-lg border border-orange-300 text-orange-600 text-sm hover:bg-orange-50"
+            @click="onHideActive">
+            Скрыть
           </button>
           <button v-if="isInactive"
             class="w-full px-4 py-2 rounded-lg border border-green-300 text-green-600 text-sm hover:bg-green-50"
             @click="onActivate">
             Активировать
+          </button>
+          <button v-if="selectedId"
+            class="w-full px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
+            @click="onDelete">
+            Удалить
           </button>
         </div>
       </div>
@@ -171,9 +189,16 @@ const title = computed(() =>
 
     <ConfirmDialog
       :open="confirmOpen"
-      message="Скрыть категорию?"
+      message="Скрыть категорию? Существующие записи сохранятся, но добавить новые с этой категорией будет нельзя."
       @confirm="onConfirmSoft"
       @cancel="confirmOpen = false"
+    />
+
+    <ConfirmDialog
+      :open="confirmDeleteOpen"
+      message="Удалить категорию? Это действие необратимо."
+      @confirm="onConfirmDelete"
+      @cancel="confirmDeleteOpen = false"
     />
 
     <!-- Used category dialog: hide or hard delete -->
@@ -186,7 +211,7 @@ const title = computed(() =>
             <button class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
               @click="confirmHardOpen = false">Отмена</button>
             <button class="px-4 py-2 rounded-lg border border-orange-300 text-orange-600 text-sm hover:bg-orange-50"
-              @click="onHide">Скрыть</button>
+              @click="onHideUsed">Скрыть</button>
             <button class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
               @click="onConfirmHard">Удалить полностью</button>
           </div>

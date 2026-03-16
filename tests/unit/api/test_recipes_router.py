@@ -172,3 +172,20 @@ class TestDeleteRecipe:
         resp = client.delete("/api/recipes/1")
         assert resp.status_code == 204
         container.delete_recipe.execute.assert_called_once()
+
+
+class TestBatchDeleteRecipes:
+    def test_batch_deletes_and_returns_204(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        resp = client.post("/api/recipes/batch-delete", json=[1, 2, 3])
+        assert resp.status_code == 204
+        container.delete_recipe.execute.assert_called_once()
+        args = container.delete_recipe.execute.call_args
+        assert args[0][0] == [RecipeId(1), RecipeId(2), RecipeId(3)]
+
+    def test_batch_delete_empty_list(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        resp = client.post("/api/recipes/batch-delete", json=[])
+        assert resp.status_code == 204

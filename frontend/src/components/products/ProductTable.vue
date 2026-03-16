@@ -11,9 +11,15 @@ const props = defineProps<{
   products: Product[]
   categories: ActiveCategory[]
   selectedId: number | null
+  selectMode?: boolean
+  selectedIds?: Set<number>
 }>()
 
-const emit = defineEmits<{ select: [id: number] }>()
+const emit = defineEmits<{
+  select: [id: number]
+  toggleSelect: [id: number]
+  toggleSelectAll: [ids: number[]]
+}>()
 
 const search = ref('')
 const sortKey = ref<'name' | 'category' | 'price'>('name')
@@ -37,6 +43,11 @@ const filtered = computed(() => {
   return list
 })
 
+const filteredIds = computed(() => filtered.value.map((p) => p.id))
+const allChecked = computed(() =>
+  filteredIds.value.length > 0 && filteredIds.value.every((id) => props.selectedIds?.has(id)),
+)
+
 function toggleSort(key: typeof sortKey.value) {
   if (sortKey.value === key) sortAsc.value = !sortAsc.value
   else { sortKey.value = key; sortAsc.value = true }
@@ -45,6 +56,11 @@ function toggleSort(key: typeof sortKey.value) {
 function sortIcon(key: typeof sortKey.value) {
   if (sortKey.value !== key) return '\u2195'
   return sortAsc.value ? '\u2191' : '\u2193'
+}
+
+function onRowClick(id: number) {
+  if (props.selectMode) emit('toggleSelect', id)
+  else emit('select', id)
 }
 </script>
 
@@ -55,6 +71,14 @@ function sortIcon(key: typeof sortKey.value) {
       <table class="w-full text-sm">
         <thead class="bg-gray-50 sticky top-0">
           <tr>
+            <th v-if="selectMode" class="w-10 px-2 py-2">
+              <input
+                type="checkbox"
+                :checked="allChecked"
+                class="rounded border-gray-300"
+                @change="emit('toggleSelectAll', filteredIds)"
+              />
+            </th>
             <th class="text-left px-4 py-2 cursor-pointer select-none hover:bg-gray-100" @click="toggleSort('name')">
               Название {{ sortIcon('name') }}
             </th>
@@ -72,10 +96,21 @@ function sortIcon(key: typeof sortKey.value) {
           <tr
             v-for="p in filtered"
             :key="p.id"
-            :class="p.id === selectedId ? 'bg-blue-50' : 'hover:bg-gray-50'"
+            :class="[
+              selectMode && selectedIds?.has(p.id) ? 'bg-blue-50' :
+              !selectMode && p.id === selectedId ? 'bg-blue-50' : 'hover:bg-gray-50',
+            ]"
             class="cursor-pointer"
-            @click="emit('select', p.id)"
+            @click="onRowClick(p.id)"
           >
+            <td v-if="selectMode" class="text-center px-2" @click.stop>
+              <input
+                type="checkbox"
+                :checked="selectedIds?.has(p.id)"
+                class="rounded border-gray-300"
+                @change="emit('toggleSelect', p.id)"
+              />
+            </td>
             <td class="px-4 py-2">{{ p.name }}</td>
             <td class="px-4 py-2 text-gray-600">{{ catMap[p.category_id] ?? '—' }}</td>
             <td class="px-4 py-2 text-center text-gray-500">{{ UNIT_MAP[p.recipe_unit] ?? p.recipe_unit }}</td>

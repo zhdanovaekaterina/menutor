@@ -90,7 +90,7 @@ def test_get_by_id_returns_none_when_absent(recipe_repo: SqliteRecipeRepository)
 def test_delete_removes_recipe(recipe_repo: SqliteRecipeRepository,
                                 flour: Product, user_id: UserId) -> None:
     saved = recipe_repo.save(_pancake_recipe(flour.id, user_id))
-    recipe_repo.delete(saved.id)
+    recipe_repo.delete([saved.id])
     assert recipe_repo.get_by_id(saved.id) is None
 
 
@@ -101,7 +101,7 @@ def test_delete_cascades_to_ingredients_and_steps(recipe_repo: SqliteRecipeRepos
     from sqlalchemy.orm import Session
     session: Session = conn  # type: ignore[assignment]
     saved = recipe_repo.save(_pancake_recipe(flour.id, user_id))
-    recipe_repo.delete(saved.id)
+    recipe_repo.delete([saved.id])
 
     ing_count = session.execute(
         text("SELECT COUNT(*) FROM recipe_ingredients WHERE recipe_id = :id"),

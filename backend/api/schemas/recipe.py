@@ -5,6 +5,7 @@ class RecipeIngredientSchema(BaseModel):
     product_id: int
     quantity_amount: float
     quantity_unit: str
+    order: int = 0
 
 
 class CookingStepSchema(BaseModel):

@@ -87,7 +87,7 @@ def test_delete_menu_calls_repo_delete() -> None:
 
     DeleteMenu(repo).execute(MenuId(1), UID)
 
-    repo.delete.assert_called_once_with(MenuId(1))
+    repo.delete.assert_called_once_with([MenuId(1)])
 
 
 # ---- ListMenus ----

@@ -98,7 +98,7 @@ def test_delete_product_calls_repo_delete() -> None:
 
     DeleteProduct(repo).execute(ProductId(1), UID)
 
-    repo.delete.assert_called_once_with(ProductId(1))
+    repo.delete.assert_called_once_with([ProductId(1)])
 
 
 # ---- UpdateProductPrice ----

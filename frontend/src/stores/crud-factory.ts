@@ -10,11 +10,13 @@ interface CrudStoreOptions<T, C> {
   createItem: (data: C) => Promise<T>
   updateItem: (id: number, data: C) => Promise<T>
   deleteItem: (id: number) => Promise<unknown>
+  batchDeleteItems?: (ids: number[]) => Promise<unknown>
   messages: {
     loadError: string
     created: string
     updated: string
     deleted: string
+    batchDeleted?: string
   }
 }
 
@@ -66,6 +68,21 @@ export function createCrudStore<T extends { id: number }, C>(
       useToastStore().show(options.messages.deleted, 'success')
     }
 
-    return { items, categories, loading, load, create, update, remove }
+    async function removeMany(ids: number[]) {
+      if (!ids.length) return
+      if (options.batchDeleteItems) {
+        await options.batchDeleteItems(ids)
+      } else {
+        await Promise.all(ids.map((id) => options.deleteItem(id)))
+      }
+      const idSet = new Set(ids)
+      items.value = items.value.filter((i) => !idSet.has(i.id))
+      useToastStore().show(
+        options.messages.batchDeleted ?? options.messages.deleted,
+        'success',
+      )
+    }
+
+    return { items, categories, loading, load, create, update, remove, removeMany }
   })
 }

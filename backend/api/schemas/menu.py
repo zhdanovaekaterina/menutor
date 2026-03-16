@@ -9,6 +9,7 @@ class MenuSlotSchema(BaseModel):
     quantity: float | None = None
     unit: str | None = None
     servings_override: float | None = None
+    position: int = 0
 
     @model_validator(mode="after")
     def exactly_one_item(self) -> "MenuSlotSchema":
@@ -30,6 +31,16 @@ class RemoveItemRequest(BaseModel):
     meal_type: str
     recipe_id: int | None = None
     product_id: int | None = None
+
+
+class MoveSlotRequest(BaseModel):
+    day: int
+    meal_type: str
+    recipe_id: int | None = None
+    product_id: int | None = None
+    to_day: int
+    to_meal_type: str
+    to_position: int = 0
 
 
 class MenuResponse(BaseModel):

@@ -106,6 +106,24 @@ async function onEditConfirm(val: string) {
   await menuStore.addSlotToMenu(updated)
 }
 
+async function onMoveItem(slot: MenuSlot, toDay: number, toMealType: string, toIndex: number) {
+  if (!menuStore.current) return
+  try {
+    await menuStore.moveSlot(slot, toDay, toMealType, toIndex)
+  } catch (e: any) {
+    toast.show(e?.response?.data?.detail ?? 'Ошибка перемещения', 'error')
+  }
+}
+
+async function onReorderItems(day: number, mealType: string, orderedSlots: MenuSlot[]) {
+  if (!menuStore.current) return
+  try {
+    await menuStore.reorderSlots(day, mealType, orderedSlots)
+  } catch (e: any) {
+    toast.show(e?.response?.data?.detail ?? 'Ошибка сортировки', 'error')
+  }
+}
+
 async function onSave() {
   if (!menuStore.current) {
     nameDialogOpen.value = true
@@ -152,6 +170,8 @@ async function onGenerateShoppingList() {
             @add-item="onAddItem"
             @remove-item="onRemoveItem"
             @edit-item="onEditItem"
+            @move-item="onMoveItem"
+            @reorder-items="onReorderItems"
           />
         </div>
         <div class="flex items-center gap-3 pt-2 border-t">

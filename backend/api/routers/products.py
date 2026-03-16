@@ -83,3 +83,14 @@ def delete_product(
     user: User = Depends(get_current_user),
 ) -> None:
     container.delete_product.execute(ProductId(product_id), user.id)
+
+
+@router.post("/batch-delete", status_code=status.HTTP_204_NO_CONTENT)
+def batch_delete_products(
+    body: list[int],
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> None:
+    container.delete_product.execute(
+        [ProductId(pid) for pid in body], user.id
+    )
