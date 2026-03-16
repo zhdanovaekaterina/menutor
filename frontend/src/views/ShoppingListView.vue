@@ -6,6 +6,7 @@ import ShoppingSummary from '@/components/shopping/ShoppingSummary.vue'
 import ShoppingTable from '@/components/shopping/ShoppingTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
+import { useSelection } from '@/composables/useSelection'
 import { useMenuStore } from '@/stores/menus'
 import { useProductStore } from '@/stores/products'
 import { useShoppingListStore } from '@/stores/shoppingList'
@@ -15,6 +16,7 @@ const store = useShoppingListStore()
 const productStore = useProductStore()
 const menuStore = useMenuStore()
 const toast = useToastStore()
+const selection = useSelection()
 
 const selectedProductId = ref<number | null>(null)
 const confirmRemoveOpen = ref(false)
@@ -103,11 +105,37 @@ function onAddProduct(productId: number, quantity: number) {
   store.addItem(item)
   toast.show('Продукт добавлен', 'success')
 }
+
+function toggleSelectMode() {
+  if (selection.active.value) selection.exit()
+  else selection.enter()
+}
 </script>
 
 <template>
   <div class="h-full flex flex-col p-4 gap-4">
-    <h1 class="text-xl font-bold">Список покупок</h1>
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl font-bold">Список покупок</h1>
+      <div v-if="store.data" class="flex items-center gap-2">
+        <template v-if="selection.active.value">
+          <span class="text-sm text-gray-500">Выбрано: {{ selection.count.value }}</span>
+          <button
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            @click="toggleSelectMode"
+          >
+            Отменить
+          </button>
+        </template>
+        <template v-else>
+          <button
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            @click="toggleSelectMode"
+          >
+            Выбрать
+          </button>
+        </template>
+      </div>
+    </div>
 
     <div v-if="!store.data" class="flex-1 flex items-center justify-center text-gray-400">
       Список покупок пуст. Сформируйте его в планировщике меню.
@@ -118,8 +146,12 @@ function onAddProduct(productId: number, quantity: number) {
       <div class="flex-1 overflow-y-auto border rounded-lg">
         <ShoppingTable
           :items-by-category="store.itemsByCategory"
+          :select-mode="selection.active.value"
+          :selected-ids="selection.selected.value"
           @toggle="onToggle"
           @edit-quantity="onEditQuantity"
+          @toggle-select="selection.toggle"
+          @toggle-select-all="selection.toggleAll"
         />
       </div>
 

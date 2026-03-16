@@ -1,13 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { ShoppingListItem } from '@/api/types'
 
-defineProps<{
+const props = defineProps<{
   itemsByCategory: Record<string, ShoppingListItem[]>
+  selectMode?: boolean
+  selectedIds?: Set<number>
 }>()
 
 const emit = defineEmits<{
   toggle: [productId: number]
   editQuantity: [productId: number]
+  toggleSelect: [productId: number]
+  toggleSelectAll: [productIds: number[]]
 }>()
 
 const UNIT_MAP: Record<string, string> = {
@@ -23,13 +28,33 @@ function fmtQty(item: ShoppingListItem) {
   }
   return main
 }
+
+const allProductIds = computed(() => {
+  const ids: number[] = []
+  for (const items of Object.values(props.itemsByCategory)) {
+    for (const item of items) ids.push(item.product_id)
+  }
+  return ids
+})
+
+const allChecked = computed(() =>
+  allProductIds.value.length > 0 && allProductIds.value.every((id) => props.selectedIds?.has(id)),
+)
 </script>
 
 <template>
   <table class="w-full text-sm">
     <thead class="sticky top-0 bg-white border-b">
       <tr class="text-left text-xs text-gray-500">
-        <th class="w-8 px-2 py-2"></th>
+        <th v-if="selectMode" class="w-10 px-2 py-2">
+          <input
+            type="checkbox"
+            :checked="allChecked"
+            class="rounded border-gray-300"
+            @change="emit('toggleSelectAll', allProductIds)"
+          />
+        </th>
+        <th v-else class="w-8 px-2 py-2"></th>
         <th class="px-4 py-2">Продукт</th>
         <th class="px-4 py-2 text-right">Количество</th>
         <th class="px-4 py-2 text-right">Сумма, руб.</th>
@@ -38,17 +63,30 @@ function fmtQty(item: ShoppingListItem) {
     <tbody>
       <template v-for="(items, category) in itemsByCategory" :key="category">
         <tr class="bg-slate-200">
-          <td colspan="4" class="px-4 py-2 font-semibold text-slate-700 text-sm">
+          <td :colspan="selectMode ? 5 : 4" class="px-4 py-2 font-semibold text-slate-700 text-sm">
             {{ category }}
           </td>
         </tr>
         <tr
           v-for="item in items"
           :key="item.product_id"
-          :class="item.purchased ? 'bg-green-50/50' : ''"
+          :class="[
+            selectMode && selectedIds?.has(item.product_id) ? 'bg-blue-50' :
+            item.purchased ? 'bg-green-50/50' : '',
+          ]"
           class="hover:bg-gray-50 border-b"
+          :style="selectMode ? 'cursor: pointer' : ''"
+          @click="selectMode && emit('toggleSelect', item.product_id)"
         >
-          <td class="text-center px-2">
+          <td v-if="selectMode" class="text-center px-2" @click.stop>
+            <input
+              type="checkbox"
+              :checked="selectedIds?.has(item.product_id)"
+              class="rounded border-gray-300"
+              @change="emit('toggleSelect', item.product_id)"
+            />
+          </td>
+          <td v-else class="text-center px-2">
             <input
               type="checkbox"
               :checked="item.purchased"
@@ -57,20 +95,20 @@ function fmtQty(item: ShoppingListItem) {
             />
           </td>
           <td
-            :class="item.purchased ? 'line-through text-gray-400' : ''"
+            :class="!selectMode && item.purchased ? 'line-through text-gray-400' : ''"
             class="px-4 py-2"
           >
             {{ item.product_name }}
           </td>
           <td
-            :class="item.purchased ? 'text-gray-400' : 'cursor-pointer hover:text-blue-600'"
+            :class="!selectMode && item.purchased ? 'text-gray-400' : !selectMode ? 'cursor-pointer hover:text-blue-600' : ''"
             class="px-4 py-2 text-right"
-            @click="!item.purchased && emit('editQuantity', item.product_id)"
+            @click="!selectMode && !item.purchased && emit('editQuantity', item.product_id)"
           >
             {{ fmtQty(item) }}
           </td>
           <td
-            :class="item.purchased ? 'text-gray-400' : ''"
+            :class="!selectMode && item.purchased ? 'text-gray-400' : ''"
             class="px-4 py-2 text-right tabular-nums"
           >
             {{ Number(item.cost.amount).toFixed(2) }}

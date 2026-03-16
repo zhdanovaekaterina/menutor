@@ -5,6 +5,7 @@ import RecipeForm from '@/components/recipes/RecipeForm.vue'
 import RecipeTable from '@/components/recipes/RecipeTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import SlidePanel from '@/components/ui/SlidePanel.vue'
+import { useSelection } from '@/composables/useSelection'
 import { useProductStore } from '@/stores/products'
 import { useRecipeStore } from '@/stores/recipes'
 import { useToastStore } from '@/stores/toast'
@@ -12,6 +13,7 @@ import { useToastStore } from '@/stores/toast'
 const store = useRecipeStore()
 const productStore = useProductStore()
 const toast = useToastStore()
+const selection = useSelection()
 
 const selectedId = ref<number | null>(null)
 const confirmDeleteOpen = ref(false)
@@ -70,18 +72,42 @@ function onClear() {
   selectedId.value = null
   formOpen.value = false
 }
+
+function toggleSelectMode() {
+  if (selection.active.value) selection.exit()
+  else { selection.enter(); formOpen.value = false }
+}
 </script>
 
 <template>
   <div class="h-full flex flex-col p-4 gap-4">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-bold">Рецепты</h1>
-      <button
-        class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
-        @click="openNew"
-      >
-        + Новый рецепт
-      </button>
+      <div class="flex items-center gap-2">
+        <template v-if="selection.active.value">
+          <span class="text-sm text-gray-500">Выбрано: {{ selection.count.value }}</span>
+          <button
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            @click="toggleSelectMode"
+          >
+            Отменить
+          </button>
+        </template>
+        <template v-else>
+          <button
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            @click="toggleSelectMode"
+          >
+            Выбрать
+          </button>
+          <button
+            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
+            @click="openNew"
+          >
+            + Новый рецепт
+          </button>
+        </template>
+      </div>
     </div>
 
     <div class="flex-1 min-h-0">
@@ -89,12 +115,16 @@ function onClear() {
         :recipes="store.items"
         :categories="store.categories"
         :selected-id="selectedId"
+        :select-mode="selection.active.value"
+        :selected-ids="selection.selected.value"
         @select="onSelect"
+        @toggle-select="selection.toggle"
+        @toggle-select-all="selection.toggleAll"
       />
     </div>
 
     <SlidePanel
-      :open="formOpen"
+      :open="formOpen && !selection.active.value"
       :title="selectedRecipe ? 'Редактировать рецепт' : 'Новый рецепт'"
       @close="onClear"
     >
