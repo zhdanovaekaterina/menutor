@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from backend.api.auth import get_current_user
 from backend.api.deps import get_container
 from backend.api.routers import auth, categories, family, menus, products, recipes
+from backend.api.routers import import_export as import_export_router
 from backend.api.routers import shopping_list as shopping_list_router
 from backend.domain.entities.user import User
 from backend.domain.exceptions import (
@@ -19,6 +20,7 @@ from backend.domain.exceptions import (
     AuthenticationError,
     DomainError,
     EntityNotFoundError,
+    ImportValidationError,
     RepositoryError,
     UserAlreadyExistsError,
 )
@@ -71,6 +73,12 @@ def _build_test_app() -> FastAPI:
     async def handle_app(request: Request, exc: AppError) -> JSONResponse:
         return JSONResponse(status_code=400, content={"detail": str(exc)})
 
+    @test_app.exception_handler(ImportValidationError)
+    async def handle_import_validation(
+        request: Request, exc: ImportValidationError
+    ) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
     test_app.include_router(auth.router, prefix="/api")
     test_app.include_router(recipes.router, prefix="/api")
     test_app.include_router(products.router, prefix="/api")
@@ -78,6 +86,7 @@ def _build_test_app() -> FastAPI:
     test_app.include_router(family.router, prefix="/api")
     test_app.include_router(categories.router, prefix="/api")
     test_app.include_router(shopping_list_router.router, prefix="/api")
+    test_app.include_router(import_export_router.router, prefix="/api")
 
     return test_app
 

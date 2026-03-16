@@ -7,7 +7,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.api.routers import auth, categories, family, menus, products, recipes
+from backend.api.routers import auth, categories, family
+from backend.api.routers import import_export as import_export_router
+from backend.api.routers import menus, products, recipes
 from backend.api.routers import shopping_list as shopping_list_router
 from backend.api.routers import system
 from backend.composition_root import ApplicationContainer
@@ -16,6 +18,7 @@ from backend.domain.exceptions import (
     AuthenticationError,
     DomainError,
     EntityNotFoundError,
+    ImportValidationError,
     RepositoryError,
     UserAlreadyExistsError,
 )
@@ -90,6 +93,13 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
+@app.exception_handler(ImportValidationError)
+async def import_validation_handler(
+    request: Request, exc: ImportValidationError
+) -> JSONResponse:
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+
 # ── Routers ────────────────────────────────────────────────────────
 
 app.include_router(auth.router, prefix="/api")
@@ -99,4 +109,5 @@ app.include_router(menus.router, prefix="/api")
 app.include_router(family.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")
 app.include_router(shopping_list_router.router, prefix="/api")
+app.include_router(import_export_router.router, prefix="/api")
 app.include_router(system.router, prefix="/api")

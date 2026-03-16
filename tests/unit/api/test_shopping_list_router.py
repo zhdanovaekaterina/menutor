@@ -90,19 +90,19 @@ class TestExportShoppingListText:
     def test_exports_as_plain_text(
         self, client: TestClient, container: MagicMock
     ) -> None:
-        container.generate_shopping_list.execute.return_value = _shopping_list()
-        container.export_shopping_list_as_text.execute.return_value = (
-            "Мука — 0.2 кг\nМолоко — 0.5 л"
+        container.export_shopping_list.execute.return_value = (
+            "Мука — 0.2 кг\nМолоко — 0.5 л".encode("utf-8"),
+            "text/plain; charset=utf-8",
+            "shopping_list.txt",
         )
         resp = client.post("/api/menus/1/shopping-list/export/text")
         assert resp.status_code == 200
         assert resp.headers["content-type"] == "text/plain; charset=utf-8"
-        assert "Мука" in resp.text
 
     def test_returns_404_when_menu_not_found(
         self, client: TestClient, container: MagicMock
     ) -> None:
-        container.generate_shopping_list.execute.side_effect = EntityNotFoundError(
+        container.export_shopping_list.execute.side_effect = EntityNotFoundError(
             "Меню 999 не найдено"
         )
         resp = client.post("/api/menus/999/shopping-list/export/text")

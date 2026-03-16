@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import Response
 
 from backend.api.auth import get_current_user
 from backend.api.converters import shopping_list_to_response
@@ -31,9 +31,28 @@ def export_shopping_list_text(
     menu_id: int,
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
-) -> PlainTextResponse:
-    shopping_list = container.generate_shopping_list.execute(
-        MenuId(menu_id), user.id
+) -> Response:
+    data, content_type, filename = container.export_shopping_list.execute(
+        MenuId(menu_id), user.id, "txt"
     )
-    text = container.export_shopping_list_as_text.execute(shopping_list)
-    return PlainTextResponse(content=text)
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/menus/{menu_id}/shopping-list/export/csv")
+def export_shopping_list_csv(
+    menu_id: int,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> Response:
+    data, content_type, filename = container.export_shopping_list.execute(
+        MenuId(menu_id), user.id, "csv"
+    )
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
