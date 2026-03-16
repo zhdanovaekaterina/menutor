@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { ActiveCategory, Product, ProductCreate } from '@/api/types'
 import { useToastStore } from '@/stores/toast'
+import { autoConversionFactor } from '@/utils/units'
 
 const toast = useToastStore()
 
@@ -31,9 +32,18 @@ const categoryId = ref<number | null>(null)
 const brand = ref('')
 const supplier = ref('')
 const recipeUnit = ref('g')
-const purchaseUnit = ref('kg')
+const purchaseUnit = ref('g')
 const priceAmount = ref(0)
 const conversionFactor = ref(1)
+
+const autoFactor = computed(() => autoConversionFactor(recipeUnit.value, purchaseUnit.value))
+const isFactorLocked = computed(() => autoFactor.value !== null)
+
+watch([recipeUnit, purchaseUnit], () => {
+  if (autoFactor.value !== null) {
+    conversionFactor.value = autoFactor.value
+  }
+})
 
 watch(
   () => props.product,
@@ -58,7 +68,7 @@ function clearForm() {
   brand.value = ''
   supplier.value = ''
   recipeUnit.value = 'g'
-  purchaseUnit.value = 'kg'
+  purchaseUnit.value = 'g'
   priceAmount.value = 0
   conversionFactor.value = 1
   emit('clear')
@@ -137,7 +147,10 @@ function onSave() {
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Коэф. конвертации</label>
         <input v-model.number="conversionFactor" type="number" min="0.001" step="0.001"
+          :disabled="isFactorLocked"
+          :class="isFactorLocked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''"
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        <p v-if="isFactorLocked" class="text-xs text-gray-400 mt-1">Рассчитан автоматически</p>
       </div>
     </div>
 
