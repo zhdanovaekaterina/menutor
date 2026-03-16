@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { ActiveCategory, Product, ProductCreate } from '@/api/types'
+import { useToastStore } from '@/stores/toast'
+
+const toast = useToastStore()
 
 const UNIT_OPTIONS = [
   { code: 'g', label: 'г' },
@@ -62,7 +65,8 @@ function clearForm() {
 }
 
 function onSave() {
-  if (!name.value.trim() || categoryId.value == null) return
+  if (!name.value.trim()) { toast.show('Введите название продукта', 'error'); return }
+  if (categoryId.value == null) { toast.show('Выберите категорию', 'error'); return }
   const data: ProductCreate = {
     name: name.value.trim(),
     category_id: categoryId.value,

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { ActiveCategory, Product, Recipe, RecipeCreate } from '@/api/types'
+import { useToastStore } from '@/stores/toast'
 import IngredientListEditor from './IngredientListEditor.vue'
 import StepListEditor from './StepListEditor.vue'
+
+const toast = useToastStore()
 
 const props = defineProps<{
   recipe: Recipe | null
@@ -49,7 +52,8 @@ function clearForm() {
 }
 
 function onSave() {
-  if (!name.value.trim() || categoryId.value == null) return
+  if (!name.value.trim()) { toast.show('Введите название рецепта', 'error'); return }
+  if (categoryId.value == null) { toast.show('Выберите категорию', 'error'); return }
   const data: RecipeCreate = {
     name: name.value.trim(),
     category_id: categoryId.value,
