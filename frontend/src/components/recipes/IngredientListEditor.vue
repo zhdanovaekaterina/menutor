@@ -25,13 +25,19 @@ function productUnit(productId: number | null) {
   return p ? (UNIT_MAP[p.recipe_unit] ?? p.recipe_unit) : ''
 }
 
+function defaultQuantity(unit: string) {
+  return unit === 'g' ? 100 : 1
+}
+
 function onProductChange(ing: { product_id: number | null; quantity_amount: number; quantity_unit: string }, index: number) {
   if (ing.product_id === NEW_PRODUCT) {
     ing.product_id = null
     emit('create-product', index)
     return
   }
-  ing.quantity_unit = props.products.find((p) => p.id === ing.product_id)?.recipe_unit ?? 'g'
+  const unit = props.products.find((p) => p.id === ing.product_id)?.recipe_unit ?? 'g'
+  ing.quantity_unit = unit
+  ing.quantity_amount = defaultQuantity(unit)
 }
 
 function add() {

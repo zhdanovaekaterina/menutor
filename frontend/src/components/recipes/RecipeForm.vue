@@ -86,8 +86,10 @@ async function onProductSave(data: ProductCreate) {
   try {
     const created = await productStore.create(data)
     if (pendingIngredientIndex.value != null && pendingIngredientIndex.value < ingredients.value.length) {
-      ingredients.value[pendingIngredientIndex.value].product_id = created.id
-      ingredients.value[pendingIngredientIndex.value].quantity_unit = created.recipe_unit
+      const ing = ingredients.value[pendingIngredientIndex.value]
+      ing.product_id = created.id
+      ing.quantity_unit = created.recipe_unit
+      ing.quantity_amount = created.recipe_unit === 'g' ? 100 : 1
     }
     productFormOpen.value = false
   } catch (e: any) {
