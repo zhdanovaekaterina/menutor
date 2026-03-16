@@ -174,3 +174,9 @@ export interface UpdateProfileRequest {
   nickname?: string
   password?: string
 }
+
+export interface ImportResult {
+  created: number
+  updated: number
+  errors: string[]
+}

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { downloadShoppingListCsv, downloadShoppingListText } from '@/api/client'
 import type { ShoppingListItem } from '@/api/types'
 import AddProductForm from '@/components/shopping/AddProductForm.vue'
 import ShoppingSummary from '@/components/shopping/ShoppingSummary.vue'
 import ShoppingTable from '@/components/shopping/ShoppingTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
+import { downloadBlob } from '@/composables/useFileDownload'
 import { useSelection } from '@/composables/useSelection'
 import { useMenuStore } from '@/stores/menus'
 import { useProductStore } from '@/stores/products'
@@ -20,8 +22,6 @@ const selection = useSelection()
 
 const selectedProductId = ref<number | null>(null)
 const confirmRemoveOpen = ref(false)
-const exportTextOpen = ref(false)
-const exportedText = ref('')
 const editProductId = ref<number | null>(null)
 const editQtyValue = ref('')
 
@@ -63,31 +63,22 @@ function onConfirmRemove() {
 
 async function onExportText() {
   if (!menuStore.current) { toast.show('Нет активного меню', 'error'); return }
-  const text = await store.exportText(menuStore.current.id)
-  if (text) {
-    exportedText.value = text
-    exportTextOpen.value = true
+  try {
+    const blob = await downloadShoppingListText(menuStore.current.id)
+    downloadBlob(blob, 'shopping_list.txt')
+  } catch {
+    toast.show('Ошибка экспорта', 'error')
   }
 }
 
-function copyToClipboard() {
-  navigator.clipboard.writeText(exportedText.value)
-  toast.show('Скопировано в буфер', 'success')
-}
-
-function onExportCsv() {
-  if (!store.data) return
-  const lines = ['Продукт;Количество;Единица;Сумма']
-  for (const item of store.items) {
-    lines.push(`${item.product_name};${item.quantity.amount};${item.quantity.unit};${item.cost.amount}`)
+async function onExportCsv() {
+  if (!menuStore.current) { toast.show('Нет активного меню', 'error'); return }
+  try {
+    const blob = await downloadShoppingListCsv(menuStore.current.id)
+    downloadBlob(blob, 'shopping_list.csv')
+  } catch {
+    toast.show('Ошибка экспорта', 'error')
   }
-  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'shopping_list.csv'
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 function onAddProduct(productId: number, quantity: number) {
@@ -228,22 +219,6 @@ function onConfirmDeleteAll() {
       @confirm="onConfirmDeleteAll"
       @cancel="confirmDeleteAllOpen = false"
     />
-
-    <!-- Export text modal -->
-    <Teleport to="body">
-      <div v-if="exportTextOpen" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6">
-          <h3 class="text-lg font-semibold mb-4">Список покупок</h3>
-          <pre class="bg-gray-50 border rounded-lg p-4 text-sm whitespace-pre-wrap max-h-80 overflow-y-auto">{{ exportedText }}</pre>
-          <div class="flex justify-end gap-2 mt-4">
-            <button class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
-              @click="exportTextOpen = false">Закрыть</button>
-            <button class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
-              @click="copyToClipboard">Копировать</button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
 
     <InputDialog
       :open="editProductId != null"

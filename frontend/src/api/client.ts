@@ -4,6 +4,7 @@ import type {
   Category,
   FamilyMember,
   FamilyMemberCreate,
+  ImportResult,
   Menu,
   MenuSlot,
   MoveSlotRequest,
@@ -155,5 +156,31 @@ export const checkCategoryUsed = (type: 'product' | 'recipe', id: number) =>
 /* Shopping List */
 export const generateShoppingList = (menuId: number) =>
   api.post<ShoppingList>(`/menus/${menuId}/shopping-list`).then((r) => r.data)
-export const exportShoppingListText = (menuId: number) =>
-  api.post<string>(`/menus/${menuId}/shopping-list/export/text`).then((r) => r.data)
+export const downloadShoppingListText = (menuId: number) =>
+  api
+    .post(`/menus/${menuId}/shopping-list/export/text`, null, { responseType: 'blob' })
+    .then((r) => r.data as Blob)
+export const downloadShoppingListCsv = (menuId: number) =>
+  api
+    .post(`/menus/${menuId}/shopping-list/export/csv`, null, { responseType: 'blob' })
+    .then((r) => r.data as Blob)
+
+/* Import / Export */
+export const exportEntities = (entityType: string, format: string, ids?: number[]) =>
+  api
+    .get(`/${entityType}/export/${format}`, {
+      params: ids?.length ? { ids: ids.join(',') } : {},
+      responseType: 'blob',
+    })
+    .then((r) => r.data as Blob)
+
+export const exportExample = (entityType: string, format: string) =>
+  api
+    .get(`/${entityType}/export/${format}/example`, { responseType: 'blob' })
+    .then((r) => r.data as Blob)
+
+export const importEntities = (entityType: string, format: string, file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return api.post<ImportResult>(`/${entityType}/import/${format}`, formData).then((r) => r.data)
+}
