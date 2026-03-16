@@ -46,6 +46,10 @@ class UserAlreadyExistsError(AppError):
     """Attempt to register with an already-used email."""
 
 
+class ImportValidationError(AppError):
+    """Uploaded file has invalid format or data."""
+
+
 # --- Infrastructure-layer errors ---
 
 
