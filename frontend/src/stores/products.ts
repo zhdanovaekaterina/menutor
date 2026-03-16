@@ -1,4 +1,5 @@
 import {
+  batchDeleteProducts,
   createProduct,
   deleteProduct,
   fetchProductCategories,
@@ -14,10 +15,12 @@ export const useProductStore = createCrudStore<Product, ProductCreate>('products
   createItem: createProduct,
   updateItem: updateProduct,
   deleteItem: deleteProduct,
+  batchDeleteItems: batchDeleteProducts,
   messages: {
     loadError: 'Ошибка загрузки продуктов',
     created: 'Продукт создан',
     updated: 'Продукт обновлён',
     deleted: 'Продукт удалён',
+    batchDeleted: 'Продукты удалены',
   },
 })

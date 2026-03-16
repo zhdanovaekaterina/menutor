@@ -106,9 +106,26 @@ function onAddProduct(productId: number, quantity: number) {
   toast.show('Продукт добавлен', 'success')
 }
 
+const confirmBatchDeleteOpen = ref(false)
+const confirmDeleteAllOpen = ref(false)
+
 function toggleSelectMode() {
   if (selection.active.value) selection.exit()
   else selection.enter()
+}
+
+function onConfirmBatchDelete() {
+  confirmBatchDeleteOpen.value = false
+  store.removeMany([...selection.selected.value])
+  selection.clear()
+  toast.show('Продукты удалены из списка', 'success')
+}
+
+function onConfirmDeleteAll() {
+  confirmDeleteAllOpen.value = false
+  store.removeMany(store.items.map((i) => i.product_id))
+  selection.exit()
+  toast.show('Список покупок очищен', 'success')
 }
 </script>
 
@@ -119,6 +136,13 @@ function toggleSelectMode() {
       <div v-if="store.data" class="flex items-center gap-2">
         <template v-if="selection.active.value">
           <span class="text-sm text-gray-500">Выбрано: {{ selection.count.value }}</span>
+          <button
+            v-if="selection.count.value > 0"
+            class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
+            @click="confirmBatchDeleteOpen = true"
+          >
+            Удалить выбранные
+          </button>
           <button
             class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
             @click="toggleSelectMode"
@@ -132,6 +156,13 @@ function toggleSelectMode() {
             @click="toggleSelectMode"
           >
             Выбрать
+          </button>
+          <button
+            v-if="store.items.length > 0"
+            class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
+            @click="confirmDeleteAllOpen = true"
+          >
+            Удалить все
           </button>
         </template>
       </div>
@@ -180,6 +211,22 @@ function toggleSelectMode() {
       danger
       @confirm="onConfirmRemove"
       @cancel="confirmRemoveOpen = false"
+    />
+
+    <ConfirmDialog
+      :open="confirmBatchDeleteOpen"
+      :message="`Удалить выбранные продукты (${selection.count.value}) из списка?`"
+      danger
+      @confirm="onConfirmBatchDelete"
+      @cancel="confirmBatchDeleteOpen = false"
+    />
+
+    <ConfirmDialog
+      :open="confirmDeleteAllOpen"
+      :message="`Очистить весь список покупок (${store.items.length})?`"
+      danger
+      @confirm="onConfirmDeleteAll"
+      @cancel="confirmDeleteAllOpen = false"
     />
 
     <!-- Export text modal -->

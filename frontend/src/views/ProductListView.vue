@@ -69,9 +69,34 @@ function onClear() {
   formOpen.value = false
 }
 
+const confirmBatchDeleteOpen = ref(false)
+const confirmDeleteAllOpen = ref(false)
+
 function toggleSelectMode() {
   if (selection.active.value) selection.exit()
   else { selection.enter(); formOpen.value = false }
+}
+
+async function onConfirmBatchDelete() {
+  confirmBatchDeleteOpen.value = false
+  const ids = [...selection.selected.value]
+  try {
+    await store.removeMany(ids)
+    selection.clear()
+  } catch (e: any) {
+    toast.show(e?.response?.data?.detail ?? 'Ошибка удаления', 'error')
+  }
+}
+
+async function onConfirmDeleteAll() {
+  confirmDeleteAllOpen.value = false
+  const ids = store.items.map((p) => p.id)
+  try {
+    await store.removeMany(ids)
+    selection.exit()
+  } catch (e: any) {
+    toast.show(e?.response?.data?.detail ?? 'Ошибка удаления', 'error')
+  }
 }
 </script>
 
@@ -82,6 +107,13 @@ function toggleSelectMode() {
       <div class="flex items-center gap-2">
         <template v-if="selection.active.value">
           <span class="text-sm text-gray-500">Выбрано: {{ selection.count.value }}</span>
+          <button
+            v-if="selection.count.value > 0"
+            class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
+            @click="confirmBatchDeleteOpen = true"
+          >
+            Удалить выбранные
+          </button>
           <button
             class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
             @click="toggleSelectMode"
@@ -95,6 +127,13 @@ function toggleSelectMode() {
             @click="toggleSelectMode"
           >
             Выбрать
+          </button>
+          <button
+            v-if="store.items.length > 0"
+            class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
+            @click="confirmDeleteAllOpen = true"
+          >
+            Удалить все
           </button>
           <button
             class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
@@ -139,6 +178,22 @@ function toggleSelectMode() {
       danger
       @confirm="onConfirmDelete"
       @cancel="confirmDeleteOpen = false"
+    />
+
+    <ConfirmDialog
+      :open="confirmBatchDeleteOpen"
+      :message="`Удалить выбранные продукты (${selection.count.value})?`"
+      danger
+      @confirm="onConfirmBatchDelete"
+      @cancel="confirmBatchDeleteOpen = false"
+    />
+
+    <ConfirmDialog
+      :open="confirmDeleteAllOpen"
+      :message="`Удалить все продукты (${store.items.length})?`"
+      danger
+      @confirm="onConfirmDeleteAll"
+      @cancel="confirmDeleteAllOpen = false"
     />
   </div>
 </template>

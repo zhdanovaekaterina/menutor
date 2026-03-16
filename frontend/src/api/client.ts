@@ -99,6 +99,8 @@ export const createRecipe = (data: RecipeCreate) =>
 export const updateRecipe = (id: number, data: RecipeCreate) =>
   api.put<Recipe>(`/recipes/${id}`, data).then((r) => r.data)
 export const deleteRecipe = (id: number) => api.delete(`/recipes/${id}`)
+export const batchDeleteRecipes = (ids: number[]) =>
+  api.post('/recipes/batch-delete', ids)
 
 /* Products */
 export const fetchProducts = () => api.get<Product[]>('/products').then((r) => r.data)
@@ -109,6 +111,8 @@ export const createProduct = (data: ProductCreate) =>
 export const updateProduct = (id: number, data: ProductCreate) =>
   api.put<Product>(`/products/${id}`, data).then((r) => r.data)
 export const deleteProduct = (id: number) => api.delete(`/products/${id}`)
+export const batchDeleteProducts = (ids: number[]) =>
+  api.post('/products/batch-delete', ids)
 
 /* Menus */
 export const fetchMenus = () => api.get<Menu[]>('/menus').then((r) => r.data)

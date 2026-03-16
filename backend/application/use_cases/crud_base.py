@@ -54,15 +54,21 @@ class EditEntity(ABC):
 
 
 class DeleteEntity:
-    """Deletes a user-owned entity if it exists and belongs to the user."""
+    """Deletes user-owned entities. Accepts a single ID or a list of IDs."""
 
     def __init__(self, repo: Any) -> None:
         self._repo = repo
 
-    def execute(self, id: Any, user_id: UserId) -> None:
-        existing = self._repo.get_by_id(id)
-        if existing is not None and existing.user_id == user_id:
-            self._repo.delete(id)
+    def execute(self, ids: Any, user_id: UserId) -> None:
+        if not isinstance(ids, list):
+            ids = [ids]
+        owned: list[Any] = []
+        for id in ids:
+            existing = self._repo.get_by_id(id)
+            if existing is not None and existing.user_id == user_id:
+                owned.append(id)
+        if owned:
+            self._repo.delete(owned)
 
 
 class GetEntity:

@@ -4,10 +4,11 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from backend.domain.entities.product import Product
+from backend.domain.exceptions import DomainError
 from backend.domain.ports.product_repository import ProductRepository
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.types import ProductCategoryId, ProductId, UserId
-from backend.infrastructure.database.models import ProductRow
+from backend.infrastructure.database.models import ProductRow, RecipeIngredientRow
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
 
@@ -83,3 +84,31 @@ class SqliteProductRepository(
             .all()
         )
         return [self._row_to_entity(r) for r in rows]
+
+    def find_linked_ids(self, ids: list[ProductId]) -> list[ProductId]:
+        if not ids:
+            return []
+        int_ids = [int(i) for i in ids]
+        rows = (
+            self._session.query(RecipeIngredientRow.product_id)
+            .filter(RecipeIngredientRow.product_id.in_(int_ids))
+            .distinct()
+            .all()
+        )
+        return [ProductId(r[0]) for r in rows]
+
+    def delete(self, ids: list[ProductId]) -> None:
+        if not ids:
+            return
+        linked = self.find_linked_ids(ids)
+        if linked:
+            names = (
+                self._session.query(ProductRow.name)
+                .filter(ProductRow.id.in_([int(i) for i in linked]))
+                .all()
+            )
+            name_list = ", ".join(f"«{n[0]}»" for n in names)
+            raise DomainError(
+                f"Нельзя удалить продукты, используемые в рецептах: {name_list}"
+            )
+        super().delete(ids)

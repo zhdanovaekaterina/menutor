@@ -51,7 +51,7 @@ def test_get_by_id_returns_none_when_absent(repo: SqliteFamilyMemberRepository) 
 
 def test_delete_removes_member(repo: SqliteFamilyMemberRepository, user_id: UserId) -> None:
     saved = repo.save(_member(user_id))
-    repo.delete(saved.id)
+    repo.delete([saved.id])
     assert repo.get_by_id(saved.id) is None
 
 

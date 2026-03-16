@@ -135,7 +135,7 @@ def test_get_by_id_returns_none_when_absent(menu_repo: SqliteMenuRepository) -> 
 
 def test_delete_removes_menu(menu_repo: SqliteMenuRepository, user_id: UserId) -> None:
     saved = menu_repo.save(_empty_menu(user_id))
-    menu_repo.delete(saved.id)
+    menu_repo.delete([saved.id])
     assert menu_repo.get_by_id(saved.id) is None
 
 
@@ -149,7 +149,7 @@ def test_delete_cascades_to_slots(menu_repo: SqliteMenuRepository,
         MenuSlot(0, "завтрак", recipe_id=seeded_recipe.id)
     ], user_id=user_id)
     saved = menu_repo.save(menu)
-    menu_repo.delete(saved.id)
+    menu_repo.delete([saved.id])
 
     count = session.execute(
         text("SELECT COUNT(*) FROM menu_slots WHERE menu_id = :id"),

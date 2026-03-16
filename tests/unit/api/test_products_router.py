@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
 from backend.domain.entities.product import Product
-from backend.domain.exceptions import EntityNotFoundError
+from backend.domain.exceptions import DomainError, EntityNotFoundError
 from backend.domain.value_objects.category import ActiveCategory
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.types import ProductCategoryId, ProductId
@@ -187,3 +187,30 @@ class TestDeleteProduct:
         resp = client.delete("/api/products/1")
         assert resp.status_code == 204
         container.delete_product.execute.assert_called_once()
+
+
+class TestBatchDeleteProducts:
+    def test_batch_deletes_and_returns_204(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        resp = client.post("/api/products/batch-delete", json=[1, 2, 3])
+        assert resp.status_code == 204
+        container.delete_product.execute.assert_called_once()
+        args = container.delete_product.execute.call_args
+        assert args[0][0] == [ProductId(1), ProductId(2), ProductId(3)]
+
+    def test_batch_delete_empty_list(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        resp = client.post("/api/products/batch-delete", json=[])
+        assert resp.status_code == 204
+
+    def test_batch_delete_returns_422_when_linked(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.delete_product.execute.side_effect = DomainError(
+            "Нельзя удалить продукты, используемые в рецептах: «Мука»"
+        )
+        resp = client.post("/api/products/batch-delete", json=[1])
+        assert resp.status_code == 422
+        assert "Мука" in resp.json()["detail"]

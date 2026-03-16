@@ -79,3 +79,14 @@ def delete_recipe(
     user: User = Depends(get_current_user),
 ) -> None:
     container.delete_recipe.execute(RecipeId(recipe_id), user.id)
+
+
+@router.post("/batch-delete", status_code=status.HTTP_204_NO_CONTENT)
+def batch_delete_recipes(
+    body: list[int],
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> None:
+    container.delete_recipe.execute(
+        [RecipeId(rid) for rid in body], user.id
+    )

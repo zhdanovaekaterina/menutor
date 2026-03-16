@@ -39,7 +39,7 @@ class DeleteMenu:
     def execute(self, menu_id: MenuId, user_id: UserId) -> None:
         menu = self._repo.get_by_id(menu_id)
         if menu is not None and menu.user_id == user_id:
-            self._repo.delete(menu_id)
+            self._repo.delete([menu_id])
 
 
 class ListMenus:

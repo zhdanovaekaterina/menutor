@@ -53,6 +53,12 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     data.value.items = data.value.items.filter((i) => i.product_id !== productId)
   }
 
+  function removeMany(productIds: number[]) {
+    if (!data.value || !productIds.length) return
+    const idSet = new Set(productIds)
+    data.value.items = data.value.items.filter((i) => !idSet.has(i.product_id))
+  }
+
   function updateQuantity(productId: number, newAmount: number) {
     const item = items.value.find((i) => i.product_id === productId)
     if (item) item.quantity.amount = newAmount
@@ -77,6 +83,7 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     exportText,
     togglePurchased,
     removeItem,
+    removeMany,
     updateQuantity,
     addItem,
   }
