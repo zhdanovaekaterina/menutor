@@ -6,6 +6,7 @@ import type {
   FamilyMemberCreate,
   Menu,
   MenuSlot,
+  MoveSlotRequest,
   Product,
   ProductCreate,
   Recipe,
@@ -117,6 +118,8 @@ export const createMenu = (name: string) =>
 export const deleteMenu = (id: number) => api.delete(`/menus/${id}`)
 export const addSlot = (menuId: number, slot: MenuSlot) =>
   api.post<Menu>(`/menus/${menuId}/slots`, slot).then((r) => r.data)
+export const moveSlotApi = (menuId: number, data: MoveSlotRequest) =>
+  api.post<Menu>(`/menus/${menuId}/slots/move`, data).then((r) => r.data)
 export const removeSlot = (menuId: number, data: RemoveItemRequest) =>
   api.delete<Menu>(`/menus/${menuId}/slots`, { data }).then((r) => r.data)
 export const clearMenu = (menuId: number) =>

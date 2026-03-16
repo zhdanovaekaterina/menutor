@@ -80,6 +80,16 @@ export interface RemoveItemRequest {
   product_id?: number | null
 }
 
+export interface MoveSlotRequest {
+  day: number
+  meal_type: string
+  recipe_id?: number | null
+  product_id?: number | null
+  to_day: number
+  to_meal_type: string
+  to_position: number
+}
+
 export interface FamilyMemberCreate {
   name: string
   portion_multiplier?: number

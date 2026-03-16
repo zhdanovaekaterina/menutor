@@ -56,6 +56,7 @@ from backend.application.use_cases.plan_menu import (
     DeleteMenu,
     ListMenus,
     LoadMenu,
+    MoveSlotInMenu,
     RemoveItemFromSlot,
     SaveMenu,
 )
@@ -222,6 +223,7 @@ class ApplicationContainer:
         self.delete_menu = DeleteMenu(infra.menu_repo)
         self.list_menus = ListMenus(infra.menu_repo)
         self.add_dish_to_slot = AddDishToSlot(infra.menu_repo)
+        self.move_slot_in_menu = MoveSlotInMenu(infra.menu_repo)
         self.remove_item_from_slot = RemoveItemFromSlot(infra.menu_repo)
         self.clear_menu = ClearMenu(infra.menu_repo)
 

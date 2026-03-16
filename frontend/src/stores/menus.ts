@@ -7,6 +7,7 @@ import {
   deleteMenu,
   fetchMenu,
   fetchMenus,
+  moveSlotApi,
   removeSlot,
 } from '@/api/client'
 import type { Menu, MenuSlot, RemoveItemRequest } from '@/api/types'
@@ -79,19 +80,15 @@ export const useMenuStore = defineStore('menus', () => {
 
   async function moveSlot(slot: MenuSlot, toDay: number, toMealType: string, toPosition: number) {
     if (!current.value) return
-    await removeSlot(current.value.id, {
+    const updated = await moveSlotApi(current.value.id, {
       day: slot.day,
       meal_type: slot.meal_type,
       recipe_id: slot.recipe_id,
       product_id: slot.product_id,
+      to_day: toDay,
+      to_meal_type: toMealType,
+      to_position: toPosition,
     })
-    const moved: MenuSlot = {
-      ...slot,
-      day: toDay,
-      meal_type: toMealType,
-      position: toPosition,
-    }
-    const updated = await addSlot(current.value.id, moved)
     _updateMenu(updated)
   }
 

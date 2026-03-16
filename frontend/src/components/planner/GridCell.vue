@@ -135,7 +135,7 @@ watch(
     @dragleave="dragOver = false"
     @drop="onDrop"
   >
-    <div ref="listRef" :data-day="day" :data-meal-type="mealType" class="flex flex-col gap-1 min-h-[8px]">
+    <div ref="listRef" :data-day="day" :data-meal-type="mealType" class="flex flex-col gap-1 min-h-[8px] flex-1">
       <ItemRow
         v-for="(slot, i) in cellSlots"
         :key="`${slot.recipe_id ?? ''}-${slot.product_id ?? ''}`"

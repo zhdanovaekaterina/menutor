@@ -33,6 +33,16 @@ class RemoveItemRequest(BaseModel):
     product_id: int | None = None
 
 
+class MoveSlotRequest(BaseModel):
+    day: int
+    meal_type: str
+    recipe_id: int | None = None
+    product_id: int | None = None
+    to_day: int
+    to_meal_type: str
+    to_position: int = 0
+
+
 class MenuResponse(BaseModel):
     id: int
     name: str
