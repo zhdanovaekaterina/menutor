@@ -1,3 +1,5 @@
+from typing import Any
+
 from backend.domain.entities.shopping_list import ShoppingList
 
 _UNIT_RU: dict[str, str] = {
@@ -27,3 +29,18 @@ class ShoppingListTextExporter:
         total = shopping_list.total_cost()
         lines.append(f"Итого: {total.amount:.2f} руб")
         return "\n".join(lines)
+
+    def export_bytes(self, entities: list[Any]) -> bytes:
+        shopping_list: ShoppingList = entities[0]
+        return self.export(shopping_list).encode("utf-8")
+
+    def example_bytes(self) -> bytes:
+        return (
+            "Список покупок\n\nМолочные:\n• Молоко — 1 л — 80.00 руб\n\nИтого: 80.00 руб"
+        ).encode("utf-8")
+
+    def content_type(self) -> str:
+        return "text/plain; charset=utf-8"
+
+    def file_extension(self) -> str:
+        return "txt"

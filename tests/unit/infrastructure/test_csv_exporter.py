@@ -73,3 +73,24 @@ def test_csv_empty_list_only_header(tmp_path: Path) -> None:
     ShoppingListCsvExporter().export(ShoppingList(), fp)
     rows = _read_csv(fp)
     assert len(rows) == 1
+
+
+def test_export_bytes_header() -> None:
+    data = ShoppingListCsvExporter().export_bytes([ShoppingList()])
+    rows = list(csv.reader(data.decode("utf-8").splitlines()))
+    assert rows[0] == ["category", "name", "quantity", "unit", "cost", "purchased"]
+
+
+def test_export_bytes_single_item() -> None:
+    sl = ShoppingList(items=[_item("Мука", "Сыпучие")])
+    data = ShoppingListCsvExporter().export_bytes([sl])
+    rows = list(csv.reader(data.decode("utf-8").splitlines()))
+    assert len(rows) == 2
+    assert rows[1][1] == "Мука"
+
+
+def test_example_bytes_is_parseable() -> None:
+    data = ShoppingListCsvExporter().example_bytes()
+    rows = list(csv.reader(data.decode("utf-8").splitlines()))
+    assert rows[0][0] == "category"
+    assert len(rows) == 2
