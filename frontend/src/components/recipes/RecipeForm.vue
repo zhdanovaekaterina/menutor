@@ -40,7 +40,7 @@ watch(
       categoryId.value = r.category_id
       servings.value = r.servings
       weight.value = r.weight
-      ingredients.value = r.ingredients.map((i) => ({ ...i }))
+      ingredients.value = [...r.ingredients].sort((a, b) => a.order - b.order).map((i) => ({ ...i }))
       steps.value = r.steps.map((s) => ({ ...s }))
     }
   },
@@ -67,10 +67,11 @@ function onSave() {
     weight: weight.value,
     ingredients: ingredients.value
       .filter((i) => i.product_id != null)
-      .map((i) => ({
+      .map((i, idx) => ({
         product_id: i.product_id!,
         quantity_amount: i.quantity_amount,
         quantity_unit: i.quantity_unit,
+        order: idx,
       })),
     steps: steps.value,
   }

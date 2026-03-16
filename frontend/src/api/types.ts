@@ -4,6 +4,7 @@ export interface RecipeIngredient {
   product_id: number
   quantity_amount: number
   quantity_unit: string
+  order: number
 }
 
 export interface CookingStep {

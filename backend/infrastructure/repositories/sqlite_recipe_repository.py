@@ -49,6 +49,7 @@ class SqliteRecipeRepository(
                 product_id=ing.product_id,
                 amount=ing.quantity.amount,
                 unit=ing.quantity.unit,
+                ingredient_order=ing.order,
             )
             for ing in entity.ingredients
         ]
@@ -68,6 +69,7 @@ class SqliteRecipeRepository(
                 product_id=ing.product_id,
                 amount=ing.quantity.amount,
                 unit=ing.quantity.unit,
+                ingredient_order=ing.order,
             )
             for ing in entity.ingredients
         ]
@@ -85,8 +87,9 @@ class SqliteRecipeRepository(
                 RecipeIngredient(
                     product_id=ProductId(r.product_id),
                     quantity=Quantity(r.amount, r.unit),
+                    order=r.ingredient_order,
                 )
-                for r in row.ingredients
+                for r in sorted(row.ingredients, key=lambda i: i.ingredient_order)
             ],
             steps=[
                 CookingStep(order=r.step_order, description=r.description)
