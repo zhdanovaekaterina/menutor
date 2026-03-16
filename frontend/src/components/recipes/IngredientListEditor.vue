@@ -44,8 +44,8 @@ function add() {
   ingredients.value.push({ product_id: null, quantity_amount: 100, quantity_unit: 'g' })
 }
 
-function removeLast() {
-  ingredients.value.pop()
+function remove(index: number) {
+  ingredients.value.splice(index, 1)
 }
 </script>
 
@@ -67,10 +67,10 @@ function removeLast() {
         <input v-model.number="ing.quantity_amount" type="number" min="0.01" step="0.01"
           class="w-20 border border-gray-300 rounded px-2 py-1 text-xs" />
         <span class="text-xs text-gray-500 w-8">{{ productUnit(ing.product_id) }}</span>
+        <button class="p-1 text-gray-400 hover:text-red-600" title="Удалить" @click="remove(i)">&times;</button>
       </div>
-      <div class="flex gap-2">
+      <div>
         <button class="px-3 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" @click="add">+ Добавить</button>
-        <button class="px-3 py-1 text-xs rounded border border-gray-300 text-red-600 hover:bg-red-50" @click="removeLast">− Удалить</button>
       </div>
     </div>
   </details>
