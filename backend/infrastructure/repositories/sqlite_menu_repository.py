@@ -46,8 +46,9 @@ class SqliteMenuRepository(
                     quantity=s.quantity,
                     unit=s.unit,
                     servings_override=s.servings_override,
+                    position=s.slot_position,
                 )
-                for s in row.slots
+                for s in sorted(row.slots, key=lambda s: s.slot_position)
             ],
             user_id=UserId(row.user_id),
         )
@@ -70,4 +71,5 @@ class SqliteMenuRepository(
             quantity=slot.quantity,
             unit=slot.unit,
             servings_override=slot.servings_override,
+            slot_position=slot.position,
         )

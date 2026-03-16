@@ -9,6 +9,7 @@ class MenuSlotSchema(BaseModel):
     quantity: float | None = None
     unit: str | None = None
     servings_override: float | None = None
+    position: int = 0
 
     @model_validator(mode="after")
     def exactly_one_item(self) -> "MenuSlotSchema":

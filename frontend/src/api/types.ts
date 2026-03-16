@@ -64,6 +64,7 @@ export interface MenuSlot {
   quantity?: number | null
   unit?: string | null
   servings_override?: number | null
+  position?: number
 }
 
 export interface Menu {

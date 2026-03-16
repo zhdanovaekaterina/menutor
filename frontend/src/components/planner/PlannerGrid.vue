@@ -12,6 +12,8 @@ const emit = defineEmits<{
   addItem: [day: number, mealType: string, data: { type: 'recipe' | 'product'; id: number }]
   removeItem: [day: number, mealType: string, data: { recipe_id?: number | null; product_id?: number | null }]
   editItem: [slot: MenuSlot]
+  moveItem: [slot: MenuSlot, toDay: number, toMealType: string, toIndex: number]
+  reorderItems: [day: number, mealType: string, orderedSlots: MenuSlot[]]
 }>()
 
 const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
@@ -44,6 +46,8 @@ const meals = ['Завтрак', 'Обед', 'Ужин']
         @add-item="(data) => emit('addItem', day - 1, meal, data)"
         @remove-item="(data) => emit('removeItem', day - 1, meal, data)"
         @edit-item="(slot) => emit('editItem', slot)"
+        @move-item="(slot, toDay, toMeal, toIdx) => emit('moveItem', slot, toDay, toMeal, toIdx)"
+        @reorder-items="(d, m, ordered) => emit('reorderItems', d, m, ordered)"
       />
     </template>
   </div>

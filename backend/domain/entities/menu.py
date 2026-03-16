@@ -13,6 +13,7 @@ class MenuSlot:
     quantity: float | None = field(default=None)
     unit: str | None = field(default=None)
     servings_override: float | None = field(default=None)
+    position: int = 0
 
     def __post_init__(self) -> None:
         has_recipe = self.recipe_id is not None
@@ -32,6 +33,18 @@ class WeeklyMenu:
 
     def add_or_replace_slot(self, slot: MenuSlot) -> None:
         """Add or replace an item (upsert by day+meal_type+item_id)."""
+        existing = next(
+            (s for s in self.slots if self._same_item(s, slot)), None
+        )
+        if existing is not None and slot.position == 0:
+            slot.position = existing.position
+        elif existing is None and slot.position == 0:
+            cell_slots = [
+                s
+                for s in self.slots
+                if s.day == slot.day and s.meal_type == slot.meal_type
+            ]
+            slot.position = max((s.position for s in cell_slots), default=-1) + 1
         self.slots = [s for s in self.slots if not self._same_item(s, slot)]
         self.slots.append(slot)
 

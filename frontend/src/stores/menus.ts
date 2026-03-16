@@ -77,6 +77,34 @@ export const useMenuStore = defineStore('menus', () => {
     _updateMenu(updated)
   }
 
+  async function moveSlot(slot: MenuSlot, toDay: number, toMealType: string, toPosition: number) {
+    if (!current.value) return
+    await removeSlot(current.value.id, {
+      day: slot.day,
+      meal_type: slot.meal_type,
+      recipe_id: slot.recipe_id,
+      product_id: slot.product_id,
+    })
+    const moved: MenuSlot = {
+      ...slot,
+      day: toDay,
+      meal_type: toMealType,
+      position: toPosition,
+    }
+    const updated = await addSlot(current.value.id, moved)
+    _updateMenu(updated)
+  }
+
+  async function reorderSlots(day: number, mealType: string, orderedSlots: MenuSlot[]) {
+    if (!current.value) return
+    let updated: Menu | null = null
+    for (let i = 0; i < orderedSlots.length; i++) {
+      const s = { ...orderedSlots[i], position: i }
+      updated = await addSlot(current.value.id, s)
+    }
+    if (updated) _updateMenu(updated)
+  }
+
   async function clear() {
     if (!current.value) return
     const updated = await clearMenu(current.value.id)
@@ -84,5 +112,5 @@ export const useMenuStore = defineStore('menus', () => {
     useToastStore().show('Меню очищено', 'success')
   }
 
-  return { menus, current, selectedId, loading, load, select, create, remove, addSlotToMenu, removeSlotFromMenu, clear }
+  return { menus, current, selectedId, loading, load, select, create, remove, addSlotToMenu, removeSlotFromMenu, moveSlot, reorderSlots, clear }
 })

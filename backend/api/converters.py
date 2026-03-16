@@ -89,6 +89,7 @@ def menu_slot_to_schema(slot: MenuSlot) -> MenuSlotSchema:
         quantity=slot.quantity,
         unit=slot.unit,
         servings_override=slot.servings_override,
+        position=slot.position,
     )
 
 
@@ -209,4 +210,5 @@ def schema_to_menu_slot(s: MenuSlotSchema) -> MenuSlot:
         quantity=s.quantity,
         unit=s.unit,
         servings_override=s.servings_override,
+        position=s.position,
     )
