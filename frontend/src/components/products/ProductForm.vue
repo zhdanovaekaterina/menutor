@@ -140,17 +140,17 @@ function onSave() {
 
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Цена (руб.)</label>
-        <input v-model.number="priceAmount" type="number" min="0" step="0.01"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-      </div>
-      <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Коэф. конвертации</label>
         <input v-model.number="conversionFactor" type="number" min="0.001" step="0.001"
           :disabled="isFactorLocked"
           :class="isFactorLocked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''"
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
         <p v-if="isFactorLocked" class="text-xs text-gray-400 mt-1">Рассчитан автоматически</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Цена (руб.)</label>
+        <input v-model.number="priceAmount" type="number" min="0" step="0.01"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
       </div>
     </div>
 

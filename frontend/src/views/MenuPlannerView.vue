@@ -150,7 +150,7 @@ async function onGenerateShoppingList() {
 
     <div class="flex-1 flex gap-4 min-h-0">
       <!-- Left: saved menus -->
-      <div :class="leftPanelOpen ? 'w-48' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col border-r bg-white overflow-hidden">
+      <div :class="leftPanelOpen ? 'w-48' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col bg-white overflow-hidden">
         <button
           class="p-2 text-gray-400 hover:text-gray-600 self-end shrink-0"
           :title="leftPanelOpen ? 'Свернуть' : 'Развернуть'"
@@ -239,7 +239,7 @@ async function onGenerateShoppingList() {
       </div>
 
       <!-- Right: source panel -->
-      <div :class="rightPanelOpen ? 'w-56' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col border-l bg-white overflow-hidden">
+      <div :class="rightPanelOpen ? 'w-56' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col bg-white overflow-hidden">
         <button
           class="p-2 text-gray-400 hover:text-gray-600 self-start shrink-0"
           :title="rightPanelOpen ? 'Свернуть' : 'Развернуть'"

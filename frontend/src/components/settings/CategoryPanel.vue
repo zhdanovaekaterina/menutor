@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { watch, ref, computed } from 'vue'
 import type { Category } from '@/api/types'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import SlidePanel from '@/components/ui/SlidePanel.vue'
@@ -20,7 +20,7 @@ const confirmDeleteOpen = ref(false)
 const confirmHardOpen = ref(false)
 const formOpen = ref(false)
 
-onMounted(() => store.load(props.type))
+watch(() => props.type, () => store.load(props.type), { immediate: true })
 
 const selected = computed(() => categories.value.find((c) => c.id === selectedId.value))
 const isInactive = computed(() => selected.value?.active === false)
