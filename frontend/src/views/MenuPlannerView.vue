@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { MenuSlot } from '@/api/types'
+import MobileItemPicker from '@/components/planner/MobileItemPicker.vue'
 import PlannerGrid from '@/components/planner/PlannerGrid.vue'
 import SavedMenuList from '@/components/planner/SavedMenuList.vue'
 import SourcePanel from '@/components/planner/SourcePanel.vue'
@@ -29,7 +30,10 @@ const leftPanelOpen = ref(true)
 const rightPanelOpen = ref(isXl.value)
 
 const mobileLeftOpen = ref(false)
-const mobileRightOpen = ref(false)
+
+const pickerOpen = ref(false)
+const pickerDay = ref(0)
+const pickerMealType = ref('')
 
 const nameDialogOpen = ref(false)
 const confirmDeleteOpen = ref(false)
@@ -64,6 +68,14 @@ const productNames = computed(() =>
   Object.fromEntries(productStore.items.map((p) => [p.id, p.name])),
 )
 
+const dayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+const pickerDayLabel = computed(() => dayLabels[pickerDay.value] ?? '')
+
+const pickerExistingSlots = computed(() =>
+  slots.value.filter(s => s.day === pickerDay.value && s.meal_type === pickerMealType.value)
+)
+
 async function onSelectMenu(id: number) {
   await menuStore.select(id)
 }
@@ -78,6 +90,20 @@ async function onDeleteMenu() {
   confirmDeleteOpen.value = false
   if (!selectedId.value) return
   await menuStore.remove(selectedId.value)
+}
+
+function onOpenPicker(day: number, mealType: string) {
+  if (!menuStore.current) {
+    toast.show('Сначала выберите меню', 'error')
+    return
+  }
+  pickerDay.value = day
+  pickerMealType.value = mealType
+  pickerOpen.value = true
+}
+
+function onPickerSelect(data: { type: 'recipe' | 'product'; id: number }) {
+  onAddItem(pickerDay.value, pickerMealType.value, data)
 }
 
 async function onAddItem(day: number, mealType: string, data: { type: 'recipe' | 'product'; id: number }) {
@@ -171,15 +197,6 @@ async function onGenerateShoppingList() {
         <h1 class="text-lg sm:text-xl font-bold lg:hidden">{{ pageTitle }}</h1>
         <h1 class="text-lg sm:text-xl font-bold hidden lg:block">Планировщик меню</h1>
       </div>
-      <button
-        class="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-        @click="mobileRightOpen = true"
-        title="Рецепты и продукты"
-      >
-        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-        </svg>
-      </button>
     </div>
 
     <div class="flex-1 flex gap-4 min-h-0">
@@ -215,11 +232,15 @@ async function onGenerateShoppingList() {
             :slots="slots"
             :recipe-names="recipeNames"
             :product-names="productNames"
+            :picker-day="pickerOpen ? pickerDay : null"
+            :picker-meal-type="pickerOpen ? pickerMealType : null"
             @add-item="onAddItem"
             @remove-item="onRemoveItem"
             @edit-item="onEditItem"
             @move-item="onMoveItem"
             @reorder-items="onReorderItems"
+            @open-picker="onOpenPicker"
+            @day-scrolled="pickerOpen = false"
           />
         </div>
         <div class="flex items-center gap-3 pt-3 border-t flex-wrap">
@@ -347,6 +368,18 @@ async function onGenerateShoppingList() {
       @imported="menuStore.load()"
     />
 
+    <MobileItemPicker
+      :open="pickerOpen"
+      :day="pickerDay"
+      :meal-type="pickerMealType"
+      :day-label="pickerDayLabel"
+      :recipes="recipeStore.items"
+      :products="productStore.items"
+      :existing-slots="pickerExistingSlots"
+      @close="pickerOpen = false"
+      @select="onPickerSelect"
+    />
+
     <!-- Mobile: Left drawer (SavedMenuList) -->
     <Teleport to="body">
       <Transition name="fade">
@@ -373,29 +406,6 @@ async function onGenerateShoppingList() {
       </Transition>
     </Teleport>
 
-    <!-- Mobile: Right drawer (SourcePanel) -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div v-if="mobileRightOpen" class="lg:hidden fixed inset-0 bg-black/40 z-40" @click="mobileRightOpen = false" />
-      </Transition>
-      <Transition name="slide-right">
-        <div v-if="mobileRightOpen" class="lg:hidden fixed inset-y-0 right-0 w-72 bg-white z-50 shadow-xl flex flex-col p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="font-semibold">Рецепты и продукты</h2>
-            <button class="p-1 rounded hover:bg-gray-100" @click="mobileRightOpen = false">
-              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <SourcePanel
-            :recipes="recipeStore.items"
-            :products="productStore.items"
-            :family-members="familyStore.items"
-          />
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
@@ -405,13 +415,6 @@ async function onGenerateShoppingList() {
 }
 .slide-left-enter-from, .slide-left-leave-to {
   transform: translateX(-100%);
-}
-
-.slide-right-enter-active, .slide-right-leave-active {
-  transition: transform 0.25s ease;
-}
-.slide-right-enter-from, .slide-right-leave-to {
-  transform: translateX(100%);
 }
 
 .fade-enter-active, .fade-leave-active {
