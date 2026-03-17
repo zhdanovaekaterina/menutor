@@ -56,8 +56,8 @@ async function onDownloadExample() {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+      <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl max-w-md w-full sm:mx-4 p-6">
         <h3 class="text-lg font-semibold mb-4">Экспорт</h3>
 
         <div class="space-y-4">
