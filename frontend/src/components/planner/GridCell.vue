@@ -10,6 +10,7 @@ const props = defineProps<{
   slots: MenuSlot[]
   recipeNames: Record<number, string>
   productNames: Record<number, string>
+  pickerActive?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   editItem: [slot: MenuSlot]
   moveItem: [slot: MenuSlot, toDay: number, toMealType: string, toIndex: number]
   reorderItems: [day: number, mealType: string, orderedSlots: MenuSlot[]]
+  openPicker: []
 }>()
 
 const dragOver = ref(false)
@@ -129,8 +131,12 @@ watch(
 
 <template>
   <div
-    :class="dragOver ? 'ring-2 ring-blue-300 bg-blue-50/50' : 'bg-white'"
-    class="h-full min-h-[100px] p-1 flex flex-col gap-1"
+    :class="[
+      dragOver ? 'ring-2 ring-blue-300 bg-blue-50/50' : '',
+      pickerActive ? 'ring-2 ring-blue-400 ring-offset-1 bg-blue-50/60' : '',
+      !dragOver && !pickerActive ? 'bg-white' : ''
+    ]"
+    class="relative h-full min-h-[100px] p-1 flex flex-col gap-1"
     @dragover="onDragOver"
     @dragleave="dragOver = false"
     @drop="onDrop"
@@ -146,6 +152,16 @@ watch(
         @click="emit('editItem', slot)"
       />
     </div>
+    <!-- Mobile add button -->
+    <button
+      class="lg:hidden absolute bottom-1.5 right-1.5 w-9 h-9 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-md active:bg-blue-600 transition-colors"
+      aria-label="Добавить"
+      @click.stop="emit('openPicker')"
+    >
+      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
+    </button>
   </div>
 </template>
 

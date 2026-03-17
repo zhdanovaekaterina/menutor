@@ -7,9 +7,10 @@ const props = defineProps<{
   label: string
   initialValue?: string
   inputType?: string
+  showDelete?: boolean
 }>()
 
-const emit = defineEmits<{ confirm: [value: string]; cancel: [] }>()
+const emit = defineEmits<{ confirm: [value: string]; cancel: []; delete: [] }>()
 
 const value = ref(props.initialValue ?? '')
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -43,19 +44,28 @@ watch(
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
           @keydown.enter="emit('confirm', value)"
         />
-        <div class="flex justify-end gap-2 mt-6">
+        <div class="flex justify-between items-center mt-6">
           <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
-            @click="emit('cancel')"
+            v-if="showDelete"
+            class="lg:hidden px-4 py-2 rounded-lg bg-red-50 text-red-600 text-sm hover:bg-red-100 transition-colors"
+            @click="emit('delete')"
           >
-            Отмена
+            Удалить
           </button>
-          <button
-            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
-            @click="emit('confirm', value)"
-          >
-            ОК
-          </button>
+          <div class="flex gap-2 ml-auto">
+            <button
+              class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
+              @click="emit('cancel')"
+            >
+              Отмена
+            </button>
+            <button
+              class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
+              @click="emit('confirm', value)"
+            >
+              ОК
+            </button>
+          </div>
         </div>
       </div>
     </div>

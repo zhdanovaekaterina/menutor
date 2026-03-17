@@ -50,6 +50,7 @@ onMounted(async () => {
 
 const selectedId = computed(() => menuStore.current?.id ?? null)
 const slots = computed(() => menuStore.current?.slots ?? [])
+const pageTitle = computed(() => menuStore.current?.name ?? 'Планировщик меню')
 
 const totalFamilyPortions = computed(() => {
   const sum = familyStore.items.reduce((acc, m) => acc + m.portion_multiplier, 0)
@@ -101,6 +102,13 @@ async function onRemoveItem(day: number, mealType: string, data: { recipe_id?: n
 function onEditItem(slot: MenuSlot) {
   editSlot.value = slot
   editValue.value = String(slot.servings_override ?? slot.quantity ?? 1)
+}
+
+async function onEditDelete() {
+  const s = editSlot.value
+  if (!s) return
+  editSlot.value = null
+  await onRemoveItem(s.day, s.meal_type, { recipe_id: s.recipe_id, product_id: s.product_id })
 }
 
 async function onEditConfirm(val: string) {
@@ -160,7 +168,8 @@ async function onGenerateShoppingList() {
             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
           </svg>
         </button>
-        <h1 class="text-lg sm:text-xl font-bold">Планировщик меню</h1>
+        <h1 class="text-lg sm:text-xl font-bold lg:hidden">{{ pageTitle }}</h1>
+        <h1 class="text-lg sm:text-xl font-bold hidden lg:block">Планировщик меню</h1>
       </div>
       <button
         class="lg:hidden p-2 rounded-lg hover:bg-gray-100"
@@ -317,8 +326,10 @@ async function onGenerateShoppingList() {
       :label="editSlot?.recipe_id != null ? 'Количество порций' : 'Количество'"
       :initial-value="editValue"
       input-type="number"
+      :show-delete="true"
       @confirm="onEditConfirm"
       @cancel="editSlot = null"
+      @delete="onEditDelete"
     />
 
     <ExportModal

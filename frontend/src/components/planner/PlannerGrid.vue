@@ -30,7 +30,7 @@ const meals = ['Завтрак', 'Обед', 'Ужин']
       <div
         v-for="meal in meals"
         :key="'label-' + meal"
-        class="flex-1 bg-gray-100 font-semibold text-xs px-2 py-2 flex items-start"
+        class="flex-1 bg-gray-100 font-semibold text-xs px-2 py-2 flex items-center"
       >
         {{ meal }}
       </div>

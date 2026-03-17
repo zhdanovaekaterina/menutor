@@ -243,14 +243,14 @@ function onConfirmDeleteAll() {
     <template v-if="store.data">
       <!-- Compact summary bar (sits above the bottom nav) -->
       <div
-        class="lg:hidden fixed bottom-[56px] inset-x-0 bg-white border-t shadow-lg z-30 px-4 py-2 flex items-center justify-between"
-        style="padding-bottom: env(safe-area-inset-bottom, 0px)"
+        class="lg:hidden fixed bottom-[56px] inset-x-0 bg-white border-t shadow-lg z-30 px-4 py-3 flex items-center justify-between"
+        style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px))"
       >
-        <div class="flex items-center gap-3">
-          <span class="text-sm font-bold">{{ Number(store.totalCost.amount).toFixed(0) }} р.</span>
-          <span class="text-xs text-gray-500">{{ store.purchasedCount }}/{{ store.items.length }}</span>
-          <div class="w-16 bg-gray-200 rounded-full h-1.5">
-            <div class="bg-green-500 h-1.5 rounded-full" :style="{ width: store.progressPercent + '%' }" />
+        <div class="flex items-center gap-4">
+          <span class="text-base font-bold">{{ Number(store.totalCost.amount).toFixed(0) }} р.</span>
+          <span class="text-sm text-gray-500">{{ store.purchasedCount }}/{{ store.items.length }}</span>
+          <div class="w-24 bg-gray-200 rounded-full h-2.5">
+            <div class="bg-green-500 h-2.5 rounded-full" :style="{ width: store.progressPercent + '%' }" />
           </div>
         </div>
         <button
