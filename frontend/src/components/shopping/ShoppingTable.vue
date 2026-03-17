@@ -88,13 +88,15 @@ const allChecked = computed(() =>
               @change="emit('toggleSelect', item.product_id)"
             />
           </td>
-          <td v-else class="text-center px-2">
-            <input
-              type="checkbox"
-              :checked="item.purchased"
-              class="rounded border-gray-300"
-              @change="emit('toggle', item.product_id)"
-            />
+          <td v-else class="text-center px-2" @click.stop>
+            <label class="flex items-center justify-center w-10 h-10 cursor-pointer mx-auto">
+              <input
+                type="checkbox"
+                :checked="item.purchased"
+                class="rounded border-gray-300 w-5 h-5"
+                @change="emit('toggle', item.product_id)"
+              />
+            </label>
           </td>
           <td
             :class="!selectMode && item.purchased ? 'line-through text-gray-400' : ''"
