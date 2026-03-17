@@ -24,6 +24,10 @@ const familyStore = useFamilyStore()
 const shoppingStore = useShoppingListStore()
 const toast = useToastStore()
 
+const isXl = ref(typeof window !== 'undefined' && window.innerWidth >= 1280)
+const leftPanelOpen = ref(true)
+const rightPanelOpen = ref(isXl.value)
+
 const nameDialogOpen = ref(false)
 const confirmDeleteOpen = ref(false)
 const confirmClearOpen = ref(false)
@@ -154,14 +158,28 @@ async function onGenerateShoppingList() {
 
     <div class="flex-1 flex gap-4 min-h-0">
       <!-- Left: saved menus -->
-      <div class="w-48 shrink-0">
-        <SavedMenuList
-          :menus="menuStore.menus"
-          :selected-id="selectedId"
-          @select="onSelectMenu"
-          @create="nameDialogOpen = true"
-          @remove="confirmDeleteOpen = true"
-        />
+      <div :class="leftPanelOpen ? 'w-48' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col border-r bg-white overflow-hidden">
+        <button
+          class="p-2 text-gray-400 hover:text-gray-600 self-end shrink-0"
+          :title="leftPanelOpen ? 'Свернуть' : 'Развернуть'"
+          @click="leftPanelOpen = !leftPanelOpen"
+        >
+          <svg v-if="leftPanelOpen" class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          <svg v-else class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+        <div v-show="leftPanelOpen" class="flex-1 min-h-0">
+          <SavedMenuList
+            :menus="menuStore.menus"
+            :selected-id="selectedId"
+            @select="onSelectMenu"
+            @create="nameDialogOpen = true"
+            @remove="confirmDeleteOpen = true"
+          />
+        </div>
       </div>
 
       <!-- Center: grid + actions -->
@@ -209,12 +227,26 @@ async function onGenerateShoppingList() {
       </div>
 
       <!-- Right: source panel -->
-      <div class="w-56 shrink-0">
-        <SourcePanel
-          :recipes="recipeStore.items"
-          :products="productStore.items"
-          :family-members="familyStore.items"
-        />
+      <div :class="rightPanelOpen ? 'w-56' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col border-l bg-white overflow-hidden">
+        <button
+          class="p-2 text-gray-400 hover:text-gray-600 self-start shrink-0"
+          :title="rightPanelOpen ? 'Свернуть' : 'Развернуть'"
+          @click="rightPanelOpen = !rightPanelOpen"
+        >
+          <svg v-if="rightPanelOpen" class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+          </svg>
+          <svg v-else class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+        <div v-show="rightPanelOpen" class="flex-1 min-h-0">
+          <SourcePanel
+            :recipes="recipeStore.items"
+            :products="productStore.items"
+            :family-members="familyStore.items"
+          />
+        </div>
       </div>
     </div>
 
