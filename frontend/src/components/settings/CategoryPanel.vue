@@ -118,7 +118,7 @@ const title = computed(() =>
     </div>
 
     <!-- Table -->
-    <div class="flex-1 overflow-y-auto border rounded-lg">
+    <div class="hidden sm:block flex-1 overflow-y-auto border rounded-lg">
       <table class="w-full text-sm">
         <thead class="bg-gray-50 sticky top-0">
           <tr>
@@ -148,6 +148,24 @@ const title = computed(() =>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Mobile: card list -->
+    <div class="flex-1 overflow-y-auto space-y-2 sm:hidden">
+      <div
+        v-for="c in categories"
+        :key="c.id"
+        :class="c.id === selectedId ? 'ring-2 ring-blue-300' : ''"
+        class="border rounded-lg p-3 cursor-pointer flex items-center justify-between hover:bg-gray-50 active:bg-gray-100"
+        @click="selectCategory(c)"
+      >
+        <span class="text-sm">{{ c.name }}</span>
+        <span v-if="c.active" class="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Активна</span>
+        <span v-else class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Скрыта</span>
+      </div>
+      <div v-if="!categories.length" class="text-center text-sm text-gray-400 py-8">
+        Нет категорий
+      </div>
     </div>
 
     <!-- Slide Panel Form -->

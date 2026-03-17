@@ -80,7 +80,7 @@ async function onConfirmDelete() {
     </div>
 
     <!-- Table -->
-    <div class="flex-1 overflow-y-auto border rounded-lg">
+    <div class="hidden sm:block flex-1 overflow-y-auto border rounded-lg">
       <table class="w-full text-sm">
         <thead class="bg-gray-50 sticky top-0">
           <tr>
@@ -105,6 +105,27 @@ async function onConfirmDelete() {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Mobile: card list -->
+    <div class="flex-1 overflow-y-auto space-y-2 sm:hidden">
+      <div
+        v-for="m in store.items"
+        :key="m.id"
+        :class="m.id === selectedId ? 'ring-2 ring-blue-300' : ''"
+        class="border rounded-lg p-3 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
+        @click="selectMember(m)"
+      >
+        <div class="flex items-center justify-between">
+          <span class="font-medium text-sm">{{ m.name }}</span>
+          <span class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">&times;{{ m.portion_multiplier }}</span>
+        </div>
+        <p v-if="m.dietary_restrictions" class="text-xs text-gray-500 mt-1">{{ m.dietary_restrictions }}</p>
+        <p v-if="m.comment" class="text-xs text-gray-400 mt-0.5">{{ m.comment }}</p>
+      </div>
+      <div v-if="!store.items.length" class="text-center text-sm text-gray-400 py-8">
+        Нет членов семьи
+      </div>
     </div>
 
     <!-- Slide Panel Form -->
