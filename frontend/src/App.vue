@@ -20,7 +20,7 @@ onMounted(() => auth.init())
   <div v-else class="flex h-[100dvh] bg-gray-50">
     <AppSidebar />
     <main class="flex-1 overflow-y-auto pb-20 lg:pb-0 overscroll-contain">
-      <div class="mx-auto max-w-screen-2xl min-h-full">
+      <div class="mx-auto max-w-screen-2xl h-full">
         <RouterView />
       </div>
     </main>
