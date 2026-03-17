@@ -201,7 +201,7 @@ async function onGenerateShoppingList() {
 
       <!-- Center: always visible -->
       <div class="flex-1 flex flex-col gap-4 min-w-0">
-        <div class="flex-1 overflow-auto">
+        <div class="flex-1 overflow-auto relative">
           <PlannerGrid
             :slots="slots"
             :recipe-names="recipeNames"
@@ -212,6 +212,8 @@ async function onGenerateShoppingList() {
             @move-item="onMoveItem"
             @reorder-items="onReorderItems"
           />
+          <!-- Scroll hint shadow (mobile only) -->
+          <div class="lg:hidden absolute top-0 right-0 bottom-0 w-4 bg-gradient-to-l from-gray-100/80 to-transparent pointer-events-none" />
         </div>
         <div class="flex items-center gap-3 pt-3 border-t flex-wrap">
           <button
