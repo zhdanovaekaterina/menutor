@@ -134,11 +134,24 @@ async function onProductSave(data: ProductCreate) {
     <StepListEditor v-model="steps" />
 
     <div class="flex gap-2 pt-4 border-t">
-      <button class="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" @click="onSave">
-        Сохранить
+      <button
+        class="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+        @click="onSave"
+      >
+        {{ recipe ? 'Сохранить' : 'Создать' }}
       </button>
-      <button v-if="recipe" class="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
-        @click="emit('remove', recipe.id)">
+      <button
+        v-if="recipe"
+        class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
+        @click="clearForm"
+      >
+        Новый
+      </button>
+      <button
+        v-if="recipe"
+        class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 transition-colors"
+        @click="emit('remove', recipe.id)"
+      >
         Удалить
       </button>
     </div>

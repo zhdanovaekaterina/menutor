@@ -69,19 +69,35 @@ function remove(index: number) {
       </svg>
     </button>
     <div v-show="expanded" class="pt-2 space-y-2">
-      <div v-for="(ing, i) in ingredients" :key="i" class="flex gap-2 items-center">
-        <select v-model="ing.product_id"
-          class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs"
-          @change="onProductChange(ing, i)">
-          <option :value="null">Продукт...</option>
-          <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
-          <option disabled>───────────</option>
-          <option :value="NEW_PRODUCT">+ Создать новый продукт...</option>
-        </select>
-        <input v-model.number="ing.quantity_amount" type="number" min="0.01" step="0.01"
-          class="w-20 border border-gray-300 rounded px-2 py-1 text-xs" />
-        <span class="text-xs text-gray-500 w-8">{{ productUnit(ing.product_id) }}</span>
-        <button class="p-1 text-gray-400 hover:text-red-600" title="Удалить" @click="remove(i)">&times;</button>
+      <div v-for="(ing, i) in ingredients" :key="i" class="border rounded-lg p-2 space-y-1.5">
+        <div class="flex items-center gap-2">
+          <select
+            v-model="ing.product_id"
+            class="flex-1 min-w-0 border border-gray-300 rounded px-2 py-1.5 text-xs"
+            @change="onProductChange(ing, i)"
+          >
+            <option :value="null">Продукт...</option>
+            <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
+            <option disabled>---</option>
+            <option :value="NEW_PRODUCT">+ Создать новый...</option>
+          </select>
+          <button
+            type="button"
+            class="p-1 text-gray-400 hover:text-red-600 shrink-0 transition-colors"
+            title="Удалить ингредиент"
+            @click="remove(i)"
+          >&times;</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            v-model.number="ing.quantity_amount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            class="w-20 border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+          />
+          <span class="text-xs text-gray-500">{{ productUnit(ing.product_id) }}</span>
+        </div>
       </div>
       <div>
         <button class="px-3 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" @click="add">+ Добавить</button>
