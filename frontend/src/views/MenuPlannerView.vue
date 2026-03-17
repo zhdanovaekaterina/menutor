@@ -196,31 +196,59 @@ async function onGenerateShoppingList() {
             @reorder-items="onReorderItems"
           />
         </div>
-        <div class="flex items-center gap-3 pt-2 border-t">
-          <button class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" @click="onSave">
+        <div class="flex items-center gap-3 pt-3 border-t flex-wrap">
+          <!-- Primary actions -->
+          <button
+            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!menuStore.current"
+            @click="onSave"
+          >
             Сохранить
           </button>
-          <button class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
-            @click="confirmClearOpen = true">
+          <button
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!menuStore.current"
+            @click="confirmClearOpen = true"
+          >
             Очистить
           </button>
-          <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-40"
-            :disabled="!menuStore.current"
-            @click="importOpen = true"
-          >
-            Импорт
-          </button>
-          <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-40"
-            :disabled="!menuStore.current"
-            @click="exportOpen = true"
-          >
-            Экспорт
-          </button>
+
+          <!-- Vertical divider -->
+          <div class="w-px h-6 bg-gray-300" />
+
+          <!-- Secondary actions: Import/Export as icon-only buttons -->
+          <div class="flex items-center gap-1.5">
+            <button
+              class="p-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="!menuStore.current"
+              @click="importOpen = true"
+              title="Импорт меню"
+            >
+              <!-- download arrow = import (bringing data in) -->
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+            </button>
+            <button
+              class="p-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="!menuStore.current"
+              @click="exportOpen = true"
+              title="Экспорт меню"
+            >
+              <!-- upload arrow = export (sending data out) -->
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+              </svg>
+            </button>
+          </div>
+
           <div class="flex-1" />
-          <button class="px-4 py-2 rounded-lg bg-green-600 text-white text-sm hover:bg-green-700"
-            @click="onGenerateShoppingList">
+
+          <!-- Call-to-action -->
+          <button
+            class="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
+            @click="onGenerateShoppingList"
+          >
             Сформировать список покупок
           </button>
         </div>
