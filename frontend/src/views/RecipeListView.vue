@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { RecipeCreate } from '@/api/types'
 import RecipeForm from '@/components/recipes/RecipeForm.vue'
 import RecipeTable from '@/components/recipes/RecipeTable.vue'
@@ -25,7 +25,9 @@ const importOpen = ref(false)
 
 onMounted(async () => {
   await Promise.all([store.load(), productStore.load()])
+  document.addEventListener('click', closeMore)
 })
+onUnmounted(() => document.removeEventListener('click', closeMore))
 
 const selectedRecipe = computed(() =>
   store.items.find((r) => r.id === selectedId.value) ?? null,
@@ -79,6 +81,11 @@ function onClear() {
 
 const confirmBatchDeleteOpen = ref(false)
 const confirmDeleteAllOpen = ref(false)
+const showMore = ref(false)
+
+function closeMore() {
+  showMore.value = false
+}
 
 function toggleSelectMode() {
   if (selection.active.value) selection.exit()
@@ -129,39 +136,59 @@ async function onConfirmDeleteAll() {
             Отменить
           </button>
         </template>
-        <template v-else>
+        <div v-else class="flex items-center gap-2">
           <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
             @click="toggleSelectMode"
           >
             Выбрать
           </button>
+
+          <!-- More actions dropdown -->
+          <div class="relative" @click.stop>
+            <button
+              class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
+              @click="showMore = !showMore"
+              title="Дополнительные действия"
+            >
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
+              </svg>
+            </button>
+            <div
+              v-if="showMore"
+              class="absolute left-0 top-full mt-1 w-44 bg-white border rounded-lg shadow-lg z-30 py-1"
+            >
+              <button
+                class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                @click="importOpen = true; showMore = false"
+              >
+                Импорт
+              </button>
+              <button
+                class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                @click="exportOpen = true; showMore = false"
+              >
+                Экспорт
+              </button>
+              <div v-if="store.items.length > 0" class="border-t my-1" />
+              <button
+                v-if="store.items.length > 0"
+                class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                @click="confirmDeleteAllOpen = true; showMore = false"
+              >
+                Удалить все
+              </button>
+            </div>
+          </div>
+
           <button
-            v-if="store.items.length > 0"
-            class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
-            @click="confirmDeleteAllOpen = true"
-          >
-            Удалить все
-          </button>
-          <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
-            @click="importOpen = true"
-          >
-            Импорт
-          </button>
-          <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
-            @click="exportOpen = true"
-          >
-            Экспорт
-          </button>
-          <button
-            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
+            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
             @click="openNew"
           >
             + Новый рецепт
           </button>
-        </template>
+        </div>
       </div>
     </div>
 
