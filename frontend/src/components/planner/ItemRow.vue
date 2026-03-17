@@ -19,7 +19,7 @@ const emit = defineEmits<{ remove: []; click: [] }>()
     <span class="truncate flex-1">{{ name }}</span>
     <span class="text-gray-500 whitespace-nowrap">{{ detail }}</span>
     <button
-      class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 ml-1 shrink-0"
+      class="opacity-40 hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 ml-1 shrink-0"
       title="Удалить"
       @click.stop="emit('remove')"
     >

@@ -130,12 +130,12 @@ watch(
 <template>
   <div
     :class="dragOver ? 'ring-2 ring-blue-300 bg-blue-50/50' : 'bg-white'"
-    class="h-full p-1 flex flex-col gap-1"
+    class="h-full min-h-[100px] p-1 flex flex-col gap-1"
     @dragover="onDragOver"
     @dragleave="dragOver = false"
     @drop="onDrop"
   >
-    <div ref="listRef" :data-day="day" :data-meal-type="mealType" class="flex flex-col gap-1 min-h-[8px] flex-1">
+    <div ref="listRef" :data-day="day" :data-meal-type="mealType" class="flex flex-col gap-1 min-h-[8px] flex-1 max-h-40 overflow-y-auto">
       <ItemRow
         v-for="(slot, i) in cellSlots"
         :key="`${slot.recipe_id ?? ''}-${slot.product_id ?? ''}`"
