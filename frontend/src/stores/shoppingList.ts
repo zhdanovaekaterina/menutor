@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { exportShoppingListText, generateShoppingList } from '@/api/client'
+import { downloadShoppingListText, generateShoppingList } from '@/api/client'
 import type { ShoppingList, ShoppingListItem } from '@/api/types'
 import { useToastStore } from './toast'
 
@@ -36,7 +36,7 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
 
   async function exportText(menuId: number) {
     try {
-      return await exportShoppingListText(menuId)
+      return await downloadShoppingListText(menuId)
     } catch {
       useToastStore().show('Ошибка экспорта', 'error')
       return null
