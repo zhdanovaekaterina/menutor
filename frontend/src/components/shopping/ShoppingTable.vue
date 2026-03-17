@@ -6,6 +6,7 @@ const props = defineProps<{
   itemsByCategory: Record<string, ShoppingListItem[]>
   selectMode?: boolean
   selectedIds?: Set<number>
+  selectedId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -13,6 +14,7 @@ const emit = defineEmits<{
   editQuantity: [productId: number]
   toggleSelect: [productId: number]
   toggleSelectAll: [productIds: number[]]
+  select: [productId: number]
 }>()
 
 const UNIT_MAP: Record<string, string> = {
@@ -72,11 +74,11 @@ const allChecked = computed(() =>
           :key="item.product_id"
           :class="[
             selectMode && selectedIds?.has(item.product_id) ? 'bg-blue-50' :
+            !selectMode && item.product_id === selectedId ? 'bg-blue-50' :
             item.purchased ? 'bg-green-50/50' : '',
           ]"
-          class="hover:bg-gray-50 border-b"
-          :style="selectMode ? 'cursor: pointer' : ''"
-          @click="selectMode && emit('toggleSelect', item.product_id)"
+          class="hover:bg-gray-50 border-b cursor-pointer"
+          @click="selectMode ? emit('toggleSelect', item.product_id) : emit('select', item.product_id)"
         >
           <td v-if="selectMode" class="text-center px-2" @click.stop>
             <input

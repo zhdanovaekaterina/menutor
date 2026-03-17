@@ -352,3 +352,71 @@ def test_product_slot_aggregates_with_recipe_ingredient() -> None:
 
     assert len(result.items) == 1
     assert result.items[0].quantity == Quantity(0.5, "kg")
+
+
+# ---- unit conversion error resilience ----
+
+def test_incompatible_recipe_unit_skips_product() -> None:
+    """When recipe ingredient unit is incompatible with product.recipe_unit, item is skipped."""
+    recipe_repo = MagicMock()
+    product_repo = MagicMock()
+    # ingredient is in 'g', but product expects 'pcs' — incompatible groups
+    recipe_repo.get_by_id.return_value = _recipe(1, 1, amount=200.0, recipe_unit="g", base_servings=2)
+    product_repo.get_by_id.return_value = _product(1, recipe_unit="pcs", purchase_unit="pcs",
+                                                    conversion_factor=1, price=5.0)
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert result.items == []
+
+
+def test_standalone_slot_unknown_unit_skipped() -> None:
+    """Standalone slot with an unknown unit string is skipped without raising."""
+    recipe_repo = MagicMock()
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = _product(1, "g", "kg", 1000, 100.0)
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", product_id=ProductId(1),
+                        quantity=500.0, unit="unknown_unit")],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert result.items == []
+
+
+def test_incompatible_aggregation_keeps_first_occurrence() -> None:
+    """Same product in two recipes with incompatible units — first value kept, second skipped."""
+    # Recipe 1 uses product 1 in 'g', recipe 2 uses product 1 in 'pcs'
+    r1 = Recipe(
+        id=RecipeId(1), name="R1", servings=1,
+        ingredients=[RecipeIngredient(ProductId(1), Quantity(200.0, "g"))],
+    )
+    r2 = Recipe(
+        id=RecipeId(2), name="R2", servings=1,
+        ingredients=[RecipeIngredient(ProductId(1), Quantity(3.0, "pcs"))],
+    )
+    product = _product(1, recipe_unit="g", purchase_unit="g", conversion_factor=1, price=1.0)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = lambda rid: r1 if rid == RecipeId(1) else r2
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = product
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[
+            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),
+            MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(2)),
+        ],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    # Only the first occurrence (200g) is kept; the 'pcs' ingredient is skipped
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(200.0, "g")

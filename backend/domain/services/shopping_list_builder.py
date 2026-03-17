@@ -1,6 +1,6 @@
-from backend.domain.entities.family_member import FamilyMember
 from backend.domain.entities.menu import WeeklyMenu
 from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
+from backend.domain.exceptions import UnitConversionError
 from backend.domain.ports.product_category_repository import ProductCategoryRepository
 from backend.domain.ports.product_repository import ProductRepository
 from backend.domain.ports.recipe_repository import RecipeRepository
@@ -41,14 +41,23 @@ class ShoppingListBuilder:
                 for ing in scaled.ingredients:
                     pid = ing.product_id
                     if pid in aggregated:
-                        aggregated[pid] = aggregated[pid] + ing.quantity
+                        try:
+                            aggregated[pid] = aggregated[pid] + ing.quantity
+                        except UnitConversionError:
+                            pass  # keep existing, skip incompatible ingredient
                     else:
                         aggregated[pid] = ing.quantity
             elif slot.product_id is not None and slot.quantity is not None and slot.unit is not None:
                 pid = slot.product_id
-                qty = Quantity(slot.quantity, slot.unit)
+                try:
+                    qty = Quantity(slot.quantity, slot.unit)
+                except UnitConversionError:
+                    continue
                 if pid in aggregated:
-                    aggregated[pid] = aggregated[pid] + qty
+                    try:
+                        aggregated[pid] = aggregated[pid] + qty
+                    except UnitConversionError:
+                        pass  # keep existing, skip incompatible quantity
                 else:
                     aggregated[pid] = qty
 
@@ -61,7 +70,10 @@ class ShoppingListBuilder:
                 continue
 
             # Normalize to product's recipe_unit, then convert to purchase unit
-            recipe_qty = qty.convert_to(product.recipe_unit)
+            try:
+                recipe_qty = qty.convert_to(product.recipe_unit)
+            except UnitConversionError:
+                continue  # skip product with incompatible units
             purchase_qty, cost = product.compute_purchase(recipe_qty.amount)
 
             items.append(ShoppingListItem(

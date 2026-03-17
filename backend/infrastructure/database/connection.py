@@ -77,6 +77,15 @@ def _migrate_recipes_weight(conn) -> None:  # type: ignore[no-untyped-def]
         conn.commit()
 
 
+def _migrate_menu_slots_position(conn) -> None:  # type: ignore[no-untyped-def]
+    info = conn.execute(text("PRAGMA table_info(menu_slots)")).fetchall()
+    if "slot_position" not in {row[1] for row in info}:
+        conn.execute(text(
+            "ALTER TABLE menu_slots ADD COLUMN slot_position INTEGER NOT NULL DEFAULT 0"
+        ))
+        conn.commit()
+
+
 def _run_sqlite_migrations(engine: Engine) -> bool:
     """Run SQLite-specific legacy migrations. Returns True if menu_slots backup exists."""
     had_menu_slots = False
@@ -94,6 +103,8 @@ def _run_sqlite_migrations(engine: Engine) -> bool:
             _migrate_products_supplier(conn)
         if "recipes" in tables:
             _migrate_recipes_weight(conn)
+        if "menu_slots" in tables:
+            _migrate_menu_slots_position(conn)
     return had_menu_slots
 
 

@@ -177,10 +177,12 @@ function onConfirmDeleteAll() {
           :items-by-category="store.itemsByCategory"
           :select-mode="selection.active.value"
           :selected-ids="selection.selected.value"
+          :selected-id="selectedProductId"
           @toggle="onToggle"
           @edit-quantity="onEditQuantity"
           @toggle-select="selection.toggle"
           @toggle-select-all="selection.toggleAll"
+          @select="(id) => { selectedProductId = selectedProductId === id ? null : id }"
         />
       </div>
 
