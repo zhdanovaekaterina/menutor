@@ -46,7 +46,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+  <div class="flex min-h-[100dvh] items-center justify-center bg-gray-50 px-6">
     <div class="w-full max-w-sm space-y-6">
       <div class="text-center">
         <h1 class="text-2xl font-bold text-gray-900">Планировщик меню</h1>
@@ -64,7 +64,7 @@ async function handleSubmit() {
             type="email"
             required
             autocomplete="email"
-            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none sm:text-sm"
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2.5 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none sm:text-sm"
           />
         </div>
 
@@ -75,7 +75,7 @@ async function handleSubmit() {
             v-model="nickname"
             type="text"
             autocomplete="name"
-            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none sm:text-sm"
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2.5 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none sm:text-sm"
           />
         </div>
 
@@ -88,7 +88,7 @@ async function handleSubmit() {
               :type="showPassword ? 'text' : 'password'"
               required
               autocomplete="current-password"
-              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none sm:text-sm"
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2.5 pr-10 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none sm:text-sm"
             />
             <button
               type="button"
