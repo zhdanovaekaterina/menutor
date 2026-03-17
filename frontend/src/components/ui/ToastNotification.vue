@@ -6,7 +6,7 @@ const store = useToastStore()
 
 <template>
   <Teleport to="body">
-    <div class="fixed top-6 right-6 max-w-sm z-[9999] flex flex-col gap-2 pointer-events-none">
+    <div class="fixed top-4 inset-x-4 sm:inset-x-auto sm:right-6 sm:left-auto z-[9999] flex flex-col gap-2 items-center sm:items-end pointer-events-none">
       <TransitionGroup name="toast">
         <div
           v-for="t in store.toasts"
@@ -16,7 +16,7 @@ const store = useToastStore()
             'bg-red-50 border-red-200 text-red-700': t.type === 'error',
             'bg-blue-50 border-blue-200 text-blue-700': t.type === 'info',
           }"
-          class="border px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 text-sm min-w-64 pointer-events-auto"
+          class="pointer-events-auto border px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 text-sm w-full sm:w-auto sm:min-w-64 max-w-sm"
         >
           <svg v-if="t.type === 'success'" class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -42,10 +42,10 @@ const store = useToastStore()
 }
 .toast-enter-from {
   opacity: 0;
-  transform: translateX(40px);
+  transform: translateY(-12px);
 }
 .toast-leave-to {
   opacity: 0;
-  transform: translateX(40px);
+  transform: translateY(-12px);
 }
 </style>
