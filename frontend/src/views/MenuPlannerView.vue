@@ -28,6 +28,9 @@ const isXl = ref(typeof window !== 'undefined' && window.innerWidth >= 1280)
 const leftPanelOpen = ref(true)
 const rightPanelOpen = ref(isXl.value)
 
+const mobileLeftOpen = ref(false)
+const mobileRightOpen = ref(false)
+
 const nameDialogOpen = ref(false)
 const confirmDeleteOpen = ref(false)
 const confirmClearOpen = ref(false)
@@ -146,11 +149,33 @@ async function onGenerateShoppingList() {
 
 <template>
   <div class="h-full flex flex-col p-3 sm:p-4 lg:p-6 gap-3 sm:gap-4">
-    <h1 class="text-lg sm:text-xl font-bold">Планировщик меню</h1>
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <!-- Mobile: hamburger to open left drawer (SavedMenuList) -->
+        <button
+          class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100"
+          @click="mobileLeftOpen = true"
+        >
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+        <h1 class="text-lg sm:text-xl font-bold">Планировщик меню</h1>
+      </div>
+      <button
+        class="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+        @click="mobileRightOpen = true"
+        title="Рецепты и продукты"
+      >
+        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+      </button>
+    </div>
 
     <div class="flex-1 flex gap-4 min-h-0">
-      <!-- Left: saved menus -->
-      <div :class="leftPanelOpen ? 'w-48' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col bg-white overflow-hidden">
+      <!-- Left panel: hidden on mobile, collapsible on desktop -->
+      <div :class="leftPanelOpen ? 'w-48' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col bg-white overflow-hidden hidden lg:flex">
         <button
           class="p-2 text-gray-400 hover:text-gray-600 self-end shrink-0"
           :title="leftPanelOpen ? 'Свернуть' : 'Развернуть'"
@@ -174,7 +199,7 @@ async function onGenerateShoppingList() {
         </div>
       </div>
 
-      <!-- Center: grid + actions -->
+      <!-- Center: always visible -->
       <div class="flex-1 flex flex-col gap-4 min-w-0">
         <div class="flex-1 overflow-auto">
           <PlannerGrid
@@ -238,8 +263,8 @@ async function onGenerateShoppingList() {
         </div>
       </div>
 
-      <!-- Right: source panel -->
-      <div :class="rightPanelOpen ? 'w-56' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col bg-white overflow-hidden">
+      <!-- Right panel: hidden on mobile, collapsible on desktop -->
+      <div :class="rightPanelOpen ? 'w-56' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col bg-white overflow-hidden hidden lg:flex">
         <button
           class="p-2 text-gray-400 hover:text-gray-600 self-start shrink-0"
           :title="rightPanelOpen ? 'Свернуть' : 'Развернуть'"
@@ -306,5 +331,78 @@ async function onGenerateShoppingList() {
       @close="importOpen = false"
       @imported="menuStore.load()"
     />
+
+    <!-- Mobile: Left drawer (SavedMenuList) -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="mobileLeftOpen" class="lg:hidden fixed inset-0 bg-black/40 z-40" @click="mobileLeftOpen = false" />
+      </Transition>
+      <Transition name="slide-left">
+        <div v-if="mobileLeftOpen" class="lg:hidden fixed inset-y-0 left-0 w-72 bg-white z-50 shadow-xl flex flex-col p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-semibold">Меню</h2>
+            <button class="p-1 rounded hover:bg-gray-100" @click="mobileLeftOpen = false">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <SavedMenuList
+            :menus="menuStore.menus"
+            :selected-id="selectedId"
+            @select="(id) => { onSelectMenu(id); mobileLeftOpen = false }"
+            @create="nameDialogOpen = true; mobileLeftOpen = false"
+            @remove="confirmDeleteOpen = true"
+          />
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Mobile: Right drawer (SourcePanel) -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="mobileRightOpen" class="lg:hidden fixed inset-0 bg-black/40 z-40" @click="mobileRightOpen = false" />
+      </Transition>
+      <Transition name="slide-right">
+        <div v-if="mobileRightOpen" class="lg:hidden fixed inset-y-0 right-0 w-72 bg-white z-50 shadow-xl flex flex-col p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-semibold">Рецепты и продукты</h2>
+            <button class="p-1 rounded hover:bg-gray-100" @click="mobileRightOpen = false">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <SourcePanel
+            :recipes="recipeStore.items"
+            :products="productStore.items"
+            :family-members="familyStore.items"
+          />
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
+
+<style scoped>
+.slide-left-enter-active, .slide-left-leave-active {
+  transition: transform 0.25s ease;
+}
+.slide-left-enter-from, .slide-left-leave-to {
+  transform: translateX(-100%);
+}
+
+.slide-right-enter-active, .slide-right-leave-active {
+  transition: transform 0.25s ease;
+}
+.slide-right-enter-from, .slide-right-leave-to {
+  transform: translateX(100%);
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>
