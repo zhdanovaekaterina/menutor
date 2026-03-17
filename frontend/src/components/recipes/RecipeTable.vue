@@ -89,7 +89,7 @@ function onRowClick(id: number) {
                 @click="toggleSort('servings')">
               Порций {{ sortIcon('servings') }}
             </th>
-            <th class="text-right px-4 py-2 cursor-pointer select-none hover:bg-gray-100 w-24"
+            <th class="hidden sm:table-cell text-right px-4 py-2 cursor-pointer select-none hover:bg-gray-100 w-24"
                 @click="toggleSort('weight')">
               Вес {{ sortIcon('weight') }}
             </th>
@@ -117,7 +117,7 @@ function onRowClick(id: number) {
             <td class="px-4 py-2">{{ r.name }}</td>
             <td class="px-4 py-2 text-gray-600">{{ catMap[r.category_id] ?? '—' }}</td>
             <td class="px-4 py-2 text-center">{{ r.servings }}</td>
-            <td class="px-4 py-2 text-right">{{ r.weight ? r.weight + ' г' : '—' }}</td>
+            <td class="hidden sm:table-cell px-4 py-2 text-right">{{ r.weight ? r.weight + ' г' : '—' }}</td>
           </tr>
         </tbody>
       </table>
