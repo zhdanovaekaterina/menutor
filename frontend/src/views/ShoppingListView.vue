@@ -149,6 +149,13 @@ function onConfirmDeleteAll() {
             Выбрать
           </button>
           <button
+            v-if="selectedProductId !== null"
+            class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 transition-colors"
+            @click="confirmRemoveOpen = true"
+          >
+            Удалить выбранный
+          </button>
+          <button
             v-if="store.items.length > 0"
             class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
             @click="confirmDeleteAllOpen = true"
@@ -178,13 +185,12 @@ function onConfirmDeleteAll() {
       </div>
 
       <!-- Sidebar -->
-      <div class="w-72 shrink-0 flex flex-col gap-4">
+      <div class="w-64 xl:w-72 shrink-0 flex flex-col gap-4">
         <ShoppingSummary
           :total-cost="store.totalCost"
           :item-count="store.items.length"
           :purchased-count="store.purchasedCount"
           :progress-percent="store.progressPercent"
-          @remove="onRemove"
           @export-text="onExportText"
           @export-csv="onExportCsv"
         />
