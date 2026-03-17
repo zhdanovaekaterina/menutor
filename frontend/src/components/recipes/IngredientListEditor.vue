@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { Product } from '@/api/types'
 
 const UNIT_MAP: Record<string, string> = {
@@ -18,6 +19,8 @@ const emit = defineEmits<{
 const ingredients = defineModel<{ product_id: number | null; quantity_amount: number; quantity_unit: string }[]>({
   required: true,
 })
+
+const expanded = ref(true)
 
 function productUnit(productId: number | null) {
   if (productId == null) return ''
@@ -50,11 +53,22 @@ function remove(index: number) {
 </script>
 
 <template>
-  <details open>
-    <summary class="bg-slate-200 px-3 py-2 rounded font-medium text-sm cursor-pointer select-none hover:bg-slate-300">
-      Ингредиенты
-    </summary>
-    <div class="pt-2 space-y-2">
+  <div>
+    <button
+      type="button"
+      class="flex items-center justify-between w-full bg-slate-100 px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors"
+      @click="expanded = !expanded"
+    >
+      <span>Ингредиенты</span>
+      <svg
+        :class="expanded ? 'rotate-180' : ''"
+        class="w-4 h-4 transition-transform duration-200"
+        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+      </svg>
+    </button>
+    <div v-show="expanded" class="pt-2 space-y-2">
       <div v-for="(ing, i) in ingredients" :key="i" class="flex gap-2 items-center">
         <select v-model="ing.product_id"
           class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs"
@@ -73,5 +87,5 @@ function remove(index: number) {
         <button class="px-3 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" @click="add">+ Добавить</button>
       </div>
     </div>
-  </details>
+  </div>
 </template>
