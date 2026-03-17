@@ -78,6 +78,7 @@ let startY = 0
 function onTouchStart(e: TouchEvent) {
   const target = e.target as HTMLElement
   if (!target.closest('[data-sheet-handle]')) return
+  if (!e.touches[0]) return
   startY = e.touches[0].clientY
   dragging.value = true
   dragY.value = 0
@@ -85,6 +86,7 @@ function onTouchStart(e: TouchEvent) {
 
 function onTouchMove(e: TouchEvent) {
   if (!dragging.value) return
+  if (!e.touches[0]) return
   const delta = e.touches[0].clientY - startY
   if (delta > 0) {
     dragY.value = delta
