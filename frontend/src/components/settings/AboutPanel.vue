@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-md">
     <h2 class="text-lg font-semibold mb-4">О программе</h2>
-    <p class="text-sm text-gray-600 version">Версия: 0.4.0</p>
+    <p class="text-sm text-gray-600 version">Версия: 0.5.0</p>
     <p class="text-sm text-gray-600 mt-2">
       Menutor — планировщик семейного меню.
     </p>
