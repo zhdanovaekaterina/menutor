@@ -132,14 +132,6 @@ async function onReorderItems(day: number, mealType: string, orderedSlots: MenuS
   }
 }
 
-async function onSave() {
-  if (!menuStore.current) {
-    nameDialogOpen.value = true
-    return
-  }
-  toast.show('Меню сохранено', 'success')
-}
-
 async function onClear() {
   confirmClearOpen.value = false
   await menuStore.clear()
@@ -197,14 +189,6 @@ async function onGenerateShoppingList() {
           />
         </div>
         <div class="flex items-center gap-3 pt-3 border-t flex-wrap">
-          <!-- Primary actions -->
-          <button
-            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="!menuStore.current"
-            @click="onSave"
-          >
-            Сохранить
-          </button>
           <button
             class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!menuStore.current"
