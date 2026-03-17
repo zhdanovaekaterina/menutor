@@ -114,7 +114,7 @@ async function onConfirmDeleteAll() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 gap-4">
+  <div class="h-full flex flex-col p-4 lg:p-6 gap-4">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-bold">Продукты</h1>
       <div class="flex items-center gap-2">

@@ -20,7 +20,9 @@ onMounted(() => auth.init())
   <div v-else class="flex h-screen bg-gray-50">
     <AppSidebar />
     <main class="flex-1 overflow-y-auto pb-16 lg:pb-0">
-      <RouterView />
+      <div class="mx-auto max-w-screen-2xl h-full">
+        <RouterView />
+      </div>
     </main>
     <MobileBottomNav />
     <ToastNotification />

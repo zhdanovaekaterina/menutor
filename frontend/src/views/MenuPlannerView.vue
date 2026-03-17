@@ -153,7 +153,7 @@ async function onGenerateShoppingList() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 gap-4">
+  <div class="h-full flex flex-col p-4 lg:p-6 gap-4">
     <h1 class="text-xl font-bold">Планировщик меню</h1>
 
     <div class="flex-1 flex gap-4 min-h-0">

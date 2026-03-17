@@ -121,7 +121,7 @@ function onConfirmDeleteAll() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 gap-4">
+  <div class="h-full flex flex-col p-4 lg:p-6 gap-4">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-bold">Список покупок</h1>
       <div v-if="store.data" class="flex items-center gap-2">
