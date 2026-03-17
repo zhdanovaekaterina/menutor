@@ -17,10 +17,10 @@ onMounted(() => auth.init())
     <RouterView />
     <ToastNotification />
   </div>
-  <div v-else class="flex h-screen bg-gray-50">
+  <div v-else class="flex h-[100dvh] bg-gray-50">
     <AppSidebar />
-    <main class="flex-1 overflow-y-auto pb-16 lg:pb-0">
-      <div class="mx-auto max-w-screen-2xl h-full">
+    <main class="flex-1 overflow-y-auto pb-20 lg:pb-0 overscroll-contain">
+      <div class="mx-auto max-w-screen-2xl min-h-full">
         <RouterView />
       </div>
     </main>
