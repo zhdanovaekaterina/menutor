@@ -1,3 +1,5 @@
+# DEPRECATED: Use ExportShoppingList (export_shopping_list.py) instead.
+# These classes will be removed once the shopping list router is fully migrated.
 from backend.application.ports.shopping_list_exporter import (
     CsvShoppingListExporter,
     TextShoppingListExporter,

@@ -96,7 +96,7 @@ export const useMenuStore = defineStore('menus', () => {
     if (!current.value) return
     let updated: Menu | null = null
     for (let i = 0; i < orderedSlots.length; i++) {
-      const s = { ...orderedSlots[i], position: i }
+      const s: MenuSlot = { ...orderedSlots[i], day, meal_type: mealType, position: i }
       updated = await addSlot(current.value.id, s)
     }
     if (updated) _updateMenu(updated)

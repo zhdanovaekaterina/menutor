@@ -1,6 +1,6 @@
 [project]
 name = "menutor"
-version = "0.3.2"
+version = "0.4.0"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.18",
@@ -10,6 +10,7 @@ dependencies = [
     "PyJWT>=2.8",
     "python-dotenv>=1.2",
     "SQLAlchemy>=2.0",
+    "python-multipart>=0.0.20",
     "uvicorn>=0.34",
 ]
 

@@ -59,3 +59,17 @@ def test_export_fractional_quantity() -> None:
 def test_export_empty_list_shows_zero_total() -> None:
     result = ShoppingListTextExporter().export(ShoppingList())
     assert "Итого: 0.00 руб" in result
+
+
+def test_export_bytes_returns_utf8_encoded_text() -> None:
+    sl = ShoppingList(items=[_item("Мука", "Сыпучие", 1.0, "kg", 80)])
+    result = ShoppingListTextExporter().export_bytes([sl])
+    assert isinstance(result, bytes)
+    assert "Мука" in result.decode("utf-8")
+
+
+def test_example_bytes_is_decodable() -> None:
+    result = ShoppingListTextExporter().example_bytes()
+    assert isinstance(result, bytes)
+    decoded = result.decode("utf-8")
+    assert "Список покупок" in decoded

@@ -4,6 +4,8 @@ import type { RecipeCreate } from '@/api/types'
 import RecipeForm from '@/components/recipes/RecipeForm.vue'
 import RecipeTable from '@/components/recipes/RecipeTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import ExportModal from '@/components/ui/ExportModal.vue'
+import ImportModal from '@/components/ui/ImportModal.vue'
 import SlidePanel from '@/components/ui/SlidePanel.vue'
 import { useSelection } from '@/composables/useSelection'
 import { useProductStore } from '@/stores/products'
@@ -18,6 +20,8 @@ const selection = useSelection()
 const selectedId = ref<number | null>(null)
 const confirmDeleteOpen = ref(false)
 const formOpen = ref(false)
+const exportOpen = ref(false)
+const importOpen = ref(false)
 
 onMounted(async () => {
   await Promise.all([store.load(), productStore.load()])
@@ -140,6 +144,18 @@ async function onConfirmDeleteAll() {
             Удалить все
           </button>
           <button
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            @click="importOpen = true"
+          >
+            Импорт
+          </button>
+          <button
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            @click="exportOpen = true"
+          >
+            Экспорт
+          </button>
+          <button
             class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
             @click="openNew"
           >
@@ -199,6 +215,20 @@ async function onConfirmDeleteAll() {
       danger
       @confirm="onConfirmDeleteAll"
       @cancel="confirmDeleteAllOpen = false"
+    />
+
+    <ExportModal
+      :open="exportOpen"
+      entity-type="recipes"
+      :formats="[{ value: 'csv', label: 'CSV' }, { value: 'json', label: 'JSON' }]"
+      @close="exportOpen = false"
+    />
+    <ImportModal
+      :open="importOpen"
+      entity-type="recipes"
+      :allowed-extensions="['csv', 'json']"
+      @close="importOpen = false"
+      @imported="store.load()"
     />
   </div>
 </template>

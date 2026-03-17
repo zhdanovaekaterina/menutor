@@ -1,8 +1,8 @@
-import { ref, computed } from 'vue'
+import { ref, shallowRef, computed } from 'vue'
 
 export function useSelection<Id extends number = number>() {
   const active = ref(false)
-  const selected = ref(new Set<Id>())
+  const selected = shallowRef(new Set<Id>())
 
   const count = computed(() => selected.value.size)
 

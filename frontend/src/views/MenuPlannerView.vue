@@ -6,6 +6,8 @@ import PlannerGrid from '@/components/planner/PlannerGrid.vue'
 import SavedMenuList from '@/components/planner/SavedMenuList.vue'
 import SourcePanel from '@/components/planner/SourcePanel.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import ExportModal from '@/components/ui/ExportModal.vue'
+import ImportModal from '@/components/ui/ImportModal.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
 import { useFamilyStore } from '@/stores/family'
 import { useMenuStore } from '@/stores/menus'
@@ -25,6 +27,8 @@ const toast = useToastStore()
 const nameDialogOpen = ref(false)
 const confirmDeleteOpen = ref(false)
 const confirmClearOpen = ref(false)
+const exportOpen = ref(false)
+const importOpen = ref(false)
 const editSlot = ref<MenuSlot | null>(null)
 const editValue = ref('')
 
@@ -182,6 +186,20 @@ async function onGenerateShoppingList() {
             @click="confirmClearOpen = true">
             Очистить
           </button>
+          <button
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-40"
+            :disabled="!menuStore.current"
+            @click="importOpen = true"
+          >
+            Импорт
+          </button>
+          <button
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-40"
+            :disabled="!menuStore.current"
+            @click="exportOpen = true"
+          >
+            Экспорт
+          </button>
           <div class="flex-1" />
           <button class="px-4 py-2 rounded-lg bg-green-600 text-white text-sm hover:bg-green-700"
             @click="onGenerateShoppingList">
@@ -228,6 +246,21 @@ async function onGenerateShoppingList() {
       input-type="number"
       @confirm="onEditConfirm"
       @cancel="editSlot = null"
+    />
+
+    <ExportModal
+      :open="exportOpen"
+      entity-type="menus"
+      :formats="[{ value: 'json', label: 'JSON' }]"
+      :selected-ids="menuStore.current ? [menuStore.current.id] : []"
+      @close="exportOpen = false"
+    />
+    <ImportModal
+      :open="importOpen"
+      entity-type="menus"
+      :allowed-extensions="['json']"
+      @close="importOpen = false"
+      @imported="menuStore.load()"
     />
   </div>
 </template>

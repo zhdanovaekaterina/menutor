@@ -37,5 +37,5 @@ export function autoConversionFactor(recipeUnit: string, purchaseUnit: string): 
   const rg = UNIT_GROUP[recipeUnit]
   const pg = UNIT_GROUP[purchaseUnit]
   if (!rg || !pg || rg !== pg) return null
-  return TO_BASE[purchaseUnit] / TO_BASE[recipeUnit]
+  return TO_BASE[purchaseUnit]! / TO_BASE[recipeUnit]!
 }
