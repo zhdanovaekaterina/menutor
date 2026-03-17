@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { MenuSlot } from '@/api/types'
 import GridCell from './GridCell.vue'
 
@@ -6,6 +7,8 @@ defineProps<{
   slots: MenuSlot[]
   recipeNames: Record<number, string>
   productNames: Record<number, string>
+  pickerDay?: number | null
+  pickerMealType?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -14,7 +17,11 @@ const emit = defineEmits<{
   editItem: [slot: MenuSlot]
   moveItem: [slot: MenuSlot, toDay: number, toMealType: string, toIndex: number]
   reorderItems: [day: number, mealType: string, orderedSlots: MenuSlot[]]
+  openPicker: [day: number, mealType: string]
+  dayScrolled: []
 }>()
+
+const scrollRef = ref<HTMLElement | null>(null)
 
 const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const meals = ['Завтрак', 'Обед', 'Ужин']
@@ -37,7 +44,7 @@ const meals = ['Завтрак', 'Обед', 'Ужин']
     </div>
 
     <!-- Swipeable day columns -->
-    <div class="flex-1 flex overflow-x-auto snap-x snap-mandatory scroll-smooth">
+    <div ref="scrollRef" class="flex-1 flex overflow-x-auto snap-x snap-mandatory scroll-smooth" @scroll="emit('dayScrolled')">
       <div
         v-for="(day, i) in days"
         :key="'day-' + day"
@@ -57,11 +64,13 @@ const meals = ['Завтрак', 'Обед', 'Ужин']
           :slots="slots"
           :recipe-names="recipeNames"
           :product-names="productNames"
+          :picker-active="pickerDay === i && pickerMealType === meal"
           @add-item="(data) => emit('addItem', i, meal, data)"
           @remove-item="(data) => emit('removeItem', i, meal, data)"
           @edit-item="(slot) => emit('editItem', slot)"
           @move-item="(slot, toDay, toMeal, toIdx) => emit('moveItem', slot, toDay, toMeal, toIdx)"
           @reorder-items="(d, m, ordered) => emit('reorderItems', d, m, ordered)"
+          @open-picker="emit('openPicker', i, meal)"
         />
       </div>
     </div>
