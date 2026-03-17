@@ -217,7 +217,7 @@ async function onGenerateShoppingList() {
         </div>
         <div class="flex items-center gap-3 pt-3 border-t flex-wrap">
           <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!menuStore.current"
             @click="confirmClearOpen = true"
           >
@@ -233,22 +233,20 @@ async function onGenerateShoppingList() {
               class="p-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               :disabled="!menuStore.current"
               @click="importOpen = true"
-              title="Импорт меню"
+              title="Импорт"
             >
-              <!-- download arrow = import (bringing data in) -->
               <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
               </svg>
             </button>
             <button
               class="p-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               :disabled="!menuStore.current"
               @click="exportOpen = true"
-              title="Экспорт меню"
+              title="Экспорт"
             >
-              <!-- upload arrow = export (sending data out) -->
               <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
               </svg>
             </button>
           </div>
@@ -257,10 +255,16 @@ async function onGenerateShoppingList() {
 
           <!-- Call-to-action -->
           <button
-            class="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
+            class="px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors flex-shrink-0"
             @click="onGenerateShoppingList"
           >
-            Сформировать список покупок
+            <span class="hidden sm:inline">Сформировать список покупок</span>
+            <span class="sm:hidden flex items-center gap-1">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-1.977 2.027-4.076 2.027-5.25A8.25 8.25 0 0 0 12 3a8.25 8.25 0 0 0-8.25 8.25c0 1.174.906 3.273 2.027 5.25" />
+              </svg>
+              Список
+            </span>
           </button>
         </div>
       </div>
