@@ -145,8 +145,8 @@ async function onGenerateShoppingList() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 lg:p-6 gap-4">
-    <h1 class="text-xl font-bold">Планировщик меню</h1>
+  <div class="h-full flex flex-col p-3 sm:p-4 lg:p-6 gap-3 sm:gap-4">
+    <h1 class="text-lg sm:text-xl font-bold">Планировщик меню</h1>
 
     <div class="flex-1 flex gap-4 min-h-0">
       <!-- Left: saved menus -->

@@ -116,9 +116,9 @@ async function onConfirmDeleteAll() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 lg:p-6 gap-4">
+  <div class="h-full flex flex-col p-3 sm:p-4 lg:p-6 gap-3 sm:gap-4">
     <div class="flex items-center justify-between">
-      <h1 class="text-xl font-bold">Рецепты</h1>
+      <h1 class="text-lg sm:text-xl font-bold">Рецепты</h1>
       <div class="flex items-center gap-2">
         <template v-if="selection.active.value">
           <span class="text-sm text-gray-500">Выбрано: {{ selection.count.value }}</span>

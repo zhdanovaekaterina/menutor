@@ -11,8 +11,8 @@ const links = [
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 lg:p-6 gap-4">
-    <h1 class="text-xl font-bold">Настройки</h1>
+  <div class="h-full flex flex-col p-3 sm:p-4 lg:p-6 gap-3 sm:gap-4">
+    <h1 class="text-lg sm:text-xl font-bold">Настройки</h1>
 
     <div class="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
       <!-- Desktop: vertical nav -->
