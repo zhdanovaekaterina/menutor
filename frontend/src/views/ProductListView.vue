@@ -115,7 +115,7 @@ async function onConfirmDeleteAll() {
 
 <template>
   <div class="h-full flex flex-col p-3 sm:p-4 lg:p-6 gap-3 sm:gap-4">
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between flex-wrap gap-2">
       <h1 class="text-lg sm:text-xl font-bold">Продукты</h1>
       <div class="flex items-center gap-2">
         <template v-if="selection.active.value">
@@ -136,7 +136,7 @@ async function onConfirmDeleteAll() {
         </template>
         <div v-else class="flex items-center gap-2">
           <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
+            class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors hidden sm:inline-flex"
             @click="toggleSelectMode"
           >
             Выбрать
@@ -145,7 +145,7 @@ async function onConfirmDeleteAll() {
           <!-- More actions dropdown -->
           <div class="relative" @click.stop>
             <button
-              class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
+              class="p-2 rounded-lg border border-gray-300 hover:bg-gray-50"
               @click="showMore = !showMore"
               title="Дополнительные действия"
             >
@@ -155,16 +155,22 @@ async function onConfirmDeleteAll() {
             </button>
             <div
               v-if="showMore"
-              class="absolute left-0 top-full mt-1 w-44 bg-white border rounded-lg shadow-lg z-30 py-1"
+              class="absolute right-0 top-full mt-1 w-48 bg-white border rounded-lg shadow-lg z-30 py-1"
             >
               <button
-                class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                class="sm:hidden w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
+                @click="toggleSelectMode(); showMore = false"
+              >
+                Выбрать
+              </button>
+              <button
+                class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
                 @click="importOpen = true; showMore = false"
               >
                 Импорт
               </button>
               <button
-                class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
                 @click="exportOpen = true; showMore = false"
               >
                 Экспорт
@@ -172,7 +178,7 @@ async function onConfirmDeleteAll() {
               <div v-if="store.items.length > 0" class="border-t my-1" />
               <button
                 v-if="store.items.length > 0"
-                class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                class="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
                 @click="confirmDeleteAllOpen = true; showMore = false"
               >
                 Удалить все
@@ -184,7 +190,8 @@ async function onConfirmDeleteAll() {
             class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
             @click="openNew"
           >
-            + Новый продукт
+            <span class="hidden sm:inline">+ Новый продукт</span>
+            <span class="sm:hidden">+ Новый</span>
           </button>
         </div>
       </div>
