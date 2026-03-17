@@ -31,7 +31,7 @@ const emit = defineEmits<{
         <div class="flex items-center justify-between px-4 py-3 border-b shrink-0">
           <h2 class="text-lg font-semibold">{{ title }}</h2>
           <button
-            class="p-1 rounded hover:bg-gray-100 text-gray-500"
+            class="p-1 rounded hover:bg-gray-100 text-gray-500 transition-colors"
             @click="emit('close')"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

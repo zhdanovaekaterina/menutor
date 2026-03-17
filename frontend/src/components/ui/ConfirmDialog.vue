@@ -1,5 +1,7 @@
 <script setup lang="ts">
-defineProps<{
+import { nextTick, ref, watch } from 'vue'
+
+const props = defineProps<{
   open: boolean
   title?: string
   message: string
@@ -9,28 +11,44 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{ confirm: []; cancel: [] }>()
+
+const confirmBtn = ref<HTMLButtonElement | null>(null)
+
+watch(
+  () => props.open,
+  async (v) => {
+    if (v) {
+      await nextTick()
+      confirmBtn.value?.focus()
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+  },
+)
 </script>
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @keydown.escape="emit('cancel')">
       <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
         <h3 class="text-lg font-semibold mb-2">{{ title ?? 'Подтверждение' }}</h3>
         <p class="text-sm text-gray-600 mb-6">{{ message }}</p>
         <div class="flex justify-end gap-2">
           <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
             @click="emit('cancel')"
           >
             {{ cancelLabel ?? 'Отмена' }}
           </button>
           <button
+            ref="confirmBtn"
             :class="
               danger
                 ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-blue-600 hover:bg-blue-700'
             "
-            class="px-4 py-2 rounded-lg text-white text-sm"
+            class="px-4 py-2 rounded-lg text-white text-sm transition-colors"
             @click="emit('confirm')"
           >
             {{ confirmLabel ?? 'Да' }}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 
 const props = defineProps<{
   open: boolean
@@ -12,22 +12,32 @@ const props = defineProps<{
 const emit = defineEmits<{ confirm: [value: string]; cancel: [] }>()
 
 const value = ref(props.initialValue ?? '')
+const inputRef = ref<HTMLInputElement | null>(null)
 
 watch(
   () => props.open,
-  (v) => {
-    if (v) value.value = props.initialValue ?? ''
+  async (v) => {
+    if (v) {
+      value.value = props.initialValue ?? ''
+      await nextTick()
+      inputRef.value?.focus()
+      inputRef.value?.select()
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
   },
 )
 </script>
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @keydown.escape="emit('cancel')">
       <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
         <h3 class="text-lg font-semibold mb-4">{{ title }}</h3>
         <label class="block text-sm font-medium text-gray-700 mb-1">{{ label }}</label>
         <input
+          ref="inputRef"
           v-model="value"
           :type="inputType ?? 'text'"
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
@@ -35,13 +45,13 @@ watch(
         />
         <div class="flex justify-end gap-2 mt-6">
           <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
             @click="emit('cancel')"
           >
             Отмена
           </button>
           <button
-            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
+            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
             @click="emit('confirm', value)"
           >
             ОК
