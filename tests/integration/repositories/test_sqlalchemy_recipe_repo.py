@@ -50,7 +50,7 @@ def _pancake_recipe(flour_id: ProductId, user_id: UserId) -> Recipe:
         id=RecipeId(0),
         name="Блины",
         servings=4,
-        ingredients=[RecipeIngredient(flour_id, Quantity(200.0, "g"))],
+        ingredients=[RecipeIngredient(product_id=flour_id, quantity=Quantity(200.0, "g"))],
         steps=[CookingStep(1, "Смешать"), CookingStep(2, "Пожарить")],
         category_id=RecipeCategoryId(1),  # Завтраки
         user_id=user_id,
@@ -141,7 +141,7 @@ def test_update_replaces_ingredients_and_steps(recipe_repo: SqlAlchemyRecipeRepo
         id=saved.id,
         name="Оладьи",
         servings=6,
-        ingredients=[RecipeIngredient(flour.id, Quantity(300.0, "g"))],
+        ingredients=[RecipeIngredient(product_id=flour.id, quantity=Quantity(300.0, "g"))],
         steps=[CookingStep(1, "Только смешать")],
         category_id=RecipeCategoryId(1),
         user_id=user_id,

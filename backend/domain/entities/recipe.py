@@ -22,6 +22,7 @@ class Recipe:
         scaled_ingredients = [
             RecipeIngredient(
                 product_id=ing.product_id,
+                sub_recipe_id=ing.sub_recipe_id,
                 quantity=Quantity(ing.quantity.amount * factor, ing.quantity.unit),
                 order=ing.order,
             )

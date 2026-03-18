@@ -66,6 +66,7 @@ class RecipeCsvImporter:
                         order=int(ing.get("order", 0)),
                     )
                     for ing in raw_ingredients
+                    if ing.get("product_id") is not None
                 ]
             except Exception as e:
                 raise ImportValidationError(f"Строка {i}: некорректный 'ingredients_json': {e}") from e

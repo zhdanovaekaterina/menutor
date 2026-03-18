@@ -18,7 +18,7 @@ def _recipe(id: int = 1) -> Recipe:
         id=RecipeId(id),
         name="Блины",
         servings=4,
-        ingredients=[RecipeIngredient(ProductId(1), Quantity(200.0, "g"))],
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(200.0, "g"))],
         steps=[CookingStep(1, "Смешать")],
         category_id=RecipeCategoryId(1),
         weight=300,

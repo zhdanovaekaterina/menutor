@@ -25,7 +25,7 @@ def _data(**kwargs) -> RecipeData:
         name="Паста",
         category_id=RecipeCategoryId(1),
         servings=4,
-        ingredients=[RecipeIngredient(ProductId(1), Quantity(200.0, "g"))],
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(200.0, "g"))],
         steps=[CookingStep(1, "Варить")],
     )
     defaults.update(kwargs)
@@ -37,7 +37,7 @@ def _saved_recipe(id: int = 1) -> Recipe:
         id=RecipeId(id),
         name="Паста",
         servings=4,
-        ingredients=[RecipeIngredient(ProductId(1), Quantity(200.0, "g"))],
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(200.0, "g"))],
         category_id=RecipeCategoryId(1),
         user_id=UID,
     )

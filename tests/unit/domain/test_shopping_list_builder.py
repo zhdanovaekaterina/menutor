@@ -36,7 +36,7 @@ def _recipe(rid: int, pid: int, amount: float = 200.0,
         id=RecipeId(rid),
         name=f"Recipe{rid}",
         servings=base_servings,
-        ingredients=[RecipeIngredient(ProductId(pid), Quantity(amount, recipe_unit))],
+        ingredients=[RecipeIngredient(product_id=ProductId(pid), quantity=Quantity(amount, recipe_unit))],
     )
 
 
@@ -219,8 +219,8 @@ def test_slot_override_scales_all_ingredients_proportionally() -> None:
     recipe = Recipe(
         id=RecipeId(1), name="R", servings=2,
         ingredients=[
-            RecipeIngredient(pid1, Quantity(100.0, "g")),
-            RecipeIngredient(pid2, Quantity(50.0, "ml")),
+            RecipeIngredient(product_id=pid1, quantity=Quantity(100.0, "g")),
+            RecipeIngredient(product_id=pid2, quantity=Quantity(50.0, "ml")),
         ],
     )
 
@@ -395,11 +395,11 @@ def test_incompatible_aggregation_keeps_first_occurrence() -> None:
     # Recipe 1 uses product 1 in 'g', recipe 2 uses product 1 in 'pcs'
     r1 = Recipe(
         id=RecipeId(1), name="R1", servings=1,
-        ingredients=[RecipeIngredient(ProductId(1), Quantity(200.0, "g"))],
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(200.0, "g"))],
     )
     r2 = Recipe(
         id=RecipeId(2), name="R2", servings=1,
-        ingredients=[RecipeIngredient(ProductId(1), Quantity(3.0, "pcs"))],
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(3.0, "pcs"))],
     )
     product = _product(1, recipe_unit="g", purchase_unit="g", conversion_factor=1, price=1.0)
 
@@ -420,3 +420,217 @@ def test_incompatible_aggregation_keeps_first_occurrence() -> None:
     # Only the first occurrence (200g) is kept; the 'pcs' ingredient is skipped
     assert len(result.items) == 1
     assert result.items[0].quantity == Quantity(200.0, "g")
+
+
+# ---- sub-recipe flattening ----
+
+def test_sub_recipe_flattened_to_products() -> None:
+    """Recipe A has sub-recipe B (2 serv of B). B has 200g tomatoes at base 4 servings.
+    Expected: shopping list shows 100g tomatoes (200g * 2/4)."""
+    tomato = _product(1, "g", "g", 1.0, 5.0)
+
+    recipe_b = Recipe(
+        id=RecipeId(2), name="B", servings=4,
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(200.0, "g"))],
+    )
+    recipe_a = Recipe(
+        id=RecipeId(1), name="A", servings=1,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(2.0, "serv"))],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = lambda rid: recipe_a if rid == RecipeId(1) else recipe_b
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = tomato
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(100.0, "g")
+
+
+def test_sub_recipe_products_aggregated_with_parent() -> None:
+    """Parent has 100g tomatoes directly + sub-recipe that also has 50g tomatoes → 150g total."""
+    tomato = _product(1, "g", "g", 1.0, 5.0)
+
+    recipe_b = Recipe(
+        id=RecipeId(2), name="B", servings=1,
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(50.0, "g"))],
+    )
+    recipe_a = Recipe(
+        id=RecipeId(1), name="A", servings=1,
+        ingredients=[
+            RecipeIngredient(product_id=ProductId(1), quantity=Quantity(100.0, "g")),
+            RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(1.0, "serv")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = lambda rid: recipe_a if rid == RecipeId(1) else recipe_b
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = tomato
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(150.0, "g")
+
+
+def test_nested_sub_recipe_flattened() -> None:
+    """A→B→C: all flatten to leaf products."""
+    pepper = _product(1, "g", "g", 1.0, 5.0)
+
+    recipe_c = Recipe(
+        id=RecipeId(3), name="C", servings=2,
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(100.0, "g"))],
+    )
+    recipe_b = Recipe(
+        id=RecipeId(2), name="B", servings=1,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(3), quantity=Quantity(2.0, "serv"))],
+    )
+    recipe_a = Recipe(
+        id=RecipeId(1), name="A", servings=1,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(1.0, "serv"))],
+    )
+
+    def get_by_id(rid: RecipeId) -> Recipe | None:
+        return {RecipeId(1): recipe_a, RecipeId(2): recipe_b, RecipeId(3): recipe_c}.get(rid)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = get_by_id
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = pepper
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert len(result.items) == 1
+    # A: 1 serv of B, B base=1 → sub_scale=1.0; B: 2 serv of C, C base=2 → sub_scale=1.0; C: 100g*1.0=100g
+    assert result.items[0].quantity == Quantity(100.0, "g")
+
+
+def test_sub_recipe_scales_with_servings_override() -> None:
+    """Menu slot overrides parent servings; sub-recipe products scale accordingly."""
+    onion = _product(1, "g", "g", 1.0, 2.0)
+
+    recipe_b = Recipe(
+        id=RecipeId(2), name="B", servings=1,
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(100.0, "g"))],
+    )
+    recipe_a = Recipe(
+        id=RecipeId(1), name="A", servings=1,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(1.0, "serv"))],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = lambda rid: recipe_a if rid == RecipeId(1) else recipe_b
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = onion
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1), servings_override=3.0)],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    # Parent scaled x3; 1 serv of B x3 → 3 serv of B (base 1) → 300g
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(300.0, "g")
+
+
+def test_sub_recipe_standalone_and_nested_aggregate() -> None:
+    """Same recipe as standalone slot AND as sub-ingredient; products aggregate."""
+    carrot = _product(1, "g", "g", 1.0, 3.0)
+
+    recipe_b = Recipe(
+        id=RecipeId(2), name="B", servings=1,
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(80.0, "g"))],
+    )
+    recipe_a = Recipe(
+        id=RecipeId(1), name="A", servings=1,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(1.0, "serv"))],
+    )
+
+    def get_by_id(rid: RecipeId) -> Recipe | None:
+        return {RecipeId(1): recipe_a, RecipeId(2): recipe_b}.get(rid)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = get_by_id
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = carrot
+
+    # Slot 1: recipe B directly (80g), Slot 2: recipe A which includes B (80g) → total 160g
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[
+            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(2)),
+            MenuSlot(day=1, meal_type="dinner", recipe_id=RecipeId(1)),
+        ],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(160.0, "g")
+
+
+def test_sub_recipe_empty_ingredients_contributes_nothing() -> None:
+    """Sub-recipe with empty ingredients adds 0 products."""
+    recipe_b = Recipe(
+        id=RecipeId(2), name="B", servings=1, ingredients=[],
+    )
+    recipe_a = Recipe(
+        id=RecipeId(1), name="A", servings=1,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(1.0, "serv"))],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = lambda rid: recipe_a if rid == RecipeId(1) else recipe_b
+    product_repo = MagicMock()
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert result.items == []
+
+
+def test_sub_recipe_cycle_defensive_guard() -> None:
+    """If a cycle exists in stored data, builder does not infinite-loop."""
+    # A uses B, B uses A — cycle in persisted data
+    recipe_a = Recipe(
+        id=RecipeId(1), name="A", servings=1,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(1.0, "serv"))],
+    )
+    recipe_b = Recipe(
+        id=RecipeId(2), name="B", servings=1,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(1), quantity=Quantity(1.0, "serv"))],
+    )
+
+    def get_by_id(rid: RecipeId) -> Recipe | None:
+        return {RecipeId(1): recipe_a, RecipeId(2): recipe_b}.get(rid)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = get_by_id
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = None
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+    )
+    # Must terminate, not loop forever
+    result = _builder(recipe_repo, product_repo).build(menu)
+    assert result.items == []

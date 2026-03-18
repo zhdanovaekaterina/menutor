@@ -46,12 +46,13 @@ def recipe_to_response(recipe: Recipe) -> RecipeResponse:
         servings=recipe.servings,
         ingredients=[
             RecipeIngredientSchema(
-                product_id=int(ing.product_id),
+                product_id=int(ing.product_id) if ing.product_id is not None else 0,
                 quantity_amount=ing.quantity.amount,
                 quantity_unit=ing.quantity.unit,
                 order=ing.order,
             )
             for ing in recipe.ingredients
+            if ing.is_product
         ],
         steps=[
             CookingStepSchema(order=s.order, description=s.description)
@@ -170,6 +171,7 @@ def schema_to_recipe_data(body: RecipeCreate) -> RecipeData:
                 order=ing.order,
             )
             for ing in body.ingredients
+            if ing.product_id is not None
         ],
         steps=[
             CookingStep(order=s.order, description=s.description)

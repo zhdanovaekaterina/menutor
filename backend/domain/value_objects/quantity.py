@@ -17,6 +17,7 @@ _UNIT_GROUPS: dict[str, str] = {
     "pcs": "count_pcs",
     "box": "count_box",
     "pack": "count_pack",
+    "serv": "servings",
 }
 
 # Amount of each unit expressed in the group's base unit (g for weight, ml for volume)
@@ -30,6 +31,7 @@ _TO_BASE: dict[str, float] = {
     "pcs": 1.0,
     "box": 1.0,
     "pack": 1.0,
+    "serv": 1.0,
 }
 
 

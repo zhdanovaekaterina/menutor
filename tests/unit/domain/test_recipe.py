@@ -2,7 +2,7 @@ from backend.domain.entities.recipe import Recipe
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
-from backend.domain.value_objects.types import ProductId, RecipeId
+from backend.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 
 
 def _make_recipe(servings: int = 2) -> Recipe:
@@ -11,8 +11,8 @@ def _make_recipe(servings: int = 2) -> Recipe:
         name="Test Recipe",
         servings=servings,
         ingredients=[
-            RecipeIngredient(ProductId(1), Quantity(100.0, "g")),
-            RecipeIngredient(ProductId(2), Quantity(200.0, "ml")),
+            RecipeIngredient(product_id=ProductId(1), quantity=Quantity(100.0, "g")),
+            RecipeIngredient(product_id=ProductId(2), quantity=Quantity(200.0, "ml")),
         ],
         steps=[CookingStep(order=1, description="Mix")],
     )
@@ -60,3 +60,45 @@ def test_scale_to_preserves_metadata() -> None:
 def test_scale_to_updates_servings() -> None:
     scaled = _make_recipe(servings=2).scale_to(6)
     assert scaled.servings == 6
+
+
+def test_scale_to_scales_sub_recipe_servings() -> None:
+    recipe = Recipe(
+        id=RecipeId(1),
+        name="Parent",
+        servings=4,
+        ingredients=[
+            RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(2, "serv")),
+        ],
+    )
+    scaled = recipe.scale_to(8)
+    assert scaled.ingredients[0].quantity == Quantity(4.0, "serv")
+
+
+def test_scale_to_preserves_sub_recipe_id() -> None:
+    recipe = Recipe(
+        id=RecipeId(1),
+        name="Parent",
+        servings=4,
+        ingredients=[
+            RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(2, "serv")),
+        ],
+    )
+    scaled = recipe.scale_to(8)
+    assert scaled.ingredients[0].sub_recipe_id == RecipeId(2)
+    assert scaled.ingredients[0].product_id is None
+
+
+def test_scale_to_mixed_ingredients() -> None:
+    recipe = Recipe(
+        id=RecipeId(1),
+        name="Mixed",
+        servings=2,
+        ingredients=[
+            RecipeIngredient(product_id=ProductId(1), quantity=Quantity(200, "g")),
+            RecipeIngredient(sub_recipe_id=RecipeId(5), quantity=Quantity(2, "serv")),
+        ],
+    )
+    scaled = recipe.scale_to(4)
+    assert scaled.ingredients[0].quantity == Quantity(400.0, "g")
+    assert scaled.ingredients[1].quantity == Quantity(4.0, "serv")

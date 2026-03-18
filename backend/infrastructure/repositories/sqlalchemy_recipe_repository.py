@@ -46,12 +46,13 @@ class SqlAlchemyRecipeRepository(
         )
         row.ingredients = [
             RecipeIngredientRow(
-                product_id=ing.product_id,
+                product_id=int(ing.product_id) if ing.product_id is not None else None,
                 amount=ing.quantity.amount,
                 unit=ing.quantity.unit,
                 ingredient_order=ing.order,
             )
             for ing in entity.ingredients
+            if ing.is_product
         ]
         row.steps = [
             CookingStepRow(step_order=step.order, description=step.description)
@@ -66,12 +67,13 @@ class SqlAlchemyRecipeRepository(
         row.weight = entity.weight
         row.ingredients = [
             RecipeIngredientRow(
-                product_id=ing.product_id,
+                product_id=int(ing.product_id) if ing.product_id is not None else None,
                 amount=ing.quantity.amount,
                 unit=ing.quantity.unit,
                 ingredient_order=ing.order,
             )
             for ing in entity.ingredients
+            if ing.is_product
         ]
         row.steps = [
             CookingStepRow(step_order=step.order, description=step.description)
@@ -90,6 +92,7 @@ class SqlAlchemyRecipeRepository(
                     order=r.ingredient_order,
                 )
                 for r in sorted(row.ingredients, key=lambda i: i.ingredient_order)
+                if r.product_id is not None
             ],
             steps=[
                 CookingStep(order=r.step_order, description=r.description)
