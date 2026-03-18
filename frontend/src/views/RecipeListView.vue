@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { RecipeCreate } from '@/api/types'
 import RecipeForm from '@/components/recipes/RecipeForm.vue'
 import RecipeTable from '@/components/recipes/RecipeTable.vue'
@@ -7,6 +7,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import ExportModal from '@/components/ui/ExportModal.vue'
 import ImportModal from '@/components/ui/ImportModal.vue'
 import SlidePanel from '@/components/ui/SlidePanel.vue'
+import { useDropdown } from '@/composables/useDropdown'
 import { useSelection } from '@/composables/useSelection'
 import { useProductStore } from '@/stores/products'
 import { useRecipeStore } from '@/stores/recipes'
@@ -25,9 +26,7 @@ const importOpen = ref(false)
 
 onMounted(async () => {
   await Promise.all([store.load(), productStore.load()])
-  document.addEventListener('click', closeMore)
 })
-onUnmounted(() => document.removeEventListener('click', closeMore))
 
 const selectedRecipe = computed(() =>
   store.items.find((r) => r.id === selectedId.value) ?? null,
@@ -81,11 +80,7 @@ function onClear() {
 
 const confirmBatchDeleteOpen = ref(false)
 const confirmDeleteAllOpen = ref(false)
-const showMore = ref(false)
-
-function closeMore() {
-  showMore.value = false
-}
+const { open: showMore, toggle: toggleMore } = useDropdown()
 
 function toggleSelectMode() {
   if (selection.active.value) selection.exit()
@@ -148,7 +143,7 @@ async function onConfirmDeleteAll() {
           <div class="relative" @click.stop>
             <button
               class="p-2 rounded-lg border border-gray-300 hover:bg-gray-50"
-              @click="showMore = !showMore"
+              @click="toggleMore()"
               title="Дополнительные действия"
             >
               <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 
 from backend.domain.services.password_hasher import PasswordHasher
-from backend.domain.services.shopping_list_builder import ShoppingListBuilder
 from backend.domain.services.portion_calculator import PortionCalculator
+from backend.domain.services.shopping_list_builder import ShoppingListBuilder
 from backend.domain.services.unit_converter import UnitConverter
 from backend.infrastructure.auth.bcrypt_password_hasher import BcryptPasswordHasher
 from backend.infrastructure.auth.jwt_token_service import JwtTokenService

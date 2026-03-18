@@ -11,7 +11,6 @@ from sqlalchemy import text as sa_text
 from sqlalchemy.orm import Session
 
 from backend.application.use_cases.generate_shopping_list import GenerateShoppingList
-from backend.application.use_cases.import_export import ExportShoppingListAsText
 from backend.application.use_cases.manage_family import (
     CreateFamilyMember,
     FamilyMemberData,
@@ -198,8 +197,7 @@ class TestFullUserScenario:
 
         # --- Step 7: Export as text ---
         text_exporter = ShoppingListTextExporter()
-        export_text = ExportShoppingListAsText(text_exporter)
-        text = export_text.execute(shopping_list)
+        text = text_exporter.export(shopping_list)
         assert "Мука" in text
         assert "Молоко" in text
 
