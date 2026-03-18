@@ -108,6 +108,7 @@ class RecipeRow(Base):
         "RecipeIngredientRow",
         back_populates="recipe",
         cascade="all, delete-orphan",
+        foreign_keys="RecipeIngredientRow.recipe_id",
     )
     steps = relationship(
         "CookingStepRow",
@@ -118,16 +119,31 @@ class RecipeRow(Base):
 
 class RecipeIngredientRow(Base):
     __tablename__ = "recipe_ingredients"
-
-    recipe_id = Column(
-        Integer, ForeignKey("recipes.id", ondelete="CASCADE"), primary_key=True
+    __table_args__ = (
+        CheckConstraint(
+            "(product_id IS NOT NULL AND sub_recipe_id IS NULL) OR "
+            "(product_id IS NULL AND sub_recipe_id IS NOT NULL)",
+            name="check_ingredient_xor",
+        ),
     )
-    product_id = Column(Integer, ForeignKey("products.id"), primary_key=True)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    recipe_id = Column(
+        Integer, ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False
+    )
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    sub_recipe_id = Column(
+        Integer, ForeignKey("recipes.id", ondelete="SET NULL"), nullable=True
+    )
     amount = Column(Float, nullable=False)
     unit = Column(String, ForeignKey("units.name"), nullable=False)
-    ingredient_order = Column(Integer, nullable=False, default=0, server_default="0")
+    ingredient_order = Column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
 
-    recipe = relationship("RecipeRow", back_populates="ingredients")
+    recipe = relationship(
+        "RecipeRow", back_populates="ingredients", foreign_keys=[recipe_id]
+    )
 
 
 class CookingStepRow(Base):

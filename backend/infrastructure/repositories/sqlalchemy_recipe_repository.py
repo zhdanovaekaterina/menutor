@@ -47,12 +47,12 @@ class SqlAlchemyRecipeRepository(
         row.ingredients = [
             RecipeIngredientRow(
                 product_id=int(ing.product_id) if ing.product_id is not None else None,
+                sub_recipe_id=int(ing.sub_recipe_id) if ing.sub_recipe_id is not None else None,
                 amount=ing.quantity.amount,
                 unit=ing.quantity.unit,
                 ingredient_order=ing.order,
             )
             for ing in entity.ingredients
-            if ing.is_product
         ]
         row.steps = [
             CookingStepRow(step_order=step.order, description=step.description)
@@ -68,12 +68,12 @@ class SqlAlchemyRecipeRepository(
         row.ingredients = [
             RecipeIngredientRow(
                 product_id=int(ing.product_id) if ing.product_id is not None else None,
+                sub_recipe_id=int(ing.sub_recipe_id) if ing.sub_recipe_id is not None else None,
                 amount=ing.quantity.amount,
                 unit=ing.quantity.unit,
                 ingredient_order=ing.order,
             )
             for ing in entity.ingredients
-            if ing.is_product
         ]
         row.steps = [
             CookingStepRow(step_order=step.order, description=step.description)
@@ -87,12 +87,12 @@ class SqlAlchemyRecipeRepository(
             servings=row.servings,
             ingredients=[
                 RecipeIngredient(
-                    product_id=ProductId(r.product_id),
+                    product_id=ProductId(r.product_id) if r.product_id is not None else None,
+                    sub_recipe_id=RecipeId(r.sub_recipe_id) if r.sub_recipe_id is not None else None,
                     quantity=Quantity(r.amount, r.unit),
                     order=r.ingredient_order,
                 )
                 for r in sorted(row.ingredients, key=lambda i: i.ingredient_order)
-                if r.product_id is not None
             ],
             steps=[
                 CookingStep(order=r.step_order, description=r.description)
@@ -127,7 +127,16 @@ class SqlAlchemyRecipeRepository(
     def find_parents_of(
         self, sub_recipe_id: RecipeId, user_id: UserId
     ) -> list[Recipe]:
-        # Sub-recipe DB column is added in Phase 3 (infrastructure layer).
-        # Until the migration runs, no parent recipes can reference a sub-recipe,
-        # so returning an empty list is always correct for the current schema.
-        return []
+        rows = (
+            self._session.query(RecipeRow)
+            .join(
+                RecipeIngredientRow,
+                RecipeRow.id == RecipeIngredientRow.recipe_id,
+            )
+            .filter(
+                RecipeIngredientRow.sub_recipe_id == int(sub_recipe_id),
+                RecipeRow.user_id == int(user_id),
+            )
+            .all()
+        )
+        return [self._row_to_entity(r) for r in rows]

@@ -153,3 +153,155 @@ def test_update_replaces_ingredients_and_steps(recipe_repo: SqlAlchemyRecipeRepo
     assert len(result.ingredients) == 1
     assert result.ingredients[0].quantity == Quantity(300.0, "g")
     assert len(result.steps) == 1
+
+
+# ── Sub-recipe ingredient tests ───────────────────────────────────────────
+
+
+def _sauce_recipe(user_id: UserId) -> Recipe:
+    return Recipe(
+        id=RecipeId(0),
+        name="Соус",
+        servings=2,
+        ingredients=[],
+        steps=[],
+        category_id=RecipeCategoryId(2),
+        user_id=user_id,
+    )
+
+
+def test_save_recipe_with_sub_recipe_ingredient(
+    recipe_repo: SqlAlchemyRecipeRepository, user_id: UserId
+) -> None:
+    sauce = recipe_repo.save(_sauce_recipe(user_id))
+    parent = recipe_repo.save(
+        Recipe(
+            id=RecipeId(0),
+            name="Паста с соусом",
+            servings=2,
+            ingredients=[
+                RecipeIngredient(sub_recipe_id=sauce.id, quantity=Quantity(1.0, "serv"))
+            ],
+            steps=[],
+            category_id=RecipeCategoryId(2),
+            user_id=user_id,
+        )
+    )
+    retrieved = recipe_repo.get_by_id(parent.id)
+
+    assert retrieved is not None
+    assert len(retrieved.ingredients) == 1
+    ing = retrieved.ingredients[0]
+    assert ing.sub_recipe_id == sauce.id
+    assert ing.product_id is None
+    assert ing.quantity == Quantity(1.0, "serv")
+
+
+def test_save_recipe_mixed_ingredients(
+    recipe_repo: SqlAlchemyRecipeRepository, flour: Product, user_id: UserId
+) -> None:
+    sauce = recipe_repo.save(_sauce_recipe(user_id))
+    parent = recipe_repo.save(
+        Recipe(
+            id=RecipeId(0),
+            name="Блины с соусом",
+            servings=4,
+            ingredients=[
+                RecipeIngredient(product_id=flour.id, quantity=Quantity(200.0, "g"), order=1),
+                RecipeIngredient(sub_recipe_id=sauce.id, quantity=Quantity(1.0, "serv"), order=2),
+            ],
+            steps=[],
+            category_id=RecipeCategoryId(1),
+            user_id=user_id,
+        )
+    )
+    retrieved = recipe_repo.get_by_id(parent.id)
+
+    assert retrieved is not None
+    assert len(retrieved.ingredients) == 2
+    product_ing = retrieved.ingredients[0]
+    sub_ing = retrieved.ingredients[1]
+    assert product_ing.product_id == flour.id
+    assert product_ing.sub_recipe_id is None
+    assert sub_ing.sub_recipe_id == sauce.id
+    assert sub_ing.product_id is None
+
+
+def test_find_parents_of_returns_parents(
+    recipe_repo: SqlAlchemyRecipeRepository, user_id: UserId
+) -> None:
+    sauce = recipe_repo.save(_sauce_recipe(user_id))
+    parent = recipe_repo.save(
+        Recipe(
+            id=RecipeId(0),
+            name="Паста с соусом",
+            servings=2,
+            ingredients=[
+                RecipeIngredient(sub_recipe_id=sauce.id, quantity=Quantity(1.0, "serv"))
+            ],
+            steps=[],
+            category_id=RecipeCategoryId(2),
+            user_id=user_id,
+        )
+    )
+    parents = recipe_repo.find_parents_of(sauce.id, user_id)
+
+    assert len(parents) == 1
+    assert parents[0].id == parent.id
+    assert parents[0].name == "Паста с соусом"
+
+
+def test_find_parents_of_returns_empty_for_no_parents(
+    recipe_repo: SqlAlchemyRecipeRepository, user_id: UserId
+) -> None:
+    sauce = recipe_repo.save(_sauce_recipe(user_id))
+    parents = recipe_repo.find_parents_of(sauce.id, user_id)
+    assert parents == []
+
+
+def test_update_recipe_replaces_sub_recipe_ingredients(
+    recipe_repo: SqlAlchemyRecipeRepository, user_id: UserId
+) -> None:
+    sauce_a = recipe_repo.save(_sauce_recipe(user_id))
+    sauce_b = recipe_repo.save(
+        Recipe(
+            id=RecipeId(0),
+            name="Другой соус",
+            servings=2,
+            ingredients=[],
+            steps=[],
+            category_id=RecipeCategoryId(2),
+            user_id=user_id,
+        )
+    )
+    parent = recipe_repo.save(
+        Recipe(
+            id=RecipeId(0),
+            name="Паста",
+            servings=2,
+            ingredients=[
+                RecipeIngredient(sub_recipe_id=sauce_a.id, quantity=Quantity(1.0, "serv"))
+            ],
+            steps=[],
+            category_id=RecipeCategoryId(2),
+            user_id=user_id,
+        )
+    )
+    updated = Recipe(
+        id=parent.id,
+        name="Паста",
+        servings=2,
+        ingredients=[
+            RecipeIngredient(sub_recipe_id=sauce_b.id, quantity=Quantity(2.0, "serv"))
+        ],
+        steps=[],
+        category_id=RecipeCategoryId(2),
+        user_id=user_id,
+    )
+    result = recipe_repo.save(updated)
+    retrieved = recipe_repo.get_by_id(result.id)
+
+    assert retrieved is not None
+    assert len(retrieved.ingredients) == 1
+    assert retrieved.ingredients[0].sub_recipe_id == sauce_b.id
+    assert retrieved.ingredients[0].quantity == Quantity(2.0, "serv")

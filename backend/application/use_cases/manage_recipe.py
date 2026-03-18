@@ -12,7 +12,9 @@ from backend.domain.entities.recipe import Recipe
 from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.ports.recipe_category_repository import RecipeCategoryRepository
 from backend.domain.ports.recipe_repository import RecipeRepository
-from backend.domain.services.recipe_dependency_validator import RecipeDependencyValidator
+from backend.domain.services.recipe_dependency_validator import (
+    RecipeDependencyValidator,
+)
 from backend.domain.value_objects.category import ActiveCategory
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient

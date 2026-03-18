@@ -16,6 +16,7 @@ _SEED_SQL = [
     "INSERT OR IGNORE INTO units (name, unit_group) VALUES ('pcs',  'count_pcs')",
     "INSERT OR IGNORE INTO units (name, unit_group) VALUES ('box',  'count_box')",
     "INSERT OR IGNORE INTO units (name, unit_group) VALUES ('pack', 'count_pack')",
+    "INSERT OR IGNORE INTO units (name, unit_group) VALUES ('serv', 'servings')",
     "INSERT OR IGNORE INTO recipe_categories  (name, active) VALUES ('Завтраки', 1)",
     "INSERT OR IGNORE INTO recipe_categories  (name, active) VALUES ('Основные', 1)",
     "INSERT OR IGNORE INTO recipe_categories  (name, active) VALUES ('Салаты',   1)",

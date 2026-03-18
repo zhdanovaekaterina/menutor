@@ -2,7 +2,9 @@ from dataclasses import dataclass
 
 from backend.domain.exceptions import CircularDependencyError, NestingDepthExceededError
 from backend.domain.ports.recipe_repository import RecipeRepository
-from backend.domain.services.recipe_dependency_validator import RecipeDependencyValidator
+from backend.domain.services.recipe_dependency_validator import (
+    RecipeDependencyValidator,
+)
 from backend.domain.value_objects.types import RecipeId, UserId
 
 
