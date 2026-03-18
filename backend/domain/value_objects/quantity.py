@@ -56,6 +56,10 @@ class Quantity:
         base_amount = self.amount * _TO_BASE[self.unit]
         return Quantity(base_amount / _TO_BASE[target_unit], target_unit)
 
+    @property
+    def is_weight(self) -> bool:
+        return _UNIT_GROUPS.get(self.unit) == "weight"
+
     def __add__(self, other: "Quantity") -> "Quantity":
         if _UNIT_GROUPS[self.unit] != _UNIT_GROUPS[other.unit]:
             raise UnitConversionError(

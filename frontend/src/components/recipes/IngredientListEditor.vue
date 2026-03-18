@@ -36,7 +36,17 @@ const ingredients = defineModel<IngredientRow[]>({
 const expanded = ref(true)
 
 function isSubRecipeRow(ing: IngredientRow): boolean {
-  return ing.sub_recipe_id != null || ing.quantity_unit === 'serv'
+  return ing.sub_recipe_id != null
+}
+
+function subRecipeWeight(recipeId: number | null): number {
+  if (recipeId == null) return 0
+  return props.recipes.find((r) => r.id === recipeId)?.weight ?? 0
+}
+
+function toggleSubRecipeUnit(ing: IngredientRow, unit: 'serv' | 'g') {
+  ing.quantity_unit = unit
+  ing.quantity_amount = unit === 'g' ? 100 : 1
 }
 
 function productUnit(productId: number | null) {
@@ -107,7 +117,8 @@ function remove(index: number) {
       </svg>
     </button>
     <div v-show="expanded" class="pt-2 space-y-2">
-      <div v-for="(ing, i) in ingredients" :key="i" class="flex items-center gap-2">
+      <div v-for="(ing, i) in ingredients" :key="i" class="flex flex-col gap-0.5">
+        <div class="flex items-center gap-2">
         <!-- Sub-recipe row -->
         <template v-if="isSubRecipeRow(ing)">
           <IngredientTypeIcon type="recipe" />
@@ -125,7 +136,21 @@ function remove(index: number) {
             step="0.01"
             class="w-16 shrink-0 border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
           />
-          <span class="text-xs text-amber-600 font-medium shrink-0 w-10">порц.</span>
+          <!-- Unit toggle: порц. / г -->
+          <span class="flex shrink-0 rounded overflow-hidden border border-amber-300 text-xs">
+            <button
+              type="button"
+              class="w-8 py-1.5 transition-colors"
+              :class="ing.quantity_unit === 'serv' ? 'bg-amber-400 text-white font-semibold' : 'bg-white text-amber-600 hover:bg-amber-50'"
+              @click="toggleSubRecipeUnit(ing, 'serv')"
+            >порц.</button>
+            <button
+              type="button"
+              class="w-8 py-1.5 border-l border-amber-300 transition-colors"
+              :class="ing.quantity_unit === 'g' ? 'bg-amber-400 text-white font-semibold' : 'bg-white text-amber-600 hover:bg-amber-50'"
+              @click="toggleSubRecipeUnit(ing, 'g')"
+            >г</button>
+          </span>
           <button
             type="button"
             class="rounded p-1 text-amber-600 hover:text-amber-800 disabled:opacity-30 disabled:cursor-not-allowed"
@@ -167,6 +192,12 @@ function remove(index: number) {
           title="Удалить ингредиент"
           @click="remove(i)"
         >&times;</button>
+        </div>
+        <!-- Weight error: shown when unit is г but sub-recipe has no weight set -->
+        <p
+          v-if="isSubRecipeRow(ing) && ing.quantity_unit === 'g' && ing.sub_recipe_id != null && subRecipeWeight(ing.sub_recipe_id) === 0"
+          class="text-xs text-red-500 pl-7"
+        >Укажите вес рецепта или используйте порции</p>
       </div>
       <div>
         <SplitButton

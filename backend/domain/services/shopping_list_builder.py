@@ -1,7 +1,7 @@
 from backend.domain.entities.menu import WeeklyMenu
 from backend.domain.entities.recipe import Recipe
 from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
-from backend.domain.exceptions import UnitConversionError
+from backend.domain.exceptions import SubRecipeWeightError, UnitConversionError
 from backend.domain.ports.product_category_repository import ProductCategoryRepository
 from backend.domain.ports.product_repository import ProductRepository
 from backend.domain.ports.recipe_repository import RecipeRepository
@@ -116,7 +116,16 @@ class ShoppingListBuilder:
                 sub_recipe = self._recipe_repo.get_by_id(ing.sub_recipe_id)
                 if sub_recipe is None:
                     continue
-                sub_scale = scaled_amount / sub_recipe.servings
+                if ing.quantity.is_weight:
+                    qty_in_g = ing.quantity.convert_to("g").amount * scale_factor
+                    if sub_recipe.weight == 0:
+                        raise SubRecipeWeightError(
+                            f"Рецепт «{sub_recipe.name}» имеет нулевой вес. "
+                            "Укажите вес рецепта или используйте порции."
+                        )
+                    sub_scale = qty_in_g / sub_recipe.weight
+                else:
+                    sub_scale = scaled_amount / sub_recipe.servings
                 sub_products = self._resolve_recipe_products(sub_recipe, sub_scale, visited)
                 for pid, qty in sub_products.items():
                     if pid in products:

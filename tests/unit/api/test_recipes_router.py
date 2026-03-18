@@ -8,7 +8,7 @@ from backend.application.use_cases.flatten_recipe_products import FlattenedProdu
 from backend.application.use_cases.preview_flattened_products import IngredientData
 from backend.application.use_cases.validate_sub_recipe import ValidationResult
 from backend.domain.entities.recipe import Recipe
-from backend.domain.exceptions import EntityNotFoundError
+from backend.domain.exceptions import EntityNotFoundError, SubRecipeWeightError
 from backend.domain.value_objects.category import ActiveCategory
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.quantity import Quantity
@@ -459,6 +459,21 @@ class TestPreviewFlattenedProducts:
     ) -> None:
         resp = client.post("/api/recipes/1/flattened-products-preview", json={})
         assert resp.status_code == 422
+
+    def test_returns_422_when_sub_recipe_weight_error(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.preview_flattened_products.execute.side_effect = SubRecipeWeightError(
+            "Рецепт «Соус» имеет нулевой вес. Укажите вес рецепта или используйте порции."
+        )
+        body = {
+            "ingredients": [
+                {"sub_recipe_id": 5, "product_id": None, "quantity_amount": 250.0, "quantity_unit": "g"},
+            ]
+        }
+        resp = client.post("/api/recipes/1/flattened-products-preview", json=body)
+        assert resp.status_code == 422
+        assert "нулевой вес" in resp.json()["detail"]
 
 
 # ---- DELETE /api/recipes/{recipe_id} with check_dependents ----

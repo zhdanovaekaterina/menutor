@@ -1,9 +1,12 @@
 from decimal import Decimal
 from unittest.mock import MagicMock
 
+import pytest
+
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.entities.product import Product
 from backend.domain.entities.recipe import Recipe
+from backend.domain.exceptions import SubRecipeWeightError
 from backend.domain.services.portion_calculator import PortionCalculator
 from backend.domain.services.shopping_list_builder import ShoppingListBuilder
 from backend.domain.services.unit_converter import UnitConverter
@@ -634,3 +637,129 @@ def test_sub_recipe_cycle_defensive_guard() -> None:
     # Must terminate, not loop forever
     result = _builder(recipe_repo, product_repo).build(menu)
     assert result.items == []
+
+
+# ---- weight-based sub-recipe scaling ----
+
+
+def test_sub_recipe_weight_based_scaling_grams() -> None:
+    """250g of a 1000g sub-recipe → scale=0.25; flour 500g → 125g, tomato 4pcs → 1pcs."""
+    flour = _product(1, "g", "g", 1.0, 5.0)
+    tomato = _product(2, "pcs", "pcs", 1.0, 3.0)
+
+    # Sub-recipe: weight=1000g, servings=4; contains 500g flour and 4 pcs tomato
+    sub_recipe = Recipe(
+        id=RecipeId(2), name="Соус", servings=4, weight=1000,
+        ingredients=[
+            RecipeIngredient(product_id=ProductId(1), quantity=Quantity(500.0, "g")),
+            RecipeIngredient(product_id=ProductId(2), quantity=Quantity(4.0, "pcs")),
+        ],
+    )
+    # Parent recipe uses 250g of the sub-recipe (weight-based)
+    parent_recipe = Recipe(
+        id=RecipeId(1), name="Паста", servings=1,
+        ingredients=[
+            RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(250.0, "g")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = (
+        lambda rid: parent_recipe if rid == RecipeId(1) else sub_recipe
+    )
+    product_repo = MagicMock()
+    product_repo.get_by_id.side_effect = (
+        lambda pid: flour if pid == ProductId(1) else tomato
+    )
+
+    result = _builder(recipe_repo, product_repo).flatten_recipe_products(parent_recipe)
+
+    # scale = 250 / 1000 = 0.25
+    assert result[ProductId(1)] == Quantity(125.0, "g")   # 500 * 0.25
+    assert result[ProductId(2)] == Quantity(1.0, "pcs")   # 4 * 0.25
+
+
+def test_sub_recipe_weight_based_scaling_kg_unit() -> None:
+    """0.5 kg of a 1000g sub-recipe → scale=0.5; 200g flour → 100g."""
+    flour = _product(1, "g", "g", 1.0, 5.0)
+
+    sub_recipe = Recipe(
+        id=RecipeId(2), name="Тесто", servings=2, weight=1000,
+        ingredients=[
+            RecipeIngredient(product_id=ProductId(1), quantity=Quantity(200.0, "g")),
+        ],
+    )
+    parent_recipe = Recipe(
+        id=RecipeId(1), name="Пирог", servings=1,
+        ingredients=[
+            RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(0.5, "kg")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = (
+        lambda rid: parent_recipe if rid == RecipeId(1) else sub_recipe
+    )
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = flour
+
+    result = _builder(recipe_repo, product_repo).flatten_recipe_products(parent_recipe)
+
+    # 0.5 kg → 500g; scale = 500 / 1000 = 0.5; flour = 200 * 0.5 = 100g
+    assert result[ProductId(1)] == Quantity(100.0, "g")
+
+
+def test_sub_recipe_weight_based_raises_when_weight_zero() -> None:
+    """SubRecipeWeightError raised when weight unit used and sub-recipe weight is 0."""
+    sub_recipe = Recipe(
+        id=RecipeId(2), name="Начинка", servings=2, weight=0,
+        ingredients=[
+            RecipeIngredient(product_id=ProductId(1), quantity=Quantity(100.0, "g")),
+        ],
+    )
+    parent_recipe = Recipe(
+        id=RecipeId(1), name="Пирог", servings=1,
+        ingredients=[
+            RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(300.0, "g")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = (
+        lambda rid: parent_recipe if rid == RecipeId(1) else sub_recipe
+    )
+    product_repo = MagicMock()
+
+    builder = _builder(recipe_repo, product_repo)
+    with pytest.raises(SubRecipeWeightError):
+        builder.flatten_recipe_products(parent_recipe)
+
+
+def test_sub_recipe_servings_based_scaling_unchanged() -> None:
+    """Servings-based scaling (serv unit) continues to work as before."""
+    onion = _product(1, "g", "g", 1.0, 2.0)
+
+    sub_recipe = Recipe(
+        id=RecipeId(2), name="Зажарка", servings=2,
+        ingredients=[
+            RecipeIngredient(product_id=ProductId(1), quantity=Quantity(100.0, "g")),
+        ],
+    )
+    parent_recipe = Recipe(
+        id=RecipeId(1), name="Суп", servings=1,
+        ingredients=[
+            RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(1.0, "serv")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = (
+        lambda rid: parent_recipe if rid == RecipeId(1) else sub_recipe
+    )
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = onion
+
+    result = _builder(recipe_repo, product_repo).flatten_recipe_products(parent_recipe)
+
+    # 1 serv of a 2-serv recipe → scale = 0.5; onion = 100 * 0.5 = 50g
+    assert result[ProductId(1)] == Quantity(50.0, "g")
