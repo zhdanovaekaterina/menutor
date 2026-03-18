@@ -4,7 +4,7 @@ import type { ActiveCategory, Product } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
 
 const UNIT_MAP: Record<string, string> = {
-  g: 'г', kg: 'кг', ml: 'мл', l: 'л', pcs: 'шт', box: 'кор', pack: 'уп',
+  g: 'г', kg: 'кг', ml: 'мл', l: 'л', tsp: 'ч.л.', tbsp: 'ст.л.', pcs: 'шт', box: 'кор', pack: 'уп',
 }
 
 const props = defineProps<{

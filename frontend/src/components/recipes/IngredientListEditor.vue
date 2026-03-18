@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import type { Product } from '@/api/types'
 
 const UNIT_MAP: Record<string, string> = {
-  g: 'г', kg: 'кг', ml: 'мл', l: 'л', pcs: 'шт', box: 'кор', pack: 'уп',
+  g: 'г', kg: 'кг', ml: 'мл', l: 'л', tsp: 'ч.л.', tbsp: 'ст.л.', pcs: 'шт', box: 'кор', pack: 'уп',
 }
 
 const NEW_PRODUCT = -1
