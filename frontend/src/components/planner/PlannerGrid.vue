@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { MenuSlot } from '@/api/types'
 import GridCell from './GridCell.vue'
 
@@ -6,6 +7,8 @@ defineProps<{
   slots: MenuSlot[]
   recipeNames: Record<number, string>
   productNames: Record<number, string>
+  pickerDay?: number | null
+  pickerMealType?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -14,30 +17,83 @@ const emit = defineEmits<{
   editItem: [slot: MenuSlot]
   moveItem: [slot: MenuSlot, toDay: number, toMealType: string, toIndex: number]
   reorderItems: [day: number, mealType: string, orderedSlots: MenuSlot[]]
+  openPicker: [day: number, mealType: string]
+  dayScrolled: []
 }>()
+
+const scrollRef = ref<HTMLElement | null>(null)
 
 const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const meals = ['Завтрак', 'Обед', 'Ужин']
 </script>
 
 <template>
-  <div class="h-full grid grid-cols-[auto_repeat(7,1fr)] grid-rows-[auto_repeat(3,1fr)] gap-px bg-gray-200 rounded-lg overflow-hidden text-sm">
+  <!-- Mobile: snap-scroll one-day-at-a-time layout (hidden on lg+) -->
+  <div class="lg:hidden h-full flex gap-px bg-gray-200 rounded-lg overflow-hidden text-sm">
+    <!-- Fixed left column: meal-type labels -->
+    <div class="w-[60px] shrink-0 flex flex-col bg-gray-100 gap-px">
+      <!-- Spacer matching day-header height -->
+      <div class="h-9 shrink-0 bg-gray-100" />
+      <div
+        v-for="meal in meals"
+        :key="'label-' + meal"
+        class="flex-1 bg-gray-100 font-semibold text-xs px-2 py-2 flex items-center"
+      >
+        {{ meal }}
+      </div>
+    </div>
+
+    <!-- Swipeable day columns -->
+    <div ref="scrollRef" class="flex-1 flex overflow-x-auto snap-x snap-mandatory scroll-smooth" @scroll="emit('dayScrolled')">
+      <div
+        v-for="(day, i) in days"
+        :key="'day-' + day"
+        class="min-w-full h-full flex flex-col gap-px snap-start"
+      >
+        <!-- Day header (stays at top, does not scroll) -->
+        <div class="h-9 shrink-0 bg-gray-100 font-semibold text-center flex items-center justify-center">
+          {{ day }}
+        </div>
+        <!-- Meal cells — flex-1 so they share height equally -->
+        <GridCell
+          v-for="meal in meals"
+          :key="'cell-' + i + '-' + meal"
+          class="flex-1"
+          :day="i"
+          :meal-type="meal"
+          :slots="slots"
+          :recipe-names="recipeNames"
+          :product-names="productNames"
+          :picker-active="pickerDay === i && pickerMealType === meal"
+          @add-item="(data) => emit('addItem', i, meal, data)"
+          @remove-item="(data) => emit('removeItem', i, meal, data)"
+          @edit-item="(slot) => emit('editItem', slot)"
+          @move-item="(slot, toDay, toMeal, toIdx) => emit('moveItem', slot, toDay, toMeal, toIdx)"
+          @reorder-items="(d, m, ordered) => emit('reorderItems', d, m, ordered)"
+          @open-picker="emit('openPicker', i, meal)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Desktop: original CSS grid layout (hidden below lg) -->
+  <div class="hidden lg:grid h-full min-w-[700px] grid-cols-[60px_repeat(7,1fr)] grid-rows-[auto_repeat(3,1fr)] gap-px bg-gray-200 rounded-lg overflow-hidden text-sm">
     <!-- Header row -->
     <div class="bg-gray-100" />
     <div
       v-for="d in days"
-      :key="d"
+      :key="'hd-' + d"
       class="bg-gray-100 font-semibold text-center py-2"
     >
       {{ d }}
     </div>
 
     <!-- Meal rows -->
-    <template v-for="(meal, mi) in meals" :key="meal">
+    <template v-for="(meal, mi) in meals" :key="'row-' + meal">
       <div class="bg-gray-100 font-semibold px-3 py-2 flex items-start">{{ meal }}</div>
       <GridCell
         v-for="day in 7"
-        :key="day"
+        :key="'gc-' + day + '-' + meal"
         :day="day - 1"
         :meal-type="meal"
         :slots="slots"

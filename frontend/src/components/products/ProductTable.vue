@@ -85,8 +85,8 @@ function onRowClick(id: number) {
             <th class="text-left px-4 py-2 cursor-pointer select-none hover:bg-gray-100" @click="toggleSort('category')">
               Категория {{ sortIcon('category') }}
             </th>
-            <th class="px-4 py-2 text-center">Ед. рец.</th>
-            <th class="px-4 py-2 text-center">Ед. пок.</th>
+            <th class="hidden sm:table-cell px-4 py-2 text-center">Ед. рец.</th>
+            <th class="hidden sm:table-cell px-4 py-2 text-center">Ед. пок.</th>
             <th class="text-right px-4 py-2 cursor-pointer select-none hover:bg-gray-100 w-28" @click="toggleSort('price')">
               Цена {{ sortIcon('price') }}
             </th>
@@ -113,8 +113,8 @@ function onRowClick(id: number) {
             </td>
             <td class="px-4 py-2">{{ p.name }}</td>
             <td class="px-4 py-2 text-gray-600">{{ catMap[p.category_id] ?? '—' }}</td>
-            <td class="px-4 py-2 text-center text-gray-500">{{ UNIT_MAP[p.recipe_unit] ?? p.recipe_unit }}</td>
-            <td class="px-4 py-2 text-center text-gray-500">{{ UNIT_MAP[p.purchase_unit] ?? p.purchase_unit }}</td>
+            <td class="hidden sm:table-cell px-4 py-2 text-center text-gray-500">{{ UNIT_MAP[p.recipe_unit] ?? p.recipe_unit }}</td>
+            <td class="hidden sm:table-cell px-4 py-2 text-center text-gray-500">{{ UNIT_MAP[p.purchase_unit] ?? p.purchase_unit }}</td>
             <td class="px-4 py-2 text-right tabular-nums">{{ Number(p.price_amount).toFixed(2) }}</td>
           </tr>
         </tbody>

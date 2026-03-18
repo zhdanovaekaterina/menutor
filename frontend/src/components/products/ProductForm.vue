@@ -140,11 +140,6 @@ function onSave() {
 
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Цена (руб.)</label>
-        <input v-model.number="priceAmount" type="number" min="0" step="0.01"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-      </div>
-      <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Коэф. конвертации</label>
         <input v-model.number="conversionFactor" type="number" min="0.001" step="0.001"
           :disabled="isFactorLocked"
@@ -152,14 +147,32 @@ function onSave() {
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
         <p v-if="isFactorLocked" class="text-xs text-gray-400 mt-1">Рассчитан автоматически</p>
       </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Цена (руб.)</label>
+        <input v-model.number="priceAmount" type="number" min="0" step="0.01"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+      </div>
     </div>
 
     <div class="flex gap-2 pt-4 border-t">
-      <button class="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" @click="onSave">
-        Сохранить
+      <button
+        class="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+        @click="onSave"
+      >
+        {{ product ? 'Сохранить' : 'Создать' }}
       </button>
-      <button v-if="product" class="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
-        @click="emit('remove', product.id)">
+      <button
+        v-if="product"
+        class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
+        @click="clearForm"
+      >
+        Новый
+      </button>
+      <button
+        v-if="product"
+        class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 transition-colors"
+        @click="emit('remove', product.id)"
+      >
         Удалить
       </button>
     </div>

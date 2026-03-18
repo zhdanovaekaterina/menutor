@@ -13,13 +13,13 @@ const emit = defineEmits<{ remove: []; click: [] }>()
     :class="variant === 'recipe'
       ? 'bg-blue-50 border-l-2 border-blue-400'
       : 'bg-orange-50 border-l-2 border-orange-400'"
-    class="flex items-center gap-1 px-2 py-1 rounded text-xs group cursor-pointer"
+    class="flex items-center gap-1 px-2 py-2 lg:py-1 rounded text-sm lg:text-xs group cursor-pointer"
     @click="emit('click')"
   >
     <span class="truncate flex-1">{{ name }}</span>
     <span class="text-gray-500 whitespace-nowrap">{{ detail }}</span>
     <button
-      class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 ml-1 shrink-0"
+      class="hidden lg:inline opacity-40 hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 ml-1 shrink-0"
       title="Удалить"
       @click.stop="emit('remove')"
     >

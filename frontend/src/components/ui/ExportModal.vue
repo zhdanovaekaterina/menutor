@@ -56,8 +56,8 @@ async function onDownloadExample() {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+      <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl max-w-md w-full sm:mx-4 p-6">
         <h3 class="text-lg font-semibold mb-4">Экспорт</h3>
 
         <div class="space-y-4">
@@ -84,21 +84,21 @@ async function onDownloadExample() {
 
         <div class="flex justify-end gap-2 mt-6">
           <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="loading"
             @click="emit('close')"
           >
             Отмена
           </button>
           <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="loading"
             @click="onDownloadExample"
           >
             Скачать пример
           </button>
           <button
-            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50"
+            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="loading"
             @click="onDownload"
           >

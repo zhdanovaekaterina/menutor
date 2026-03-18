@@ -61,29 +61,35 @@ function onDragStart(e: DragEvent, type: 'recipe' | 'product', id: number) {
     <SearchInput v-model="search" />
 
     <!-- Recipe list -->
-    <ul v-if="tab === 'recipes'" class="flex-1 overflow-y-auto text-sm divide-y">
-      <li
-        v-for="r in filteredRecipes"
-        :key="r.id"
-        draggable="true"
-        class="px-2 py-1.5 cursor-grab hover:bg-gray-100"
-        @dragstart="onDragStart($event, 'recipe', r.id)"
-      >
-        {{ r.name }}
-      </li>
-    </ul>
+    <div v-if="tab === 'recipes'" class="flex-1 relative overflow-hidden border rounded-lg">
+      <ul class="absolute inset-0 overflow-y-auto text-sm divide-y pb-4">
+        <li
+          v-for="r in filteredRecipes"
+          :key="r.id"
+          draggable="true"
+          class="px-2 py-1.5 cursor-grab hover:bg-gray-100"
+          @dragstart="onDragStart($event, 'recipe', r.id)"
+        >
+          {{ r.name }}
+        </li>
+      </ul>
+      <div class="absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+    </div>
 
     <!-- Product list -->
-    <ul v-else class="flex-1 overflow-y-auto text-sm divide-y">
-      <li
-        v-for="p in filteredProducts"
-        :key="p.id"
-        draggable="true"
-        class="px-2 py-1.5 cursor-grab hover:bg-gray-100"
-        @dragstart="onDragStart($event, 'product', p.id)"
-      >
-        {{ p.name }}
-      </li>
-    </ul>
+    <div v-else class="flex-1 relative overflow-hidden border rounded-lg">
+      <ul class="absolute inset-0 overflow-y-auto text-sm divide-y pb-4">
+        <li
+          v-for="p in filteredProducts"
+          :key="p.id"
+          draggable="true"
+          class="px-2 py-1.5 cursor-grab hover:bg-gray-100"
+          @dragstart="onDragStart($event, 'product', p.id)"
+        >
+          {{ p.name }}
+        </li>
+      </ul>
+      <div class="absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+    </div>
   </div>
 </template>

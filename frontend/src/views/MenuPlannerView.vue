@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { MenuSlot } from '@/api/types'
+import MobileItemPicker from '@/components/planner/MobileItemPicker.vue'
 import PlannerGrid from '@/components/planner/PlannerGrid.vue'
 import SavedMenuList from '@/components/planner/SavedMenuList.vue'
 import SourcePanel from '@/components/planner/SourcePanel.vue'
@@ -24,6 +25,16 @@ const familyStore = useFamilyStore()
 const shoppingStore = useShoppingListStore()
 const toast = useToastStore()
 
+const isXl = ref(typeof window !== 'undefined' && window.innerWidth >= 1280)
+const leftPanelOpen = ref(true)
+const rightPanelOpen = ref(isXl.value)
+
+const mobileLeftOpen = ref(false)
+
+const pickerOpen = ref(false)
+const pickerDay = ref(0)
+const pickerMealType = ref('')
+
 const nameDialogOpen = ref(false)
 const confirmDeleteOpen = ref(false)
 const confirmClearOpen = ref(false)
@@ -43,6 +54,7 @@ onMounted(async () => {
 
 const selectedId = computed(() => menuStore.current?.id ?? null)
 const slots = computed(() => menuStore.current?.slots ?? [])
+const pageTitle = computed(() => menuStore.current?.name ?? 'Планировщик меню')
 
 const totalFamilyPortions = computed(() => {
   const sum = familyStore.items.reduce((acc, m) => acc + m.portion_multiplier, 0)
@@ -54,6 +66,14 @@ const recipeNames = computed(() =>
 )
 const productNames = computed(() =>
   Object.fromEntries(productStore.items.map((p) => [p.id, p.name])),
+)
+
+const dayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+const pickerDayLabel = computed(() => dayLabels[pickerDay.value] ?? '')
+
+const pickerExistingSlots = computed(() =>
+  slots.value.filter(s => s.day === pickerDay.value && s.meal_type === pickerMealType.value)
 )
 
 async function onSelectMenu(id: number) {
@@ -70,6 +90,20 @@ async function onDeleteMenu() {
   confirmDeleteOpen.value = false
   if (!selectedId.value) return
   await menuStore.remove(selectedId.value)
+}
+
+function onOpenPicker(day: number, mealType: string) {
+  if (!menuStore.current) {
+    toast.show('Сначала выберите меню', 'error')
+    return
+  }
+  pickerDay.value = day
+  pickerMealType.value = mealType
+  pickerOpen.value = true
+}
+
+function onPickerSelect(data: { type: 'recipe' | 'product'; id: number }) {
+  onAddItem(pickerDay.value, pickerMealType.value, data)
 }
 
 async function onAddItem(day: number, mealType: string, data: { type: 'recipe' | 'product'; id: number }) {
@@ -94,6 +128,13 @@ async function onRemoveItem(day: number, mealType: string, data: { recipe_id?: n
 function onEditItem(slot: MenuSlot) {
   editSlot.value = slot
   editValue.value = String(slot.servings_override ?? slot.quantity ?? 1)
+}
+
+async function onEditDelete() {
+  const s = editSlot.value
+  if (!s) return
+  editSlot.value = null
+  await onRemoveItem(s.day, s.meal_type, { recipe_id: s.recipe_id, product_id: s.product_id })
 }
 
 async function onEditConfirm(val: string) {
@@ -128,14 +169,6 @@ async function onReorderItems(day: number, mealType: string, orderedSlots: MenuS
   }
 }
 
-async function onSave() {
-  if (!menuStore.current) {
-    nameDialogOpen.value = true
-    return
-  }
-  toast.show('Меню сохранено', 'success')
-}
-
 async function onClear() {
   confirmClearOpen.value = false
   await menuStore.clear()
@@ -149,72 +182,142 @@ async function onGenerateShoppingList() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 gap-4">
-    <h1 class="text-xl font-bold">Планировщик меню</h1>
+  <div class="h-full flex flex-col p-3 sm:p-4 lg:p-6 gap-3 sm:gap-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <!-- Mobile: hamburger to open left drawer (SavedMenuList) -->
+        <button
+          class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100"
+          @click="mobileLeftOpen = true"
+        >
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+        <h1 class="text-lg sm:text-xl font-bold lg:hidden">{{ pageTitle }}</h1>
+        <h1 class="text-lg sm:text-xl font-bold hidden lg:block">Планировщик меню</h1>
+      </div>
+    </div>
 
     <div class="flex-1 flex gap-4 min-h-0">
-      <!-- Left: saved menus -->
-      <div class="w-48 shrink-0">
-        <SavedMenuList
-          :menus="menuStore.menus"
-          :selected-id="selectedId"
-          @select="onSelectMenu"
-          @create="nameDialogOpen = true"
-          @remove="confirmDeleteOpen = true"
-        />
+      <!-- Left panel: hidden on mobile, collapsible on desktop -->
+      <div :class="leftPanelOpen ? 'w-48' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col bg-white overflow-hidden hidden lg:flex">
+        <button
+          class="p-2 text-gray-400 hover:text-gray-600 self-end shrink-0"
+          :title="leftPanelOpen ? 'Свернуть' : 'Развернуть'"
+          @click="leftPanelOpen = !leftPanelOpen"
+        >
+          <svg v-if="leftPanelOpen" class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          <svg v-else class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+        <div v-show="leftPanelOpen" class="flex-1 min-h-0">
+          <SavedMenuList
+            :menus="menuStore.menus"
+            :selected-id="selectedId"
+            @select="onSelectMenu"
+            @create="nameDialogOpen = true"
+            @remove="confirmDeleteOpen = true"
+          />
+        </div>
       </div>
 
-      <!-- Center: grid + actions -->
+      <!-- Center: always visible -->
       <div class="flex-1 flex flex-col gap-4 min-w-0">
-        <div class="flex-1 overflow-auto">
+        <div class="flex-1 overflow-hidden lg:overflow-auto">
           <PlannerGrid
             :slots="slots"
             :recipe-names="recipeNames"
             :product-names="productNames"
+            :picker-day="pickerOpen ? pickerDay : null"
+            :picker-meal-type="pickerOpen ? pickerMealType : null"
             @add-item="onAddItem"
             @remove-item="onRemoveItem"
             @edit-item="onEditItem"
             @move-item="onMoveItem"
             @reorder-items="onReorderItems"
+            @open-picker="onOpenPicker"
+            @day-scrolled="pickerOpen = false"
           />
         </div>
-        <div class="flex items-center gap-3 pt-2 border-t">
-          <button class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" @click="onSave">
-            Сохранить
-          </button>
-          <button class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
-            @click="confirmClearOpen = true">
+        <div class="flex items-center gap-3 pt-3 border-t flex-wrap">
+          <button
+            class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!menuStore.current"
+            @click="confirmClearOpen = true"
+          >
             Очистить
           </button>
-          <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-40"
-            :disabled="!menuStore.current"
-            @click="importOpen = true"
-          >
-            Импорт
-          </button>
-          <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-40"
-            :disabled="!menuStore.current"
-            @click="exportOpen = true"
-          >
-            Экспорт
-          </button>
+
+          <!-- Vertical divider -->
+          <div class="w-px h-6 bg-gray-300" />
+
+          <!-- Secondary actions: Import/Export as icon-only buttons -->
+          <div class="flex items-center gap-1.5">
+            <button
+              class="p-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="!menuStore.current"
+              @click="importOpen = true"
+              title="Импорт"
+            >
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+              </svg>
+            </button>
+            <button
+              class="p-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="!menuStore.current"
+              @click="exportOpen = true"
+              title="Экспорт"
+            >
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+            </button>
+          </div>
+
           <div class="flex-1" />
-          <button class="px-4 py-2 rounded-lg bg-green-600 text-white text-sm hover:bg-green-700"
-            @click="onGenerateShoppingList">
-            Сформировать список покупок
+
+          <!-- Call-to-action -->
+          <button
+            class="px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors flex-shrink-0"
+            @click="onGenerateShoppingList"
+          >
+            <span class="hidden sm:inline">Сформировать список покупок</span>
+            <span class="sm:hidden flex items-center gap-1">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-1.977 2.027-4.076 2.027-5.25A8.25 8.25 0 0 0 12 3a8.25 8.25 0 0 0-8.25 8.25c0 1.174.906 3.273 2.027 5.25" />
+              </svg>
+              Список
+            </span>
           </button>
         </div>
       </div>
 
-      <!-- Right: source panel -->
-      <div class="w-56 shrink-0">
-        <SourcePanel
-          :recipes="recipeStore.items"
-          :products="productStore.items"
-          :family-members="familyStore.items"
-        />
+      <!-- Right panel: hidden on mobile, collapsible on desktop -->
+      <div :class="rightPanelOpen ? 'w-56' : 'w-10'" class="shrink-0 transition-all duration-200 flex flex-col bg-white overflow-hidden hidden lg:flex">
+        <button
+          class="p-2 text-gray-400 hover:text-gray-600 self-start shrink-0"
+          :title="rightPanelOpen ? 'Свернуть' : 'Развернуть'"
+          @click="rightPanelOpen = !rightPanelOpen"
+        >
+          <svg v-if="rightPanelOpen" class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+          </svg>
+          <svg v-else class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+        <div v-show="rightPanelOpen" class="flex-1 min-h-0">
+          <SourcePanel
+            :recipes="recipeStore.items"
+            :products="productStore.items"
+            :family-members="familyStore.items"
+          />
+        </div>
       </div>
     </div>
 
@@ -244,8 +347,10 @@ async function onGenerateShoppingList() {
       :label="editSlot?.recipe_id != null ? 'Количество порций' : 'Количество'"
       :initial-value="editValue"
       input-type="number"
+      :show-delete="true"
       @confirm="onEditConfirm"
       @cancel="editSlot = null"
+      @delete="onEditDelete"
     />
 
     <ExportModal
@@ -262,5 +367,60 @@ async function onGenerateShoppingList() {
       @close="importOpen = false"
       @imported="menuStore.load()"
     />
+
+    <MobileItemPicker
+      :open="pickerOpen"
+      :day="pickerDay"
+      :meal-type="pickerMealType"
+      :day-label="pickerDayLabel"
+      :recipes="recipeStore.items"
+      :products="productStore.items"
+      :existing-slots="pickerExistingSlots"
+      @close="pickerOpen = false"
+      @select="onPickerSelect"
+    />
+
+    <!-- Mobile: Left drawer (SavedMenuList) -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="mobileLeftOpen" class="lg:hidden fixed inset-0 bg-black/40 z-40" @click="mobileLeftOpen = false" />
+      </Transition>
+      <Transition name="slide-left">
+        <div v-if="mobileLeftOpen" class="lg:hidden fixed inset-y-0 left-0 w-72 bg-white z-50 shadow-xl flex flex-col p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-semibold">Меню</h2>
+            <button class="p-1 rounded hover:bg-gray-100" @click="mobileLeftOpen = false">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <SavedMenuList
+            :menus="menuStore.menus"
+            :selected-id="selectedId"
+            @select="(id) => { onSelectMenu(id); mobileLeftOpen = false }"
+            @create="nameDialogOpen = true; mobileLeftOpen = false"
+            @remove="confirmDeleteOpen = true"
+          />
+        </div>
+      </Transition>
+    </Teleport>
+
   </div>
 </template>
+
+<style scoped>
+.slide-left-enter-active, .slide-left-leave-active {
+  transition: transform 0.25s ease;
+}
+.slide-left-enter-from, .slide-left-leave-to {
+  transform: translateX(-100%);
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>

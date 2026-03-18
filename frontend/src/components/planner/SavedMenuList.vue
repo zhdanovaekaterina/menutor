@@ -19,10 +19,26 @@ const filtered = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 h-full">
-    <h3 class="font-semibold text-sm">Сохранённые меню</h3>
+  <div class="flex flex-col gap-2 h-full p-4">
+    <!-- Header: title + create button -->
+    <div class="flex items-center justify-between">
+      <h3 class="font-semibold text-sm">Сохранённые меню</h3>
+      <button
+        class="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+        @click="emit('create')"
+        title="Новое меню"
+      >
+        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Search -->
     <SearchInput v-model="search" />
-    <ul class="flex-1 overflow-y-auto divide-y border rounded-lg">
+
+    <!-- Menu list -->
+    <ul class="flex-1 overflow-y-auto divide-y border rounded-lg min-h-0">
       <li
         v-for="m in filtered"
         :key="m.id"
@@ -36,20 +52,14 @@ const filtered = computed(() => {
         Нет меню
       </li>
     </ul>
-    <div class="flex flex-col gap-2 pt-2 border-t">
-      <button
-        class="w-full px-3 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
-        @click="emit('create')"
-      >
-        + Новое меню
-      </button>
-      <button
-        class="w-full px-3 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
-        :disabled="!selectedId"
-        @click="emit('remove')"
-      >
-        Удалить
-      </button>
-    </div>
+
+    <!-- Delete button at bottom (destructive, less frequent) -->
+    <button
+      class="w-full px-3 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      :disabled="!selectedId"
+      @click="emit('remove')"
+    >
+      Удалить выбранное
+    </button>
   </div>
 </template>

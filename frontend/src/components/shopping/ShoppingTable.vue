@@ -6,6 +6,7 @@ const props = defineProps<{
   itemsByCategory: Record<string, ShoppingListItem[]>
   selectMode?: boolean
   selectedIds?: Set<number>
+  selectedId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -13,6 +14,7 @@ const emit = defineEmits<{
   editQuantity: [productId: number]
   toggleSelect: [productId: number]
   toggleSelectAll: [productIds: number[]]
+  select: [productId: number]
 }>()
 
 const UNIT_MAP: Record<string, string> = {
@@ -72,11 +74,11 @@ const allChecked = computed(() =>
           :key="item.product_id"
           :class="[
             selectMode && selectedIds?.has(item.product_id) ? 'bg-blue-50' :
+            !selectMode && item.product_id === selectedId ? 'bg-blue-50' :
             item.purchased ? 'bg-green-50/50' : '',
           ]"
-          class="hover:bg-gray-50 border-b"
-          :style="selectMode ? 'cursor: pointer' : ''"
-          @click="selectMode && emit('toggleSelect', item.product_id)"
+          class="hover:bg-gray-50 border-b cursor-pointer"
+          @click="selectMode ? emit('toggleSelect', item.product_id) : emit('select', item.product_id)"
         >
           <td v-if="selectMode" class="text-center px-2" @click.stop>
             <input
@@ -86,13 +88,15 @@ const allChecked = computed(() =>
               @change="emit('toggleSelect', item.product_id)"
             />
           </td>
-          <td v-else class="text-center px-2">
-            <input
-              type="checkbox"
-              :checked="item.purchased"
-              class="rounded border-gray-300"
-              @change="emit('toggle', item.product_id)"
-            />
+          <td v-else class="text-center px-2" @click.stop>
+            <label class="flex items-center justify-center w-10 h-10 cursor-pointer mx-auto">
+              <input
+                type="checkbox"
+                :checked="item.purchased"
+                class="rounded border-gray-300 w-5 h-5"
+                @change="emit('toggle', item.product_id)"
+              />
+            </label>
           </td>
           <td
             :class="!selectMode && item.purchased ? 'line-through text-gray-400' : ''"

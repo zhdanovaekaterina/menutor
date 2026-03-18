@@ -24,6 +24,7 @@ const selectedProductId = ref<number | null>(null)
 const confirmRemoveOpen = ref(false)
 const editProductId = ref<number | null>(null)
 const editQtyValue = ref('')
+const mobileSidebarOpen = ref(false)
 
 const existingIds = computed(() => store.items.map((i) => i.product_id))
 
@@ -121,9 +122,9 @@ function onConfirmDeleteAll() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 gap-4">
+  <div class="h-full flex flex-col p-3 sm:p-4 lg:p-6 pb-28 sm:pb-4 lg:pb-6 gap-3 sm:gap-4">
     <div class="flex items-center justify-between">
-      <h1 class="text-xl font-bold">Список покупок</h1>
+      <h1 class="text-lg sm:text-xl font-bold">Список покупок</h1>
       <div v-if="store.data" class="flex items-center gap-2">
         <template v-if="selection.active.value">
           <span class="text-sm text-gray-500">Выбрано: {{ selection.count.value }}</span>
@@ -149,6 +150,13 @@ function onConfirmDeleteAll() {
             Выбрать
           </button>
           <button
+            v-if="selectedProductId !== null"
+            class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 transition-colors"
+            @click="confirmRemoveOpen = true"
+          >
+            Удалить выбранный
+          </button>
+          <button
             v-if="store.items.length > 0"
             class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
             @click="confirmDeleteAllOpen = true"
@@ -163,28 +171,29 @@ function onConfirmDeleteAll() {
       Список покупок пуст. Сформируйте его в планировщике меню.
     </div>
 
-    <div v-else class="flex-1 flex gap-4 min-h-0">
-      <!-- Table -->
+    <div v-else class="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
+      <!-- Table (full width on mobile) -->
       <div class="flex-1 overflow-y-auto border rounded-lg">
         <ShoppingTable
           :items-by-category="store.itemsByCategory"
           :select-mode="selection.active.value"
           :selected-ids="selection.selected.value"
+          :selected-id="selectedProductId"
           @toggle="onToggle"
           @edit-quantity="onEditQuantity"
           @toggle-select="selection.toggle"
           @toggle-select-all="selection.toggleAll"
+          @select="(id) => { selectedProductId = selectedProductId === id ? null : id }"
         />
       </div>
 
-      <!-- Sidebar -->
-      <div class="w-72 shrink-0 flex flex-col gap-4">
+      <!-- Sidebar: hidden on mobile, shown on desktop -->
+      <div class="w-64 xl:w-72 shrink-0 hidden lg:flex flex-col gap-4">
         <ShoppingSummary
           :total-cost="store.totalCost"
           :item-count="store.items.length"
           :purchased-count="store.purchasedCount"
           :progress-percent="store.progressPercent"
-          @remove="onRemove"
           @export-text="onExportText"
           @export-csv="onExportCsv"
         />
@@ -229,5 +238,87 @@ function onConfirmDeleteAll() {
       @confirm="onEditConfirm"
       @cancel="editProductId = null"
     />
+
+    <!-- Mobile: Floating summary bar + bottom sheet -->
+    <template v-if="store.data">
+      <!-- Compact summary bar (sits above the bottom nav) -->
+      <div
+        class="lg:hidden fixed bottom-[56px] inset-x-0 bg-white border-t shadow-lg z-30 px-4 py-3 flex items-center justify-between"
+        style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px))"
+      >
+        <div class="flex items-center gap-4">
+          <span class="text-base font-bold">{{ Number(store.totalCost.amount).toFixed(0) }} р.</span>
+          <span class="text-sm text-gray-500">{{ store.purchasedCount }}/{{ store.items.length }}</span>
+          <div class="w-24 bg-gray-200 rounded-full h-2.5">
+            <div class="bg-green-500 h-2.5 rounded-full" :style="{ width: store.progressPercent + '%' }" />
+          </div>
+        </div>
+        <button
+          class="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+          @click="mobileSidebarOpen = true"
+        >
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Bottom sheet (Teleport to body) -->
+      <Teleport to="body">
+        <Transition name="fade">
+          <div
+            v-if="mobileSidebarOpen"
+            class="fixed inset-0 bg-black/40 z-40 lg:hidden"
+            @click="mobileSidebarOpen = false"
+          />
+        </Transition>
+        <Transition name="slide-up">
+          <div
+            v-if="mobileSidebarOpen"
+            class="fixed bottom-0 inset-x-0 bg-white z-50 rounded-t-2xl shadow-xl max-h-[75vh] flex flex-col lg:hidden"
+          >
+            <!-- Handle bar -->
+            <div class="flex justify-center pt-3 pb-1">
+              <div class="w-10 h-1 bg-gray-300 rounded-full" />
+            </div>
+            <div class="flex-1 overflow-y-auto px-4 pb-6 space-y-4">
+              <ShoppingSummary
+                :total-cost="store.totalCost"
+                :item-count="store.items.length"
+                :purchased-count="store.purchasedCount"
+                :progress-percent="store.progressPercent"
+                @export-text="onExportText"
+                @export-csv="onExportCsv"
+              />
+              <AddProductForm
+                :products="productStore.items"
+                :existing-ids="existingIds"
+                @add="onAddProduct"
+              />
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
+    </template>
   </div>
 </template>
+
+<style scoped>
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.3s ease;
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
