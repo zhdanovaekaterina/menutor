@@ -34,12 +34,14 @@ def upgrade() -> None:
             sa.Column("id", sa.Integer(), autoincrement=True, nullable=False)
         )
         batch_op.add_column(
-            sa.Column(
-                "sub_recipe_id",
-                sa.Integer(),
-                sa.ForeignKey("recipes.id", ondelete="SET NULL"),
-                nullable=True,
-            )
+            sa.Column("sub_recipe_id", sa.Integer(), nullable=True)
+        )
+        batch_op.create_foreign_key(
+            "fk_recipe_ingredients_sub_recipe_id",
+            "recipes",
+            ["sub_recipe_id"],
+            ["id"],
+            ondelete="SET NULL",
         )
         batch_op.alter_column("product_id", existing_type=sa.Integer(), nullable=True)
         batch_op.create_primary_key("pk_recipe_ingredients", ["id"])
@@ -52,6 +54,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     with op.batch_alter_table("recipe_ingredients", recreate="always") as batch_op:
+        batch_op.drop_constraint("fk_recipe_ingredients_sub_recipe_id", type_="foreignkey")
         batch_op.drop_column("sub_recipe_id")
         batch_op.alter_column("product_id", existing_type=sa.Integer(), nullable=False)
         batch_op.drop_column("id")
