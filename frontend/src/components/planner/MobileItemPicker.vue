@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import type { ActiveCategory, MenuSlot, Product, Recipe } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
+import { useCategoryFilter } from '@/composables/useCategoryFilter'
 
 const props = defineProps<{
   open: boolean
@@ -22,32 +23,19 @@ const emit = defineEmits<{
 
 const tab = ref<'recipes' | 'products'>('recipes')
 const search = ref('')
-const categoryFilter = ref<number | null>(null)
+const recipeCF = useCategoryFilter<Recipe>()
+const productCF = useCategoryFilter<Product>()
 
 function switchTab(next: 'recipes' | 'products') {
   tab.value = next
   search.value = ''
-  categoryFilter.value = null
+  recipeCF.reset()
+  productCF.reset()
 }
 
 // Filter items by search query and category
-const filteredRecipes = computed(() => {
-  const q = search.value.toLowerCase()
-  return props.recipes.filter(r => {
-    if (categoryFilter.value !== null && r.category_id !== categoryFilter.value) return false
-    if (q && !r.name.toLowerCase().includes(q)) return false
-    return true
-  })
-})
-
-const filteredProducts = computed(() => {
-  const q = search.value.toLowerCase()
-  return props.products.filter(p => {
-    if (categoryFilter.value !== null && p.category_id !== categoryFilter.value) return false
-    if (q && !p.name.toLowerCase().includes(q)) return false
-    return true
-  })
-})
+const filteredRecipes = computed(() => recipeCF.applyFilter(props.recipes, search.value))
+const filteredProducts = computed(() => productCF.applyFilter(props.products, search.value))
 
 // Track which items are already in this cell
 const existingRecipeIds = computed(() =>
@@ -75,7 +63,8 @@ watch(() => props.open, (v) => {
   if (v) {
     search.value = ''
     tab.value = 'recipes'
-    categoryFilter.value = null
+    recipeCF.reset()
+    productCF.reset()
     justAdded.value = new Set()
     // Push history entry so Android back dismisses the sheet
     history.pushState({ mobilePicker: true }, '')
@@ -195,8 +184,14 @@ function onTouchEnd() {
         <div class="px-4 pt-2 pb-1 shrink-0 flex flex-col gap-2">
           <SearchInput v-model="search" />
           <select
-            v-model="categoryFilter"
+            :model-value="tab === 'recipes' ? recipeCF.categoryFilter.value : productCF.categoryFilter.value"
             class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            @change="(e: Event) => {
+              const v = (e.target as HTMLSelectElement).value
+              const val = v === '' ? null : Number(v)
+              if (tab === 'recipes') recipeCF.categoryFilter.value = val
+              else productCF.categoryFilter.value = val
+            }"
           >
             <option :value="null">Все категории</option>
             <option
