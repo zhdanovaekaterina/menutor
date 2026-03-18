@@ -1,5 +1,7 @@
 """Конвертеры между доменными объектами и Pydantic-схемами."""
 
+from collections.abc import Callable
+
 from backend.api.schemas.category import ActiveCategoryResponse, CategoryResponse
 from backend.api.schemas.family import FamilyMemberCreate, FamilyMemberResponse
 from backend.api.schemas.menu import MenuResponse, MenuSlotSchema
@@ -38,22 +40,30 @@ from backend.domain.value_objects.types import (
 
 # ── Recipe ─────────────────────────────────────────────────────────
 
-def recipe_to_response(recipe: Recipe) -> RecipeResponse:
+def recipe_to_response(
+    recipe: Recipe,
+    sub_recipe_name_lookup: Callable[[RecipeId], str | None] | None = None,
+) -> RecipeResponse:
+    ingredients = []
+    for ing in recipe.ingredients:
+        sub_name: str | None = None
+        if ing.is_sub_recipe and sub_recipe_name_lookup is not None:
+            assert ing.sub_recipe_id is not None
+            sub_name = sub_recipe_name_lookup(ing.sub_recipe_id)
+        ingredients.append(RecipeIngredientSchema(
+            product_id=int(ing.product_id) if ing.product_id is not None else None,
+            sub_recipe_id=int(ing.sub_recipe_id) if ing.sub_recipe_id is not None else None,
+            sub_recipe_name=sub_name,
+            quantity_amount=ing.quantity.amount,
+            quantity_unit=ing.quantity.unit,
+            order=ing.order,
+        ))
     return RecipeResponse(
         id=int(recipe.id),
         name=recipe.name,
         category_id=int(recipe.category_id),
         servings=recipe.servings,
-        ingredients=[
-            RecipeIngredientSchema(
-                product_id=int(ing.product_id) if ing.product_id is not None else 0,
-                quantity_amount=ing.quantity.amount,
-                quantity_unit=ing.quantity.unit,
-                order=ing.order,
-            )
-            for ing in recipe.ingredients
-            if ing.is_product
-        ],
+        ingredients=ingredients,
         steps=[
             CookingStepSchema(order=s.order, description=s.description)
             for s in recipe.steps
@@ -160,19 +170,19 @@ def shopping_list_to_response(sl: ShoppingList) -> ShoppingListResponse:
 # ── Schema → Domain Data ─────────────────────────────────────────
 
 def schema_to_recipe_data(body: RecipeCreate) -> RecipeData:
+    ingredients = []
+    for ing in body.ingredients:
+        ingredients.append(RecipeIngredient(
+            product_id=ProductId(ing.product_id) if ing.product_id is not None else None,
+            sub_recipe_id=RecipeId(ing.sub_recipe_id) if ing.sub_recipe_id is not None else None,
+            quantity=Quantity(ing.quantity_amount, ing.quantity_unit),
+            order=ing.order,
+        ))
     return RecipeData(
         name=body.name,
         category_id=RecipeCategoryId(body.category_id),
         servings=body.servings,
-        ingredients=[
-            RecipeIngredient(
-                product_id=ProductId(ing.product_id),
-                quantity=Quantity(ing.quantity_amount, ing.quantity_unit),
-                order=ing.order,
-            )
-            for ing in body.ingredients
-            if ing.product_id is not None
-        ],
+        ingredients=ingredients,
         steps=[
             CookingStep(order=s.order, description=s.description)
             for s in body.steps
