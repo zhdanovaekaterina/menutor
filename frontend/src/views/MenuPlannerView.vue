@@ -10,6 +10,13 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import ExportModal from '@/components/ui/ExportModal.vue'
 import ImportModal from '@/components/ui/ImportModal.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
+import IconCart from '@/components/ui/icons/IconCart.vue'
+import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
+import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
+import IconClose from '@/components/ui/icons/IconClose.vue'
+import IconDownload from '@/components/ui/icons/IconDownload.vue'
+import IconHamburger from '@/components/ui/icons/IconHamburger.vue'
+import IconUpload from '@/components/ui/icons/IconUpload.vue'
 import { useFamilyStore } from '@/stores/family'
 import { useMenuStore } from '@/stores/menus'
 import { useProductStore } from '@/stores/products'
@@ -190,9 +197,7 @@ async function onGenerateShoppingList() {
           class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100"
           @click="mobileLeftOpen = true"
         >
-          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
+          <IconHamburger class="w-5 h-5" />
         </button>
         <h1 class="text-lg sm:text-xl font-bold lg:hidden">{{ pageTitle }}</h1>
         <h1 class="text-lg sm:text-xl font-bold hidden lg:block">Планировщик меню</h1>
@@ -207,12 +212,8 @@ async function onGenerateShoppingList() {
           :title="leftPanelOpen ? 'Свернуть' : 'Развернуть'"
           @click="leftPanelOpen = !leftPanelOpen"
         >
-          <svg v-if="leftPanelOpen" class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-          </svg>
-          <svg v-else class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-          </svg>
+          <IconChevronLeft v-if="leftPanelOpen" class="w-4 h-4" />
+          <IconChevronRight v-else class="w-4 h-4" />
         </button>
         <div v-show="leftPanelOpen" class="flex-1 min-h-0">
           <SavedMenuList
@@ -263,9 +264,7 @@ async function onGenerateShoppingList() {
               @click="importOpen = true"
               title="Импорт"
             >
-              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-              </svg>
+              <IconUpload class="w-4 h-4" />
             </button>
             <button
               class="p-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -273,9 +272,7 @@ async function onGenerateShoppingList() {
               @click="exportOpen = true"
               title="Экспорт"
             >
-              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-              </svg>
+              <IconDownload class="w-4 h-4" />
             </button>
           </div>
 
@@ -288,9 +285,7 @@ async function onGenerateShoppingList() {
           >
             <span class="hidden sm:inline">Сформировать список покупок</span>
             <span class="sm:hidden flex items-center gap-1">
-              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-1.977 2.027-4.076 2.027-5.25A8.25 8.25 0 0 0 12 3a8.25 8.25 0 0 0-8.25 8.25c0 1.174.906 3.273 2.027 5.25" />
-              </svg>
+              <IconCart class="w-4 h-4" />
               Список
             </span>
           </button>
@@ -304,12 +299,8 @@ async function onGenerateShoppingList() {
           :title="rightPanelOpen ? 'Свернуть' : 'Развернуть'"
           @click="rightPanelOpen = !rightPanelOpen"
         >
-          <svg v-if="rightPanelOpen" class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-          </svg>
-          <svg v-else class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-          </svg>
+          <IconChevronRight v-if="rightPanelOpen" class="w-4 h-4" />
+          <IconChevronLeft v-else class="w-4 h-4" />
         </button>
         <div v-show="rightPanelOpen" class="flex-1 min-h-0">
           <SourcePanel
@@ -394,9 +385,7 @@ async function onGenerateShoppingList() {
           <div class="flex items-center justify-between mb-3">
             <h2 class="font-semibold">Меню</h2>
             <button class="p-1 rounded hover:bg-gray-100" @click="mobileLeftOpen = false">
-              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
+              <IconClose class="w-5 h-5" />
             </button>
           </div>
           <SavedMenuList
