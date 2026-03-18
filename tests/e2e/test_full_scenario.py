@@ -46,28 +46,34 @@ from backend.domain.services.unit_converter import UnitConverter
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
-from backend.domain.value_objects.types import ProductCategoryId, RecipeCategoryId, UserId
+from backend.domain.value_objects.types import (
+    ProductCategoryId,
+    RecipeCategoryId,
+    UserId,
+)
 from backend.infrastructure.database.connection import (
     apply_schema,
     get_engine,
     seed_defaults,
 )
 from backend.infrastructure.export.text_exporter import ShoppingListTextExporter
-from backend.infrastructure.repositories.sqlite_family_member_repository import (
-    SqliteFamilyMemberRepository,
+from backend.infrastructure.repositories.sqlalchemy_family_member_repository import (
+    SqlAlchemyFamilyMemberRepository,
 )
-from backend.infrastructure.repositories.sqlite_menu_repository import SqliteMenuRepository
-from backend.infrastructure.repositories.sqlite_product_category_repository import (
-    SqliteProductCategoryRepository,
+from backend.infrastructure.repositories.sqlalchemy_menu_repository import (
+    SqlAlchemyMenuRepository,
 )
-from backend.infrastructure.repositories.sqlite_product_repository import (
-    SqliteProductRepository,
+from backend.infrastructure.repositories.sqlalchemy_product_category_repository import (
+    SqlAlchemyProductCategoryRepository,
 )
-from backend.infrastructure.repositories.sqlite_recipe_category_repository import (
-    SqliteRecipeCategoryRepository,
+from backend.infrastructure.repositories.sqlalchemy_product_repository import (
+    SqlAlchemyProductRepository,
 )
-from backend.infrastructure.repositories.sqlite_recipe_repository import (
-    SqliteRecipeRepository,
+from backend.infrastructure.repositories.sqlalchemy_recipe_category_repository import (
+    SqlAlchemyRecipeCategoryRepository,
+)
+from backend.infrastructure.repositories.sqlalchemy_recipe_repository import (
+    SqlAlchemyRecipeRepository,
 )
 
 TEST_USER_ID = UserId(1)
@@ -96,12 +102,12 @@ def db():
 def repos(db):
     """All repository instances backed by the in-memory DB."""
     return {
-        "recipe": SqliteRecipeRepository(db),
-        "product": SqliteProductRepository(db),
-        "menu": SqliteMenuRepository(db),
-        "family": SqliteFamilyMemberRepository(db),
-        "product_cat": SqliteProductCategoryRepository(db),
-        "recipe_cat": SqliteRecipeCategoryRepository(db),
+        "recipe": SqlAlchemyRecipeRepository(db),
+        "product": SqlAlchemyProductRepository(db),
+        "menu": SqlAlchemyMenuRepository(db),
+        "family": SqlAlchemyFamilyMemberRepository(db),
+        "product_cat": SqlAlchemyProductCategoryRepository(db),
+        "recipe_cat": SqlAlchemyRecipeCategoryRepository(db),
     }
 
 

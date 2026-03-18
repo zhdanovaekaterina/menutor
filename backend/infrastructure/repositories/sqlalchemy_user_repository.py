@@ -9,7 +9,7 @@ from backend.infrastructure.database.models import UserRow
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
 
-class SqliteUserRepository(
+class SqlAlchemyUserRepository(
     BaseOrmRepository[User, UserId],
     UserRepository,
 ):

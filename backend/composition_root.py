@@ -87,29 +87,29 @@ from backend.infrastructure.import_.product_csv_importer import ProductCsvImport
 from backend.infrastructure.import_.product_json_importer import ProductJsonImporter
 from backend.infrastructure.import_.recipe_csv_importer import RecipeCsvImporter
 from backend.infrastructure.import_.recipe_json_importer import RecipeJsonImporter
-from backend.infrastructure.repositories.sqlite_family_member_repository import (
-    SqliteFamilyMemberRepository,
+from backend.infrastructure.repositories.sqlalchemy_family_member_repository import (
+    SqlAlchemyFamilyMemberRepository,
 )
-from backend.infrastructure.repositories.sqlite_menu_repository import (
-    SqliteMenuRepository,
+from backend.infrastructure.repositories.sqlalchemy_menu_repository import (
+    SqlAlchemyMenuRepository,
 )
-from backend.infrastructure.repositories.sqlite_product_category_repository import (
-    SqliteProductCategoryRepository,
+from backend.infrastructure.repositories.sqlalchemy_product_category_repository import (
+    SqlAlchemyProductCategoryRepository,
 )
-from backend.infrastructure.repositories.sqlite_product_repository import (
-    SqliteProductRepository,
+from backend.infrastructure.repositories.sqlalchemy_product_repository import (
+    SqlAlchemyProductRepository,
 )
-from backend.infrastructure.repositories.sqlite_recipe_category_repository import (
-    SqliteRecipeCategoryRepository,
+from backend.infrastructure.repositories.sqlalchemy_recipe_category_repository import (
+    SqlAlchemyRecipeCategoryRepository,
 )
-from backend.infrastructure.repositories.sqlite_recipe_repository import (
-    SqliteRecipeRepository,
+from backend.infrastructure.repositories.sqlalchemy_recipe_repository import (
+    SqlAlchemyRecipeRepository,
 )
-from backend.infrastructure.repositories.sqlite_refresh_token_repository import (
-    SqliteRefreshTokenRepository,
+from backend.infrastructure.repositories.sqlalchemy_refresh_token_repository import (
+    SqlAlchemyRefreshTokenRepository,
 )
-from backend.infrastructure.repositories.sqlite_user_repository import (
-    SqliteUserRepository,
+from backend.infrastructure.repositories.sqlalchemy_user_repository import (
+    SqlAlchemyUserRepository,
 )
 
 
@@ -119,16 +119,16 @@ class _Infrastructure:
 
     engine: Any
     session: Session
-    user_repo: SqliteUserRepository
-    refresh_token_repo: SqliteRefreshTokenRepository
+    user_repo: SqlAlchemyUserRepository
+    refresh_token_repo: SqlAlchemyRefreshTokenRepository
     password_hasher: PasswordHasher
     token_service: JwtTokenService
-    recipe_repo: SqliteRecipeRepository
-    product_repo: SqliteProductRepository
-    menu_repo: SqliteMenuRepository
-    family_repo: SqliteFamilyMemberRepository
-    product_category_repo: SqliteProductCategoryRepository
-    recipe_category_repo: SqliteRecipeCategoryRepository
+    recipe_repo: SqlAlchemyRecipeRepository
+    product_repo: SqlAlchemyProductRepository
+    menu_repo: SqlAlchemyMenuRepository
+    family_repo: SqlAlchemyFamilyMemberRepository
+    product_category_repo: SqlAlchemyProductCategoryRepository
+    recipe_category_repo: SqlAlchemyRecipeCategoryRepository
     text_exporter: ShoppingListTextExporter
     csv_exporter: ShoppingListCsvExporter
     builder: ShoppingListBuilder
@@ -146,15 +146,15 @@ def _create_infrastructure(db_url: str | None) -> _Infrastructure:
     session = Session(engine)
     seed_defaults(session)
 
-    recipe_repo = SqliteRecipeRepository(session)
-    product_repo = SqliteProductRepository(session)
-    product_category_repo = SqliteProductCategoryRepository(session)
+    recipe_repo = SqlAlchemyRecipeRepository(session)
+    product_repo = SqlAlchemyProductRepository(session)
+    product_category_repo = SqlAlchemyProductCategoryRepository(session)
 
     return _Infrastructure(
         engine=engine,
         session=session,
-        user_repo=SqliteUserRepository(session),
-        refresh_token_repo=SqliteRefreshTokenRepository(session),
+        user_repo=SqlAlchemyUserRepository(session),
+        refresh_token_repo=SqlAlchemyRefreshTokenRepository(session),
         password_hasher=BcryptPasswordHasher(),
         token_service=JwtTokenService(
             os.environ.get(
@@ -164,10 +164,10 @@ def _create_infrastructure(db_url: str | None) -> _Infrastructure:
         ),
         recipe_repo=recipe_repo,
         product_repo=product_repo,
-        menu_repo=SqliteMenuRepository(session),
-        family_repo=SqliteFamilyMemberRepository(session),
+        menu_repo=SqlAlchemyMenuRepository(session),
+        family_repo=SqlAlchemyFamilyMemberRepository(session),
         product_category_repo=product_category_repo,
-        recipe_category_repo=SqliteRecipeCategoryRepository(session),
+        recipe_category_repo=SqlAlchemyRecipeCategoryRepository(session),
         text_exporter=ShoppingListTextExporter(),
         csv_exporter=ShoppingListCsvExporter(),
         builder=ShoppingListBuilder(
