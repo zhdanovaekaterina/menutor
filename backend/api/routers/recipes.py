@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from backend.api.auth import get_current_user
 from backend.api.converters import (
@@ -11,17 +11,20 @@ from backend.api.schemas.category import ActiveCategoryResponse
 from backend.api.schemas.recipe import RecipeCreate, RecipeResponse, RecipeUpdate
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
-from backend.domain.value_objects.types import RecipeId
+from backend.domain.value_objects.types import RecipeCategoryId, RecipeId
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
 
 @router.get("", response_model=list[RecipeResponse])
 def list_recipes(
+    category_id: int | None = Query(None),
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> list[RecipeResponse]:
-    recipes = container.list_recipes.execute(user.id)
+    recipes = container.list_recipes.execute(
+        user.id, RecipeCategoryId(category_id) if category_id is not None else None
+    )
     return [recipe_to_response(r) for r in recipes]
 
 

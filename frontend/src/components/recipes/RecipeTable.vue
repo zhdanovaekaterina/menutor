@@ -18,6 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const search = ref('')
+const categoryFilter = ref<number | null>(null)
 const sortKey = ref<'name' | 'category' | 'servings' | 'weight'>('name')
 const sortAsc = ref(true)
 
@@ -25,9 +26,11 @@ const catMap = computed(() => Object.fromEntries(props.categories.map((c) => [c.
 
 const filtered = computed(() => {
   const q = search.value.toLowerCase()
-  let list = q
-    ? props.recipes.filter((r) => r.name.toLowerCase().includes(q))
-    : [...props.recipes]
+  let list = props.recipes.filter((r) => {
+    if (categoryFilter.value !== null && r.category_id !== categoryFilter.value) return false
+    if (q && !r.name.toLowerCase().includes(q)) return false
+    return true
+  })
 
   list.sort((a, b) => {
     let cmp = 0
@@ -64,7 +67,16 @@ function onRowClick(id: number) {
 
 <template>
   <div class="flex flex-col gap-3 h-full">
-    <SearchInput v-model="search" />
+    <div class="flex flex-col sm:flex-row gap-2">
+      <SearchInput v-model="search" class="flex-1" />
+      <select
+        v-model="categoryFilter"
+        class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      >
+        <option :value="null">Все категории</option>
+        <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+      </select>
+    </div>
     <div class="flex-1 overflow-y-auto border rounded-lg">
       <table class="w-full text-sm">
         <thead class="bg-gray-50 sticky top-0">

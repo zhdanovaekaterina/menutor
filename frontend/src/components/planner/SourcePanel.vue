@@ -1,25 +1,42 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { FamilyMember, Product, Recipe } from '@/api/types'
+import type { ActiveCategory, FamilyMember, Product, Recipe } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
 
 const props = defineProps<{
   recipes: Recipe[]
   products: Product[]
   familyMembers: FamilyMember[]
+  recipeCategories: ActiveCategory[]
+  productCategories: ActiveCategory[]
 }>()
 
 const tab = ref<'recipes' | 'products'>('recipes')
 const search = ref('')
+const categoryFilter = ref<number | null>(null)
+
+function switchTab(next: 'recipes' | 'products') {
+  tab.value = next
+  search.value = ''
+  categoryFilter.value = null
+}
 
 const filteredRecipes = computed(() => {
   const q = search.value.toLowerCase()
-  return q ? props.recipes.filter((r) => r.name.toLowerCase().includes(q)) : props.recipes
+  return props.recipes.filter((r) => {
+    if (categoryFilter.value !== null && r.category_id !== categoryFilter.value) return false
+    if (q && !r.name.toLowerCase().includes(q)) return false
+    return true
+  })
 })
 
 const filteredProducts = computed(() => {
   const q = search.value.toLowerCase()
-  return q ? props.products.filter((p) => p.name.toLowerCase().includes(q)) : props.products
+  return props.products.filter((p) => {
+    if (categoryFilter.value !== null && p.category_id !== categoryFilter.value) return false
+    if (q && !p.name.toLowerCase().includes(q)) return false
+    return true
+  })
 })
 
 function onDragStart(e: DragEvent, type: 'recipe' | 'product', id: number) {
@@ -45,20 +62,31 @@ function onDragStart(e: DragEvent, type: 'recipe' | 'product', id: number) {
       <button
         :class="tab === 'recipes' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'"
         class="flex-1 py-2 text-sm font-medium"
-        @click="tab = 'recipes'; search = ''"
+        @click="switchTab('recipes')"
       >
         Блюда
       </button>
       <button
         :class="tab === 'products' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'"
         class="flex-1 py-2 text-sm font-medium"
-        @click="tab = 'products'; search = ''"
+        @click="switchTab('products')"
       >
         Ингредиенты
       </button>
     </div>
 
     <SearchInput v-model="search" />
+    <select
+      v-model="categoryFilter"
+      class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+    >
+      <option :value="null">Все категории</option>
+      <option
+        v-for="c in tab === 'recipes' ? recipeCategories : productCategories"
+        :key="c.id"
+        :value="c.id"
+      >{{ c.name }}</option>
+    </select>
 
     <!-- Recipe list -->
     <div v-if="tab === 'recipes'" class="flex-1 relative overflow-hidden border rounded-lg">

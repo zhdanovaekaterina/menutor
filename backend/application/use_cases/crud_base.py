@@ -85,10 +85,12 @@ class GetEntity:
 
 
 class ListEntities:
-    """Lists all entities belonging to a user."""
+    """Lists all entities belonging to a user, optionally filtered by category."""
 
     def __init__(self, repo: Any) -> None:
         self._repo = repo
 
-    def execute(self, user_id: UserId) -> list[Any]:
+    def execute(self, user_id: UserId, category_id: Any = None) -> list[Any]:
+        if category_id is not None:
+            return self._repo.find_by_category_id(category_id, user_id)
         return self._repo.find_all(user_id)

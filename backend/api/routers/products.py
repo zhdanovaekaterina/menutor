@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from backend.api.auth import get_current_user
 from backend.api.converters import (
@@ -17,17 +17,20 @@ from backend.api.schemas.product import (
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
 from backend.domain.value_objects.money import Money
-from backend.domain.value_objects.types import ProductId
+from backend.domain.value_objects.types import ProductCategoryId, ProductId
 
 router = APIRouter(prefix="/products", tags=["products"])
 
 
 @router.get("", response_model=list[ProductResponse])
 def list_products(
+    category_id: int | None = Query(None),
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> list[ProductResponse]:
-    products = container.list_products.execute(user.id)
+    products = container.list_products.execute(
+        user.id, ProductCategoryId(category_id) if category_id is not None else None
+    )
     return [product_to_response(p) for p in products]
 
 

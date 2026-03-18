@@ -11,6 +11,8 @@ const UNIT_OPTIONS = [
   { code: 'kg', label: 'кг' },
   { code: 'ml', label: 'мл' },
   { code: 'l', label: 'л' },
+  { code: 'tsp', label: 'ч.л.' },
+  { code: 'tbsp', label: 'ст.л.' },
   { code: 'pcs', label: 'шт' },
   { code: 'box', label: 'кор' },
   { code: 'pack', label: 'уп' },

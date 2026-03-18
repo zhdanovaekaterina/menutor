@@ -1,5 +1,31 @@
 @import 'tailwindcss';
 
+/*
+  Prevent iOS Safari auto-zoom on input focus.
+  iOS zooms when font-size < 16px. This rule applies only on mobile/tablet
+  and sits outside @layer, so it overrides Tailwind's text-sm (14px) utilities.
+*/
+@media screen and (max-width: 1024px) {
+  input[type="color"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="email"],
+  input[type="month"],
+  input[type="number"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="text"],
+  input[type="time"],
+  input[type="url"],
+  input[type="week"],
+  input:not([type]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 @utility scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
