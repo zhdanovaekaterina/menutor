@@ -12,7 +12,7 @@ from backend.infrastructure.database.models import ProductRow, RecipeIngredientR
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
 
-class SqliteProductRepository(
+class SqlAlchemyProductRepository(
     BaseOrmRepository[Product, ProductId],
     ProductRepository,
 ):

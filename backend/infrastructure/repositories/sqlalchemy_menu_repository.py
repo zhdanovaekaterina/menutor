@@ -9,7 +9,7 @@ from backend.infrastructure.database.models import MenuRow, MenuSlotRow
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
 
-class SqliteMenuRepository(
+class SqlAlchemyMenuRepository(
     BaseOrmRepository[WeeklyMenu, MenuId],
     MenuRepository,
 ):

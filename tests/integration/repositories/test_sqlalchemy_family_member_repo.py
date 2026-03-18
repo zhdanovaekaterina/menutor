@@ -2,14 +2,14 @@ import pytest
 
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.value_objects.types import FamilyMemberId, UserId
-from backend.infrastructure.repositories.sqlite_family_member_repository import (
-    SqliteFamilyMemberRepository,
+from backend.infrastructure.repositories.sqlalchemy_family_member_repository import (
+    SqlAlchemyFamilyMemberRepository,
 )
 
 
 @pytest.fixture
-def repo(conn: object) -> SqliteFamilyMemberRepository:
-    return SqliteFamilyMemberRepository(conn)  # type: ignore[arg-type]
+def repo(conn: object) -> SqlAlchemyFamilyMemberRepository:
+    return SqlAlchemyFamilyMemberRepository(conn)  # type: ignore[arg-type]
 
 
 def _member(user_id: UserId, **kw: object) -> FamilyMember:
@@ -25,12 +25,12 @@ def _member(user_id: UserId, **kw: object) -> FamilyMember:
     return FamilyMember(**defaults)
 
 
-def test_save_assigns_id(repo: SqliteFamilyMemberRepository, user_id: UserId) -> None:
+def test_save_assigns_id(repo: SqlAlchemyFamilyMemberRepository, user_id: UserId) -> None:
     saved = repo.save(_member(user_id))
     assert saved.id != FamilyMemberId(0)
 
 
-def test_save_and_get_by_id_roundtrip(repo: SqliteFamilyMemberRepository, user_id: UserId) -> None:
+def test_save_and_get_by_id_roundtrip(repo: SqlAlchemyFamilyMemberRepository, user_id: UserId) -> None:
     saved = repo.save(_member(user_id,
         name="Боб", portion_multiplier=0.5,
         dietary_restrictions="без глютена", comment="школьный обед",
@@ -45,24 +45,24 @@ def test_save_and_get_by_id_roundtrip(repo: SqliteFamilyMemberRepository, user_i
     assert retrieved.user_id == user_id
 
 
-def test_get_by_id_returns_none_when_absent(repo: SqliteFamilyMemberRepository) -> None:
+def test_get_by_id_returns_none_when_absent(repo: SqlAlchemyFamilyMemberRepository) -> None:
     assert repo.get_by_id(FamilyMemberId(9999)) is None
 
 
-def test_delete_removes_member(repo: SqliteFamilyMemberRepository, user_id: UserId) -> None:
+def test_delete_removes_member(repo: SqlAlchemyFamilyMemberRepository, user_id: UserId) -> None:
     saved = repo.save(_member(user_id))
     repo.delete([saved.id])
     assert repo.get_by_id(saved.id) is None
 
 
-def test_find_all_returns_all_members(repo: SqliteFamilyMemberRepository, user_id: UserId) -> None:
+def test_find_all_returns_all_members(repo: SqlAlchemyFamilyMemberRepository, user_id: UserId) -> None:
     repo.save(_member(user_id, name="Алиса"))
     repo.save(_member(user_id, name="Боб"))
     repo.save(_member(user_id, name="Ребёнок", portion_multiplier=0.5))
     assert len(repo.find_all(user_id)) == 3
 
 
-def test_update_existing_member(repo: SqliteFamilyMemberRepository, user_id: UserId) -> None:
+def test_update_existing_member(repo: SqlAlchemyFamilyMemberRepository, user_id: UserId) -> None:
     saved = repo.save(_member(user_id, name="Алиса"))
     updated = FamilyMember(
         id=saved.id,

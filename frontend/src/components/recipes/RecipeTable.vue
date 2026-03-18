@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import type { ActiveCategory, Recipe } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
+import { useCategoryFilter } from '@/composables/useCategoryFilter'
 
 const props = defineProps<{
   recipes: Recipe[]
@@ -18,19 +19,14 @@ const emit = defineEmits<{
 }>()
 
 const search = ref('')
-const categoryFilter = ref<number | null>(null)
+const { categoryFilter, applyFilter } = useCategoryFilter<Recipe>()
 const sortKey = ref<'name' | 'category' | 'servings' | 'weight'>('name')
 const sortAsc = ref(true)
 
 const catMap = computed(() => Object.fromEntries(props.categories.map((c) => [c.id, c.name])))
 
 const filtered = computed(() => {
-  const q = search.value.toLowerCase()
-  let list = props.recipes.filter((r) => {
-    if (categoryFilter.value !== null && r.category_id !== categoryFilter.value) return false
-    if (q && !r.name.toLowerCase().includes(q)) return false
-    return true
-  })
+  let list = applyFilter(props.recipes, search.value)
 
   list.sort((a, b) => {
     let cmp = 0

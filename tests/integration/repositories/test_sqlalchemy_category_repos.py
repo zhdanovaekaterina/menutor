@@ -1,15 +1,15 @@
 from sqlalchemy import text
 
-from backend.infrastructure.repositories.sqlite_product_category_repository import (
-    SqliteProductCategoryRepository,
+from backend.infrastructure.repositories.sqlalchemy_product_category_repository import (
+    SqlAlchemyProductCategoryRepository,
 )
-from backend.infrastructure.repositories.sqlite_recipe_category_repository import (
-    SqliteRecipeCategoryRepository,
+from backend.infrastructure.repositories.sqlalchemy_recipe_category_repository import (
+    SqlAlchemyRecipeCategoryRepository,
 )
 
 
 def test_product_category_repo_returns_active(conn) -> None:
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     categories = repo.find_active()
     names = [name for _, name in categories]
     assert "Сыпучие" in names
@@ -18,7 +18,7 @@ def test_product_category_repo_returns_active(conn) -> None:
 
 
 def test_product_category_repo_returns_id_name_tuples(conn) -> None:
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     categories = repo.find_active()
     for cat_id, cat_name in categories:
         assert isinstance(cat_id, int)
@@ -31,7 +31,7 @@ def test_product_category_repo_excludes_inactive(conn) -> None:
     ))
     conn.commit()
 
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     categories = repo.find_active()
     names = [name for _, name in categories]
 
@@ -39,14 +39,14 @@ def test_product_category_repo_excludes_inactive(conn) -> None:
 
 
 def test_product_category_repo_sorted(conn) -> None:
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     categories = repo.find_active()
     names = [name for _, name in categories]
     assert names == sorted(names)
 
 
 def test_recipe_category_repo_returns_active(conn) -> None:
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     categories = repo.find_active()
     names = [name for _, name in categories]
     assert "Завтраки" in names
@@ -55,7 +55,7 @@ def test_recipe_category_repo_returns_active(conn) -> None:
 
 
 def test_recipe_category_repo_returns_id_name_tuples(conn) -> None:
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     categories = repo.find_active()
     for cat_id, cat_name in categories:
         assert isinstance(cat_id, int)
@@ -68,7 +68,7 @@ def test_recipe_category_repo_excludes_inactive(conn) -> None:
     ))
     conn.commit()
 
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     categories = repo.find_active()
     names = [name for _, name in categories]
 
@@ -76,7 +76,7 @@ def test_recipe_category_repo_excludes_inactive(conn) -> None:
 
 
 def test_recipe_category_repo_sorted(conn) -> None:
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     categories = repo.find_active()
     names = [name for _, name in categories]
     assert names == sorted(names)
@@ -91,7 +91,7 @@ def test_product_category_find_all_includes_inactive(conn) -> None:
     ))
     conn.commit()
 
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     categories = repo.find_all()
     names = [name for _, name, _ in categories]
     assert "Архив" in names
@@ -101,7 +101,7 @@ def test_product_category_find_all_includes_inactive(conn) -> None:
 
 
 def test_product_category_save_creates_new(conn) -> None:
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     new_id = repo.save("Замороженные")
     assert isinstance(new_id, int)
     names = [name for _, name in repo.find_active()]
@@ -109,7 +109,7 @@ def test_product_category_save_creates_new(conn) -> None:
 
 
 def test_product_category_save_updates_existing(conn) -> None:
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     new_id = repo.save("Тестовая")
     repo.save("Тестовая (изм.)", new_id)
     names = [name for _, name in repo.find_active()]
@@ -118,7 +118,7 @@ def test_product_category_save_updates_existing(conn) -> None:
 
 
 def test_product_category_delete_makes_inactive(conn) -> None:
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     new_id = repo.save("Удаляемая")
     repo.delete(new_id)
     active_names = [name for _, name in repo.find_active()]
@@ -129,7 +129,7 @@ def test_product_category_delete_makes_inactive(conn) -> None:
 
 
 def test_product_category_hard_delete_removes_row(conn) -> None:
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     new_id = repo.save("Удаляемая навсегда")
     repo.hard_delete(new_id)
     all_names = [name for _, name, _ in repo.find_all()]
@@ -137,7 +137,7 @@ def test_product_category_hard_delete_removes_row(conn) -> None:
 
 
 def test_product_category_hard_delete_removes_linked_products(conn) -> None:
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     new_id = repo.save("С продуктами")
     conn.execute(
         text("INSERT INTO products (name, brand, supplier, category_id, recipe_unit, purchase_unit, user_id) "
@@ -158,7 +158,7 @@ def test_product_category_hard_delete_removes_linked_products(conn) -> None:
 def test_product_category_hard_delete_cascades_to_recipe_ingredients(conn) -> None:
     """Hard-deleting a product category must also remove recipe_ingredients
     and menu_slots that reference the deleted products."""
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     cat_id = repo.save("Каскад")
 
     # Create a product in this category
@@ -212,13 +212,13 @@ def test_product_category_hard_delete_cascades_to_recipe_ingredients(conn) -> No
 
 
 def test_product_category_is_used_false(conn) -> None:
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     new_id = repo.save("Пустая")
     assert repo.is_used(new_id) is False
 
 
 def test_product_category_is_used_true(conn) -> None:
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     new_id = repo.save("С продуктами")
     conn.execute(
         text("INSERT INTO products (name, brand, supplier, category_id, recipe_unit, purchase_unit, user_id) "
@@ -235,7 +235,7 @@ def test_recipe_category_find_all_includes_inactive(conn) -> None:
     ))
     conn.commit()
 
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     categories = repo.find_all()
     names = [name for _, name, _ in categories]
     assert "Старые" in names
@@ -245,7 +245,7 @@ def test_recipe_category_find_all_includes_inactive(conn) -> None:
 
 
 def test_recipe_category_save_creates_new(conn) -> None:
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     new_id = repo.save("Выпечка")
     assert isinstance(new_id, int)
     names = [name for _, name in repo.find_active()]
@@ -253,7 +253,7 @@ def test_recipe_category_save_creates_new(conn) -> None:
 
 
 def test_recipe_category_save_updates_existing(conn) -> None:
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     new_id = repo.save("Тестовая")
     repo.save("Тестовая (изм.)", new_id)
     names = [name for _, name in repo.find_active()]
@@ -262,7 +262,7 @@ def test_recipe_category_save_updates_existing(conn) -> None:
 
 
 def test_recipe_category_delete_makes_inactive(conn) -> None:
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     new_id = repo.save("Удаляемая")
     repo.delete(new_id)
     active_names = [name for _, name in repo.find_active()]
@@ -273,7 +273,7 @@ def test_recipe_category_delete_makes_inactive(conn) -> None:
 
 
 def test_recipe_category_hard_delete_removes_row(conn) -> None:
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     new_id = repo.save("Удаляемая навсегда")
     repo.hard_delete(new_id)
     all_names = [name for _, name, _ in repo.find_all()]
@@ -281,7 +281,7 @@ def test_recipe_category_hard_delete_removes_row(conn) -> None:
 
 
 def test_recipe_category_hard_delete_removes_linked_recipes(conn) -> None:
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     new_id = repo.save("С рецептами")
     conn.execute(
         text("INSERT INTO recipes (name, category_id, servings, user_id) VALUES ('Тест-рецепт', :cat_id, 1, 1)"),
@@ -301,7 +301,7 @@ def test_recipe_category_hard_delete_removes_linked_recipes(conn) -> None:
 def test_recipe_category_hard_delete_cascades_to_menu_slots(conn) -> None:
     """Hard-deleting a recipe category must also remove recipe_ingredients,
     cooking_steps, and menu_slots that reference the deleted recipes."""
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     cat_id = repo.save("Каскад-рец")
 
     # Create a recipe in this category with ingredient and step
@@ -362,13 +362,13 @@ def test_recipe_category_hard_delete_cascades_to_menu_slots(conn) -> None:
 
 
 def test_recipe_category_is_used_false(conn) -> None:
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     new_id = repo.save("Пустая")
     assert repo.is_used(new_id) is False
 
 
 def test_recipe_category_is_used_true(conn) -> None:
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     new_id = repo.save("С рецептами")
     conn.execute(
         text("INSERT INTO recipes (name, category_id, servings, user_id) VALUES ('Тест', :cat_id, 1, 1)"),
@@ -379,7 +379,7 @@ def test_recipe_category_is_used_true(conn) -> None:
 
 
 def test_product_category_activate_restores_hidden(conn) -> None:
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     new_id = repo.save("Скрытая")
     repo.delete(new_id)
     assert "Скрытая" not in [name for _, name in repo.find_active()]
@@ -390,7 +390,7 @@ def test_product_category_activate_restores_hidden(conn) -> None:
 
 
 def test_recipe_category_activate_restores_hidden(conn) -> None:
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     new_id = repo.save("Скрытая")
     repo.delete(new_id)
     assert "Скрытая" not in [name for _, name in repo.find_active()]
@@ -402,7 +402,7 @@ def test_recipe_category_activate_restores_hidden(conn) -> None:
 
 def test_product_category_save_reactivates_on_edit(conn) -> None:
     """Editing an inactive category should reactivate it."""
-    repo = SqliteProductCategoryRepository(conn)
+    repo = SqlAlchemyProductCategoryRepository(conn)
     new_id = repo.save("Скрытая")
     repo.delete(new_id)
     assert "Скрытая" not in [name for _, name in repo.find_active()]
@@ -414,7 +414,7 @@ def test_product_category_save_reactivates_on_edit(conn) -> None:
 
 def test_recipe_category_save_reactivates_on_edit(conn) -> None:
     """Editing an inactive category should reactivate it."""
-    repo = SqliteRecipeCategoryRepository(conn)
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
     new_id = repo.save("Скрытая")
     repo.delete(new_id)
     assert "Скрытая" not in [name for _, name in repo.find_active()]
