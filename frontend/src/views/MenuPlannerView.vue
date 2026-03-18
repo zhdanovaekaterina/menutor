@@ -316,6 +316,8 @@ async function onGenerateShoppingList() {
             :recipes="recipeStore.items"
             :products="productStore.items"
             :family-members="familyStore.items"
+            :recipe-categories="recipeStore.categories"
+            :product-categories="productStore.categories"
           />
         </div>
       </div>
@@ -376,6 +378,8 @@ async function onGenerateShoppingList() {
       :recipes="recipeStore.items"
       :products="productStore.items"
       :existing-slots="pickerExistingSlots"
+      :recipe-categories="recipeStore.categories"
+      :product-categories="productStore.categories"
       @close="pickerOpen = false"
       @select="onPickerSelect"
     />

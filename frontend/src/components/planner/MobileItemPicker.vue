@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { MenuSlot, Product, Recipe } from '@/api/types'
+import type { ActiveCategory, MenuSlot, Product, Recipe } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
 
 const props = defineProps<{
@@ -11,6 +11,8 @@ const props = defineProps<{
   recipes: Recipe[]
   products: Product[]
   existingSlots: MenuSlot[]
+  recipeCategories: ActiveCategory[]
+  productCategories: ActiveCategory[]
 }>()
 
 const emit = defineEmits<{
@@ -20,16 +22,31 @@ const emit = defineEmits<{
 
 const tab = ref<'recipes' | 'products'>('recipes')
 const search = ref('')
+const categoryFilter = ref<number | null>(null)
 
-// Filter items by search query
+function switchTab(next: 'recipes' | 'products') {
+  tab.value = next
+  search.value = ''
+  categoryFilter.value = null
+}
+
+// Filter items by search query and category
 const filteredRecipes = computed(() => {
   const q = search.value.toLowerCase()
-  return q ? props.recipes.filter(r => r.name.toLowerCase().includes(q)) : props.recipes
+  return props.recipes.filter(r => {
+    if (categoryFilter.value !== null && r.category_id !== categoryFilter.value) return false
+    if (q && !r.name.toLowerCase().includes(q)) return false
+    return true
+  })
 })
 
 const filteredProducts = computed(() => {
   const q = search.value.toLowerCase()
-  return q ? props.products.filter(p => p.name.toLowerCase().includes(q)) : props.products
+  return props.products.filter(p => {
+    if (categoryFilter.value !== null && p.category_id !== categoryFilter.value) return false
+    if (q && !p.name.toLowerCase().includes(q)) return false
+    return true
+  })
 })
 
 // Track which items are already in this cell
@@ -58,6 +75,7 @@ watch(() => props.open, (v) => {
   if (v) {
     search.value = ''
     tab.value = 'recipes'
+    categoryFilter.value = null
     justAdded.value = new Set()
     // Push history entry so Android back dismisses the sheet
     history.pushState({ mobilePicker: true }, '')
@@ -158,7 +176,7 @@ function onTouchEnd() {
             :aria-selected="tab === 'recipes'"
             :class="tab === 'recipes' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'"
             class="flex-1 py-2.5 text-sm font-medium"
-            @click="tab = 'recipes'; search = ''"
+            @click="switchTab('recipes')"
           >
             Блюда
           </button>
@@ -167,15 +185,26 @@ function onTouchEnd() {
             :aria-selected="tab === 'products'"
             :class="tab === 'products' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'"
             class="flex-1 py-2.5 text-sm font-medium"
-            @click="tab = 'products'; search = ''"
+            @click="switchTab('products')"
           >
             Ингредиенты
           </button>
         </div>
 
-        <!-- Search -->
-        <div class="px-4 py-2 shrink-0">
+        <!-- Search + Category filter -->
+        <div class="px-4 pt-2 pb-1 shrink-0 flex flex-col gap-2">
           <SearchInput v-model="search" />
+          <select
+            v-model="categoryFilter"
+            class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          >
+            <option :value="null">Все категории</option>
+            <option
+              v-for="c in tab === 'recipes' ? recipeCategories : productCategories"
+              :key="c.id"
+              :value="c.id"
+            >{{ c.name }}</option>
+          </select>
         </div>
 
         <!-- Item List -->
