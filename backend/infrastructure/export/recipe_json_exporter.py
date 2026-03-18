@@ -15,28 +15,37 @@ class RecipeJsonExporter:
         self._compact = compact
 
     def _to_dict(self, recipe: Recipe) -> dict[str, Any]:
-        ingredients = [
-            {
-                "product_id": ing.product_id,
+        ingredients: list[dict[str, Any]] = []
+        for ing in recipe.ingredients:
+            d: dict[str, Any] = {
                 "quantity_amount": ing.quantity.amount,
                 "quantity_unit": ing.quantity.unit,
                 "order": ing.order,
             }
-            for ing in recipe.ingredients
-        ]
+            if ing.is_product:
+                assert ing.product_id is not None
+                d["product_id"] = int(ing.product_id)
+            elif ing.is_sub_recipe:
+                assert ing.sub_recipe_id is not None
+                d["sub_recipe_id"] = int(ing.sub_recipe_id)
+            ingredients.append(d)
         if self._compact:
+            compact_ingredients: list[dict[str, Any]] = []
+            for ing_dict in ingredients:
+                entry: dict[str, Any] = {
+                    "quantity_amount": ing_dict["quantity_amount"],
+                    "quantity_unit": ing_dict["quantity_unit"],
+                }
+                if "product_id" in ing_dict:
+                    entry["product_id"] = ing_dict["product_id"]
+                elif "sub_recipe_id" in ing_dict:
+                    entry["sub_recipe_id"] = ing_dict["sub_recipe_id"]
+                compact_ingredients.append(entry)
             return {
                 "id": recipe.id,
                 "name": recipe.name,
                 "servings": recipe.servings,
-                "ingredients": [
-                    {
-                        "product_id": ing["product_id"],
-                        "quantity_amount": ing["quantity_amount"],
-                        "quantity_unit": ing["quantity_unit"],
-                    }
-                    for ing in ingredients
-                ],
+                "ingredients": compact_ingredients,
             }
         return {
             "id": recipe.id,

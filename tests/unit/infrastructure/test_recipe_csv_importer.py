@@ -111,3 +111,50 @@ def test_empty_bytes_returns_zero() -> None:
 
 def test_supported_extensions() -> None:
     assert RecipeCsvImporter(_mock_repo()).supported_extensions() == ["csv"]
+
+
+def _sub_recipe(id: int = 10) -> Recipe:
+    return Recipe(
+        id=RecipeId(id), name="Тесто", servings=4,
+        category_id=RecipeCategoryId(1), user_id=UID,
+    )
+
+
+def _row_with_sub_recipe(**kwargs) -> dict:
+    defaults = dict(
+        id="", name="Блины с тестом", category_id="1", servings="4", weight="0",
+        ingredients_json=json.dumps([
+            {"sub_recipe_id": 10, "quantity_amount": 1, "quantity_unit": "serv", "order": 0}
+        ]),
+        steps_json=json.dumps([]),
+    )
+    defaults.update(kwargs)
+    return defaults
+
+
+def test_import_csv_recipe_with_sub_recipe() -> None:
+    sub = _sub_recipe(id=10)
+    repo = MagicMock()
+    repo.get_by_id.return_value = sub
+    repo.save.side_effect = lambda r: r
+    result = RecipeCsvImporter(repo).import_from_bytes(
+        _make_csv(_row_with_sub_recipe()), UID
+    )
+    assert result.created == 1
+    saved: Recipe = repo.save.call_args[0][0]
+    assert len(saved.ingredients) == 1
+    assert saved.ingredients[0].sub_recipe_id == RecipeId(10)
+    assert saved.ingredients[0].is_sub_recipe
+
+
+def test_import_csv_sub_recipe_not_found_skipped() -> None:
+    repo = MagicMock()
+    repo.get_by_id.return_value = None
+    repo.save.side_effect = lambda r: r
+    result = RecipeCsvImporter(repo).import_from_bytes(
+        _make_csv(_row_with_sub_recipe()), UID
+    )
+    assert result.created == 1
+    assert len(result.errors) == 1
+    saved: Recipe = repo.save.call_args[0][0]
+    assert len(saved.ingredients) == 0

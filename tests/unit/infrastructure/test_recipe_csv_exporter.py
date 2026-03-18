@@ -76,3 +76,34 @@ def test_content_type() -> None:
 
 def test_file_extension() -> None:
     assert RecipeCsvExporter().file_extension() == "csv"
+
+
+def _recipe_with_sub_recipe() -> Recipe:
+    return Recipe(
+        id=RecipeId(2),
+        name="Тесто для блинов",
+        servings=4,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(10), quantity=Quantity(1, "serv"), order=0)],
+        steps=[],
+        category_id=RecipeCategoryId(1),
+        weight=0,
+        user_id=UserId(1),
+    )
+
+
+def test_export_recipe_with_sub_recipe_ingredient_in_csv() -> None:
+    rows = _parse_csv(RecipeCsvExporter().export_bytes([_recipe_with_sub_recipe()]))
+    ingredients = json.loads(rows[1][5])
+    assert len(ingredients) == 1
+    ing = ingredients[0]
+    assert ing["sub_recipe_id"] == 10
+    assert "product_id" not in ing
+
+
+def test_export_product_only_recipe_csv_unchanged() -> None:
+    rows = _parse_csv(RecipeCsvExporter().export_bytes([_recipe()]))
+    ingredients = json.loads(rows[1][5])
+    assert len(ingredients) == 1
+    ing = ingredients[0]
+    assert ing["product_id"] == 1
+    assert "sub_recipe_id" not in ing

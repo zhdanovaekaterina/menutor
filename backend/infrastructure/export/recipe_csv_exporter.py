@@ -17,15 +17,20 @@ class RecipeCsvExporter:
         writer.writerow(self._HEADERS)
         for r in entities:
             recipe: Recipe = r
-            ingredients = [
-                {
-                    "product_id": ing.product_id,
+            ingredients: list[dict[str, Any]] = []
+            for ing in recipe.ingredients:
+                d: dict[str, Any] = {
                     "quantity_amount": ing.quantity.amount,
                     "quantity_unit": ing.quantity.unit,
                     "order": ing.order,
                 }
-                for ing in recipe.ingredients
-            ]
+                if ing.is_product:
+                    assert ing.product_id is not None
+                    d["product_id"] = int(ing.product_id)
+                elif ing.is_sub_recipe:
+                    assert ing.sub_recipe_id is not None
+                    d["sub_recipe_id"] = int(ing.sub_recipe_id)
+                ingredients.append(d)
             steps = [
                 {"order": s.order, "description": s.description}
                 for s in recipe.steps

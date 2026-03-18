@@ -33,6 +33,7 @@ class RecipeCsvImporter:
             raise ImportValidationError(f"Не удалось прочитать CSV: {e}") from e
 
         created = updated = 0
+        errors: list[str] = []
         for i, row in enumerate(reader, start=2):
             missing = _REQUIRED - set(row.keys())
             if missing:
@@ -59,15 +60,33 @@ class RecipeCsvImporter:
 
             try:
                 raw_ingredients = json.loads(row.get("ingredients_json") or "[]")
-                ingredients = [
-                    RecipeIngredient(
-                        product_id=ProductId(int(ing["product_id"])),
-                        quantity=Quantity(float(ing["quantity_amount"]), ing["quantity_unit"]),
-                        order=int(ing.get("order", 0)),
-                    )
-                    for ing in raw_ingredients
-                    if ing.get("product_id") is not None
-                ]
+                ingredients: list[RecipeIngredient] = []
+                for ing_data in raw_ingredients:
+                    if ing_data.get("product_id") is not None:
+                        ingredients.append(RecipeIngredient(
+                            product_id=ProductId(int(ing_data["product_id"])),
+                            quantity=Quantity(
+                                float(ing_data["quantity_amount"]),
+                                ing_data["quantity_unit"],
+                            ),
+                            order=int(ing_data.get("order", 0)),
+                        ))
+                    elif "sub_recipe_id" in ing_data:
+                        sub_id = RecipeId(int(ing_data["sub_recipe_id"]))
+                        sub = self._repo.get_by_id(sub_id)
+                        if sub is not None and sub.user_id == user_id:
+                            ingredients.append(RecipeIngredient(
+                                sub_recipe_id=sub_id,
+                                quantity=Quantity(
+                                    float(ing_data["quantity_amount"]),
+                                    ing_data["quantity_unit"],
+                                ),
+                                order=int(ing_data.get("order", 0)),
+                            ))
+                        else:
+                            errors.append(
+                                f"Рецепт-ингредиент с ID {sub_id} не найден, пропущен"
+                            )
             except Exception as e:
                 raise ImportValidationError(f"Строка {i}: некорректный 'ingredients_json': {e}") from e
 
@@ -101,7 +120,7 @@ class RecipeCsvImporter:
             )
             self._repo.save(recipe)
 
-        return ImportResult(created=created, updated=updated)
+        return ImportResult(created=created, updated=updated, errors=errors)
 
     def supported_extensions(self) -> list[str]:
         return ["csv"]

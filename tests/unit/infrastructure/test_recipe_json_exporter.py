@@ -77,3 +77,30 @@ def test_content_type() -> None:
 
 def test_file_extension() -> None:
     assert RecipeJsonExporter().file_extension() == "json"
+
+
+def _recipe_with_sub_recipe() -> Recipe:
+    return Recipe(
+        id=RecipeId(2),
+        name="Тесто для блинов",
+        servings=4,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(10), quantity=Quantity(1, "serv"), order=0)],
+        steps=[],
+        category_id=RecipeCategoryId(1),
+        weight=0,
+        user_id=UserId(1),
+    )
+
+
+def test_export_recipe_with_sub_recipe_includes_sub_recipe_id() -> None:
+    item = json.loads(RecipeJsonExporter().export_bytes([_recipe_with_sub_recipe()]))[0]
+    ing = item["ingredients"][0]
+    assert ing["sub_recipe_id"] == 10
+    assert "product_id" not in ing
+
+
+def test_export_product_only_recipe_unchanged() -> None:
+    item = json.loads(RecipeJsonExporter().export_bytes([_recipe()]))[0]
+    ing = item["ingredients"][0]
+    assert ing["product_id"] == 1
+    assert "sub_recipe_id" not in ing
