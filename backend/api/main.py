@@ -1,5 +1,6 @@
 """FastAPI-приложение — HTTP-адаптер поверх существующих use cases."""
 
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -35,7 +36,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Menutor API",
     description="API планировщика меню",
-    version="0.5.2",
+    version=os.environ.get("VERSION", "unknown"),
     lifespan=lifespan,
 )
 
