@@ -70,8 +70,8 @@ def pancake_recipe(flour: Product, milk: Product) -> Recipe:
         name="Блины",
         servings=4,
         ingredients=[
-            RecipeIngredient(flour.id, Quantity(200.0, "g")),
-            RecipeIngredient(milk.id, Quantity(500.0, "ml")),
+            RecipeIngredient(product_id=flour.id, quantity=Quantity(200.0, "g")),
+            RecipeIngredient(product_id=milk.id, quantity=Quantity(500.0, "ml")),
         ],
         category_id=RecipeCategoryId(1),
     )

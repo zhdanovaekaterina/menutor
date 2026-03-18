@@ -1,7 +1,12 @@
+<script setup lang="ts">
+declare const __APP_VERSION__: string
+const version = __APP_VERSION__
+</script>
+
 <template>
   <div class="max-w-md">
     <h2 class="text-lg font-semibold mb-4">О программе</h2>
-    <p class="text-sm text-gray-600 version">Версия: 0.5.2</p>
+    <p class="text-sm text-gray-600 version">Версия: {{ version }}</p>
     <p class="text-sm text-gray-600 mt-2">
       Menutor — планировщик семейного меню.
     </p>

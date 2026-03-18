@@ -73,3 +73,24 @@ def test_count_units_no_conversion_between_types() -> None:
 def test_add_count_same_unit() -> None:
     result = Quantity(3.0, "pcs") + Quantity(2.0, "pcs")
     assert result == Quantity(5.0, "pcs")
+
+
+def test_serv_unit_is_valid() -> None:
+    q = Quantity(2.0, "serv")
+    assert q.amount == 2.0
+    assert q.unit == "serv"
+
+
+def test_serv_cannot_add_to_grams() -> None:
+    with pytest.raises(UnitConversionError):
+        _ = Quantity(1, "serv") + Quantity(100, "g")
+
+
+def test_serv_can_add_to_serv() -> None:
+    result = Quantity(1, "serv") + Quantity(2, "serv")
+    assert result == Quantity(3, "serv")
+
+
+def test_serv_cannot_convert_to_grams() -> None:
+    with pytest.raises(UnitConversionError, match="incompatible"):
+        Quantity(1, "serv").convert_to("g")

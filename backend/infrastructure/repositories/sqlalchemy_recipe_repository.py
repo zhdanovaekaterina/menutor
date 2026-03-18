@@ -46,7 +46,8 @@ class SqlAlchemyRecipeRepository(
         )
         row.ingredients = [
             RecipeIngredientRow(
-                product_id=ing.product_id,
+                product_id=int(ing.product_id) if ing.product_id is not None else None,
+                sub_recipe_id=int(ing.sub_recipe_id) if ing.sub_recipe_id is not None else None,
                 amount=ing.quantity.amount,
                 unit=ing.quantity.unit,
                 ingredient_order=ing.order,
@@ -66,7 +67,8 @@ class SqlAlchemyRecipeRepository(
         row.weight = entity.weight
         row.ingredients = [
             RecipeIngredientRow(
-                product_id=ing.product_id,
+                product_id=int(ing.product_id) if ing.product_id is not None else None,
+                sub_recipe_id=int(ing.sub_recipe_id) if ing.sub_recipe_id is not None else None,
                 amount=ing.quantity.amount,
                 unit=ing.quantity.unit,
                 ingredient_order=ing.order,
@@ -85,7 +87,8 @@ class SqlAlchemyRecipeRepository(
             servings=row.servings,
             ingredients=[
                 RecipeIngredient(
-                    product_id=ProductId(r.product_id),
+                    product_id=ProductId(r.product_id) if r.product_id is not None else None,
+                    sub_recipe_id=RecipeId(r.sub_recipe_id) if r.sub_recipe_id is not None else None,
                     quantity=Quantity(r.amount, r.unit),
                     order=r.ingredient_order,
                 )
@@ -115,6 +118,23 @@ class SqlAlchemyRecipeRepository(
             self._session.query(RecipeRow)
             .filter(
                 RecipeRow.category_id == category_id,
+                RecipeRow.user_id == int(user_id),
+            )
+            .all()
+        )
+        return [self._row_to_entity(r) for r in rows]
+
+    def find_parents_of(
+        self, sub_recipe_id: RecipeId, user_id: UserId
+    ) -> list[Recipe]:
+        rows = (
+            self._session.query(RecipeRow)
+            .join(
+                RecipeIngredientRow,
+                RecipeRow.id == RecipeIngredientRow.recipe_id,
+            )
+            .filter(
+                RecipeIngredientRow.sub_recipe_id == int(sub_recipe_id),
                 RecipeRow.user_id == int(user_id),
             )
             .all()

@@ -15,6 +15,7 @@ const UNIT_GROUP: Record<string, string> = {
   pcs: 'count_pcs',
   box: 'count_box',
   pack: 'count_pack',
+  serv: 'servings',
 }
 
 const TO_BASE: Record<string, number> = {
@@ -27,6 +28,7 @@ const TO_BASE: Record<string, number> = {
   pcs: 1,
   box: 1,
   pack: 1,
+  serv: 1,
 }
 
 /**

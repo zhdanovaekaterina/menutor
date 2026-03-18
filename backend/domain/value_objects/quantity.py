@@ -17,6 +17,7 @@ _UNIT_GROUPS: dict[str, str] = {
     "pcs": "count_pcs",
     "box": "count_box",
     "pack": "count_pack",
+    "serv": "servings",
 }
 
 # Amount of each unit expressed in the group's base unit (g for weight, ml for volume)
@@ -30,6 +31,7 @@ _TO_BASE: dict[str, float] = {
     "pcs": 1.0,
     "box": 1.0,
     "pack": 1.0,
+    "serv": 1.0,
 }
 
 
@@ -53,6 +55,10 @@ class Quantity:
             return self
         base_amount = self.amount * _TO_BASE[self.unit]
         return Quantity(base_amount / _TO_BASE[target_unit], target_unit)
+
+    @property
+    def is_weight(self) -> bool:
+        return _UNIT_GROUPS.get(self.unit) == "weight"
 
     def __add__(self, other: "Quantity") -> "Quantity":
         if _UNIT_GROUPS[self.unit] != _UNIT_GROUPS[other.unit]:

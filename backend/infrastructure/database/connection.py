@@ -165,6 +165,7 @@ def _seed_defaults_sqlite(session: Session) -> None:
             {"n": "pcs",  "g": "count_pcs"},
             {"n": "box",  "g": "count_box"},
             {"n": "pack", "g": "count_pack"},
+            {"n": "serv", "g": "servings"},
         ],
     )
     session.execute(
@@ -203,6 +204,7 @@ def _seed_defaults_pg(session: Session) -> None:
             {"n": "pcs",  "g": "count_pcs"},
             {"n": "box",  "g": "count_box"},
             {"n": "pack", "g": "count_pack"},
+            {"n": "serv", "g": "servings"},
         ],
     )
     session.execute(

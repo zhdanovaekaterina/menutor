@@ -1,10 +1,41 @@
 /* TypeScript interfaces matching backend Pydantic schemas */
 
 export interface RecipeIngredient {
-  product_id: number
+  product_id: number | null
+  sub_recipe_id: number | null
+  sub_recipe_name?: string | null
   quantity_amount: number
   quantity_unit: string
   order: number
+}
+
+export interface ValidateSubRecipeRequest {
+  parent_recipe_id: number | null
+  sub_recipe_id: number
+}
+
+export interface ValidateSubRecipeResponse {
+  valid: boolean
+  error: string | null
+}
+
+export interface FlattenedProduct {
+  product_id: number
+  product_name: string
+  quantity_amount: number
+  quantity_unit: string
+}
+
+export interface IngredientRow {
+  product_id: number | null
+  sub_recipe_id: number | null
+  quantity_amount: number
+  quantity_unit: string
+}
+
+export interface RecipeDependent {
+  id: number
+  name: string
 }
 
 export interface CookingStep {

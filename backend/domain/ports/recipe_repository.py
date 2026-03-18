@@ -21,3 +21,8 @@ class RecipeRepository(ABC):
 
     @abstractmethod
     def delete(self, ids: list[RecipeId]) -> None: ...
+
+    @abstractmethod
+    def find_parents_of(
+        self, sub_recipe_id: RecipeId, user_id: UserId
+    ) -> list[Recipe]: ...

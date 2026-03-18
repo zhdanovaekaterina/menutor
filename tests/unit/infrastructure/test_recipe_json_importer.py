@@ -107,3 +107,60 @@ def test_empty_bytes_returns_zero() -> None:
 
 def test_supported_extensions() -> None:
     assert RecipeJsonImporter(_mock_repo()).supported_extensions() == ["json"]
+
+
+def _sub_recipe(id: int = 10) -> Recipe:
+    return Recipe(
+        id=RecipeId(id), name="Тесто", servings=4,
+        category_id=RecipeCategoryId(1), user_id=UID,
+    )
+
+
+def _row_with_sub_recipe(**kwargs) -> dict:
+    defaults = dict(
+        name="Блины с тестом", category_id=1, servings=4, weight=0,
+        ingredients=[{"sub_recipe_id": 10, "quantity_amount": 1, "quantity_unit": "serv", "order": 0}],
+        steps=[],
+    )
+    defaults.update(kwargs)
+    return defaults
+
+
+def test_import_recipe_with_sub_recipe_by_id() -> None:
+    sub = _sub_recipe(id=10)
+    repo = MagicMock()
+    # First call: get_by_id for the recipe row (id=0 → skipped), subsequent for sub-recipe
+    repo.get_by_id.return_value = sub
+    repo.save.side_effect = lambda r: r
+    result = RecipeJsonImporter(repo).import_from_bytes(
+        _make_json(_row_with_sub_recipe()), UID
+    )
+    assert result == ImportResult(created=1, updated=0)
+    saved: Recipe = repo.save.call_args[0][0]
+    assert len(saved.ingredients) == 1
+    assert saved.ingredients[0].sub_recipe_id == RecipeId(10)
+    assert saved.ingredients[0].is_sub_recipe
+
+
+def test_import_recipe_sub_recipe_not_found_skipped() -> None:
+    repo = MagicMock()
+    repo.get_by_id.return_value = None
+    repo.save.side_effect = lambda r: r
+    result = RecipeJsonImporter(repo).import_from_bytes(
+        _make_json(_row_with_sub_recipe()), UID
+    )
+    # Recipe is still saved, but the sub-recipe ingredient is skipped
+    assert result.created == 1
+    assert len(result.errors) == 1
+    saved: Recipe = repo.save.call_args[0][0]
+    assert len(saved.ingredients) == 0
+
+
+def test_import_product_only_recipe_unchanged() -> None:
+    repo = _mock_repo()
+    result = RecipeJsonImporter(repo).import_from_bytes(_make_json(_row()), UID)
+    assert result == ImportResult(created=1, updated=0)
+    saved: Recipe = repo.save.call_args[0][0]
+    assert len(saved.ingredients) == 1
+    assert saved.ingredients[0].is_product
+    assert saved.ingredients[0].product_id is not None

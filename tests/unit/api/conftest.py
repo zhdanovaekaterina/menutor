@@ -18,9 +18,11 @@ from backend.domain.entities.user import User
 from backend.domain.exceptions import (
     AppError,
     AuthenticationError,
+    CircularDependencyError,
     DomainError,
     EntityNotFoundError,
     ImportValidationError,
+    NestingDepthExceededError,
     RepositoryError,
     UserAlreadyExistsError,
 )
@@ -60,6 +62,24 @@ def _build_test_app() -> FastAPI:
         request: Request, exc: EntityNotFoundError
     ) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+    @test_app.exception_handler(CircularDependencyError)
+    async def handle_circular_dep(
+        request: Request, exc: CircularDependencyError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=422,
+            content={"detail": str(exc), "error_type": "circular_dependency"},
+        )
+
+    @test_app.exception_handler(NestingDepthExceededError)
+    async def handle_nesting_depth(
+        request: Request, exc: NestingDepthExceededError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=422,
+            content={"detail": str(exc), "error_type": "nesting_depth_exceeded"},
+        )
 
     @test_app.exception_handler(DomainError)
     async def handle_domain(request: Request, exc: DomainError) -> JSONResponse:

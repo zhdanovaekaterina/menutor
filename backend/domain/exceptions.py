@@ -50,6 +50,18 @@ class ImportValidationError(AppError):
     """Uploaded file has invalid format or data."""
 
 
+class CircularDependencyError(DomainError):
+    """Adding this sub-recipe would create a circular dependency."""
+
+
+class NestingDepthExceededError(DomainError):
+    """Recipe nesting exceeds the maximum allowed depth."""
+
+
+class SubRecipeWeightError(DomainError):
+    """Sub-recipe used with a weight unit but the recipe has zero weight."""
+
+
 # --- Infrastructure-layer errors ---
 
 

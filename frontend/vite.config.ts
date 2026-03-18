@@ -20,6 +20,9 @@ export default defineConfig({
       },
     },
   },
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.VERSION ?? 'unknown'),
+  },
   test: {
     environment: 'happy-dom',
     globals: true,

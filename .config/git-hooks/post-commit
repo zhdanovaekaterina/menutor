@@ -24,5 +24,3 @@ if [ "dev" = "$branch" ]; then
 else
     echo "Post-commit hook skipped for branch: $branch"
 fi
-
-
