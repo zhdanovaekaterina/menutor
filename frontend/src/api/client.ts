@@ -6,6 +6,7 @@ import type {
   FamilyMemberCreate,
   FlattenedProduct,
   ImportResult,
+  IngredientRow,
   Menu,
   MenuSlot,
   MoveSlotRequest,
@@ -114,6 +115,11 @@ export const validateSubRecipe = (data: ValidateSubRecipeRequest) =>
 
 export const fetchFlattenedProducts = (recipeId: number) =>
   api.get<FlattenedProduct[]>(`/recipes/${recipeId}/flattened-products`).then((r) => r.data)
+
+export const previewFlattenedProducts = (recipeId: number, ingredients: IngredientRow[]) =>
+  api
+    .post<FlattenedProduct[]>(`/recipes/${recipeId}/flattened-products-preview`, { ingredients })
+    .then((r) => r.data)
 
 export const fetchRecipeDependents = (recipeId: number) =>
   api.get<RecipeDependent[]>(`/recipes/${recipeId}/dependents`).then((r) => r.data)

@@ -11,6 +11,9 @@ from backend.application.use_cases.manage_recipe import (
     ListRecipeCategories,
     ListRecipes,
 )
+from backend.application.use_cases.preview_flattened_products import (
+    PreviewFlattenedProducts,
+)
 from backend.application.use_cases.validate_sub_recipe import ValidateSubRecipe
 from backend.composition._infrastructure import _Infrastructure
 from backend.domain.services.recipe_dependency_validator import (
@@ -30,5 +33,8 @@ def _wire_recipes(infra: _Infrastructure) -> dict[str, Any]:
         "validate_sub_recipe": ValidateSubRecipe(infra.recipe_repo, validator),
         "flatten_recipe_products": FlattenRecipeProducts(
             infra.recipe_repo, infra.product_repo, infra.builder
+        ),
+        "preview_flattened_products": PreviewFlattenedProducts(
+            infra.product_repo, infra.builder
         ),
     }

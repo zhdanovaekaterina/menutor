@@ -26,6 +26,13 @@ export interface FlattenedProduct {
   quantity_unit: string
 }
 
+export interface IngredientRow {
+  product_id: number | null
+  sub_recipe_id: number | null
+  quantity_amount: number
+  quantity_unit: string
+}
+
 export interface RecipeDependent {
   id: number
   name: string

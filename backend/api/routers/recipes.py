@@ -11,12 +11,14 @@ from backend.api.deps import get_container
 from backend.api.schemas.category import ActiveCategoryResponse
 from backend.api.schemas.recipe import (
     FlattenedProductResponse,
+    FlattenedProductsPreviewRequest,
     RecipeCreate,
     RecipeResponse,
     RecipeUpdate,
     ValidateSubRecipeRequest,
     ValidateSubRecipeResponse,
 )
+from backend.application.use_cases.preview_flattened_products import IngredientData
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
 from backend.domain.value_objects.types import RecipeCategoryId, RecipeId, UserId
@@ -90,6 +92,39 @@ def get_flattened_products(
     user: User = Depends(get_current_user),
 ) -> list[FlattenedProductResponse]:
     items = container.flatten_recipe_products.execute(RecipeId(recipe_id), user.id)
+    return [
+        FlattenedProductResponse(
+            product_id=int(item.product_id),
+            product_name=item.product_name,
+            quantity_amount=item.quantity.amount,
+            quantity_unit=item.quantity.unit,
+        )
+        for item in items
+    ]
+
+
+@router.post(
+    "/{recipe_id}/flattened-products-preview",
+    response_model=list[FlattenedProductResponse],
+)
+def preview_flattened_products(
+    recipe_id: int,
+    body: FlattenedProductsPreviewRequest,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> list[FlattenedProductResponse]:
+    ingredients_data = [
+        IngredientData(
+            product_id=ing.product_id,
+            sub_recipe_id=ing.sub_recipe_id,
+            quantity_amount=ing.quantity_amount,
+            quantity_unit=ing.quantity_unit,
+        )
+        for ing in body.ingredients
+    ]
+    items = container.preview_flattened_products.execute(
+        RecipeId(recipe_id), user.id, ingredients_data
+    )
     return [
         FlattenedProductResponse(
             product_id=int(item.product_id),

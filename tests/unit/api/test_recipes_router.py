@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
 from backend.application.use_cases.flatten_recipe_products import FlattenedProduct
+from backend.application.use_cases.preview_flattened_products import IngredientData
 from backend.application.use_cases.validate_sub_recipe import ValidationResult
 from backend.domain.entities.recipe import Recipe
 from backend.domain.exceptions import EntityNotFoundError
@@ -384,6 +385,80 @@ class TestGetRecipeDependents:
         resp = client.get("/api/recipes/5/dependents")
         assert resp.status_code == 200
         assert resp.json() == []
+
+
+# ---- POST /api/recipes/{recipe_id}/flattened-products-preview ----
+
+
+class TestPreviewFlattenedProducts:
+    def test_returns_flattened_products_for_given_ingredients(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.preview_flattened_products.execute.return_value = [
+            FlattenedProduct(
+                product_id=ProductId(1),
+                product_name="Мука",
+                quantity=Quantity(200.0, "g"),
+            ),
+            FlattenedProduct(
+                product_id=ProductId(2),
+                product_name="Молоко",
+                quantity=Quantity(500.0, "ml"),
+            ),
+        ]
+        body = {
+            "ingredients": [
+                {"product_id": 1, "sub_recipe_id": None, "quantity_amount": 200.0, "quantity_unit": "g"},
+                {"sub_recipe_id": 5, "product_id": None, "quantity_amount": 1.0, "quantity_unit": "serv"},
+            ]
+        }
+        resp = client.post("/api/recipes/1/flattened-products-preview", json=body)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 2
+        assert data[0]["product_id"] == 1
+        assert data[0]["product_name"] == "Мука"
+        assert data[0]["quantity_amount"] == 200.0
+        assert data[0]["quantity_unit"] == "g"
+        assert data[1]["product_id"] == 2
+        assert data[1]["product_name"] == "Молоко"
+
+    def test_passes_ingredient_data_to_use_case(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.preview_flattened_products.execute.return_value = []
+        body = {
+            "ingredients": [
+                {"product_id": 3, "sub_recipe_id": None, "quantity_amount": 100.0, "quantity_unit": "g"},
+            ]
+        }
+        resp = client.post("/api/recipes/7/flattened-products-preview", json=body)
+        assert resp.status_code == 200
+        container.preview_flattened_products.execute.assert_called_once()
+        call_args = container.preview_flattened_products.execute.call_args
+        recipe_id_arg = call_args[0][0]
+        ingredients_arg = call_args[0][2]
+        assert int(recipe_id_arg) == 7
+        assert len(ingredients_arg) == 1
+        assert isinstance(ingredients_arg[0], IngredientData)
+        assert ingredients_arg[0].product_id == 3
+        assert ingredients_arg[0].quantity_amount == 100.0
+        assert ingredients_arg[0].quantity_unit == "g"
+
+    def test_returns_empty_list_when_no_ingredients(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.preview_flattened_products.execute.return_value = []
+        body = {"ingredients": []}
+        resp = client.post("/api/recipes/1/flattened-products-preview", json=body)
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_returns_422_on_missing_body(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        resp = client.post("/api/recipes/1/flattened-products-preview", json={})
+        assert resp.status_code == 422
 
 
 # ---- DELETE /api/recipes/{recipe_id} with check_dependents ----

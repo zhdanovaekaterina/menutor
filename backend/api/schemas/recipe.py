@@ -62,3 +62,14 @@ class FlattenedProductResponse(BaseModel):
     product_name: str
     quantity_amount: float
     quantity_unit: str
+
+
+class IngredientPreviewItem(BaseModel):
+    product_id: int | None = None
+    sub_recipe_id: int | None = None
+    quantity_amount: float
+    quantity_unit: str
+
+
+class FlattenedProductsPreviewRequest(BaseModel):
+    ingredients: list[IngredientPreviewItem]

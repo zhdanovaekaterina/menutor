@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import type { ActiveCategory, Product, Recipe, RecipeCreate, ProductCreate } from '@/api/types'
 import { useToastStore } from '@/stores/toast'
 import { useProductStore } from '@/stores/products'
@@ -48,9 +48,33 @@ const pendingIngredientIndex = ref<number | null>(null)
 
 const dependentNames = ref<string[]>([])
 
+type IngredientSnapshot = { product_id: number | null; sub_recipe_id: number | null; quantity_amount: number; quantity_unit: string }
+const ingredientsSnapshotAtLastFetch = ref<IngredientSnapshot[] | null>(null)
+
+const flattenedProductsDirty = computed<boolean>(() => {
+  const snap = ingredientsSnapshotAtLastFetch.value
+  if (snap === null) return false
+  const current = ingredients.value
+  if (current.length !== snap.length) return true
+  return current.some((ing, i) => {
+    const s = snap[i]!
+    return (
+      ing.product_id !== s.product_id ||
+      ing.sub_recipe_id !== s.sub_recipe_id ||
+      ing.quantity_amount !== s.quantity_amount ||
+      ing.quantity_unit !== s.quantity_unit
+    )
+  })
+})
+
+function takeIngredientsSnapshot() {
+  ingredientsSnapshotAtLastFetch.value = ingredients.value.map((ing) => ({ ...ing }))
+}
+
 watch(
   () => props.recipe,
   (r) => {
+    ingredientsSnapshotAtLastFetch.value = null
     if (r) {
       name.value = r.name
       categoryId.value = r.category_id
@@ -200,6 +224,9 @@ async function onProductSave(data: ProductCreate) {
     <FlattenedProductList
       v-if="recipe && ingredients.some((i) => i.sub_recipe_id != null)"
       :recipe-id="recipe.id"
+      :ingredients="ingredients"
+      :is-dirty="flattenedProductsDirty"
+      @refreshed="takeIngredientsSnapshot"
     />
 
     <StepListEditor v-model="steps" />
