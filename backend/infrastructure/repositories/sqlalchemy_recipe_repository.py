@@ -123,3 +123,11 @@ class SqlAlchemyRecipeRepository(
             .all()
         )
         return [self._row_to_entity(r) for r in rows]
+
+    def find_parents_of(
+        self, sub_recipe_id: RecipeId, user_id: UserId
+    ) -> list[Recipe]:
+        # Sub-recipe DB column is added in Phase 3 (infrastructure layer).
+        # Until the migration runs, no parent recipes can reference a sub-recipe,
+        # so returning an empty list is always correct for the current schema.
+        return []
