@@ -12,6 +12,7 @@ import { useSelection } from '@/composables/useSelection'
 import { useProductStore } from '@/stores/products'
 import { useRecipeStore } from '@/stores/recipes'
 import { useToastStore } from '@/stores/toast'
+import { fetchRecipeDependents } from '@/api/client'
 
 const store = useRecipeStore()
 const productStore = useProductStore()
@@ -24,6 +25,9 @@ const formOpen = ref(false)
 const exportOpen = ref(false)
 const importOpen = ref(false)
 
+const recipeStack = ref<number[]>([])
+const dependentRecipes = ref<{ id: number; name: string }[]>([])
+
 onMounted(async () => {
   await Promise.all([store.load(), productStore.load()])
 })
@@ -32,7 +36,20 @@ const selectedRecipe = computed(() =>
   store.items.find((r) => r.id === selectedId.value) ?? null,
 )
 
+const parentRecipeName = computed(() => {
+  if (recipeStack.value.length === 0) return undefined
+  const parentId = recipeStack.value[recipeStack.value.length - 1]
+  return store.items.find((r) => r.id === parentId)?.name
+})
+
+// For MVP: prevent self-reference only; deep cycles caught by backend
+const ancestorIds = computed(() => {
+  if (selectedId.value == null) return new Set<number>()
+  return new Set([selectedId.value])
+})
+
 function onSelect(id: number) {
+  recipeStack.value = []
   selectedId.value = id
   formOpen.value = true
 }
@@ -56,7 +73,12 @@ async function onSave(data: RecipeCreate, id: number | null) {
   }
 }
 
-function onRemove(id: number) {
+async function onRemove(id: number) {
+  dependentRecipes.value = []
+  try {
+    const deps = await fetchRecipeDependents(id)
+    dependentRecipes.value = deps
+  } catch { /* proceed without info */ }
   selectedId.value = id
   confirmDeleteOpen.value = true
 }
@@ -67,6 +89,7 @@ async function onConfirmDelete() {
   try {
     await store.remove(selectedId.value)
     selectedId.value = null
+    recipeStack.value = []
     formOpen.value = false
   } catch (e: any) {
     toast.show(e?.response?.data?.detail ?? 'Ошибка удаления', 'error')
@@ -74,8 +97,23 @@ async function onConfirmDelete() {
 }
 
 function onClear() {
+  recipeStack.value = []
   selectedId.value = null
   formOpen.value = false
+}
+
+function onNavigateToSubRecipe(subRecipeId: number) {
+  if (selectedId.value != null) {
+    recipeStack.value.push(selectedId.value)
+  }
+  selectedId.value = subRecipeId
+}
+
+function onNavigateBack() {
+  const parentId = recipeStack.value.pop()
+  if (parentId != null) {
+    selectedId.value = parentId
+  }
 }
 
 const confirmBatchDeleteOpen = ref(false)
@@ -180,9 +218,14 @@ async function onConfirmDeleteAll() {
         :recipe="selectedRecipe"
         :categories="store.categories"
         :products="productStore.items"
+        :recipes="store.items"
+        :parent-recipe-name="parentRecipeName"
+        :ancestor-ids="ancestorIds"
         @save="onSave"
         @remove="onRemove"
         @clear="onClear"
+        @navigate-to-recipe="onNavigateToSubRecipe"
+        @navigate-back="onNavigateBack"
       />
     </SlidePanel>
 
@@ -192,7 +235,14 @@ async function onConfirmDeleteAll() {
       danger
       @confirm="onConfirmDelete"
       @cancel="confirmDeleteOpen = false"
-    />
+    >
+      <template v-if="dependentRecipes.length > 0">
+        <p class="mt-2 text-sm text-orange-600">
+          Этот рецепт используется в: {{ dependentRecipes.map((d) => d.name).join(', ') }}.
+          После удаления он будет убран из этих рецептов.
+        </p>
+      </template>
+    </ConfirmDialog>
 
     <ConfirmDialog
       :open="confirmBatchDeleteOpen"

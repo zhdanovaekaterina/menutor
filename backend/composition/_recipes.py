@@ -13,7 +13,9 @@ from backend.application.use_cases.manage_recipe import (
 )
 from backend.application.use_cases.validate_sub_recipe import ValidateSubRecipe
 from backend.composition._infrastructure import _Infrastructure
-from backend.domain.services.recipe_dependency_validator import RecipeDependencyValidator
+from backend.domain.services.recipe_dependency_validator import (
+    RecipeDependencyValidator,
+)
 
 
 def _wire_recipes(infra: _Infrastructure) -> dict[str, Any]:

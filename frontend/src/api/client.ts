@@ -4,6 +4,7 @@ import type {
   Category,
   FamilyMember,
   FamilyMemberCreate,
+  FlattenedProduct,
   ImportResult,
   Menu,
   MenuSlot,
@@ -12,8 +13,11 @@ import type {
   ProductCreate,
   Recipe,
   RecipeCreate,
+  RecipeDependent,
   RemoveItemRequest,
   ShoppingList,
+  ValidateSubRecipeRequest,
+  ValidateSubRecipeResponse,
 } from './types'
 
 const api = axios.create({ baseURL: '/api' })
@@ -104,6 +108,18 @@ export const updateRecipe = (id: number, data: RecipeCreate) =>
 export const deleteRecipe = (id: number) => api.delete(`/recipes/${id}`)
 export const batchDeleteRecipes = (ids: number[]) =>
   api.post('/recipes/batch-delete', ids)
+
+export const validateSubRecipe = (data: ValidateSubRecipeRequest) =>
+  api.post<ValidateSubRecipeResponse>('/recipes/validate-sub-recipe', data).then((r) => r.data)
+
+export const fetchFlattenedProducts = (recipeId: number) =>
+  api.get<FlattenedProduct[]>(`/recipes/${recipeId}/flattened-products`).then((r) => r.data)
+
+export const fetchRecipeDependents = (recipeId: number) =>
+  api.get<RecipeDependent[]>(`/recipes/${recipeId}/dependents`).then((r) => r.data)
+
+export const deleteRecipeWithCheck = (id: number) =>
+  api.delete(`/recipes/${id}`, { params: { check_dependents: true } })
 
 /* Products */
 export const fetchProducts = () => api.get<Product[]>('/products').then((r) => r.data)

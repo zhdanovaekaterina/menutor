@@ -33,8 +33,9 @@ watch(
     <div v-if="open" class="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50" @keydown.escape="emit('cancel')">
       <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl max-w-md w-full sm:mx-4 p-6 pb-8 sm:pb-6">
         <h3 class="text-lg font-semibold mb-2">{{ title ?? 'Подтверждение' }}</h3>
-        <p class="text-sm text-gray-600 mb-6">{{ message }}</p>
-        <div class="flex flex-col-reverse sm:flex-row justify-end gap-2">
+        <p class="text-sm text-gray-600 mb-2">{{ message }}</p>
+        <slot />
+        <div class="mt-4 flex flex-col-reverse sm:flex-row justify-end gap-2">
           <button
             class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
             @click="emit('cancel')"
