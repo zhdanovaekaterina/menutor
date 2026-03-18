@@ -20,4 +20,6 @@ COPY backend /code/backend
 
 USER zhdanova
 
+LABEL org.opencontainers.image.source https://github.com/zhdanovaekaterina/menutor
+
 CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

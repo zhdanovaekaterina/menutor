@@ -12,10 +12,10 @@ jobs:
 
     steps:
     - name: Down the containers
-      run: docker compose -f ../menutor/docker-compose.yml down
+      run: docker compose -f ~/menutor/docker-compose.yml down
     - name: Pull the containers
-      run: docker compose -f ../menutor/docker-compose.yml pull
+      run: docker compose -f ~/menutor/docker-compose.yml pull
     - name: Apply migrations
-      run: docker compose -f ../menutor/docker-compose.yml run backend alembic upgrade head
+      run: docker compose -f ~/menutor/docker-compose.yml run backend alembic upgrade head
     - name: Up the containers
-      run: docker compose -f ../menutor/docker-compose.yml up -d --remove-orphans
+      run: docker compose -f ~/menutor/docker-compose.yml up -d --remove-orphans
