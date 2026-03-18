@@ -2,6 +2,10 @@ from dataclasses import dataclass
 
 from backend.domain.exceptions import UnitConversionError
 
+# SYNC POINT: These unit definitions are duplicated in
+# frontend/src/utils/units.ts — any changes here MUST be
+# mirrored there and vice versa.
+
 # Maps unit name → unit group
 _UNIT_GROUPS: dict[str, str] = {
     "g": "weight",
