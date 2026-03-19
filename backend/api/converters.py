@@ -150,6 +150,7 @@ def shopping_item_to_response(item: ShoppingListItem) -> ShoppingListItemRespons
         product_name=item.product_name,
         category=item.category,
         quantity=quantity_to_schema(item.quantity),
+        buy_quantity=quantity_to_schema(item.buy_quantity),
         cost=money_to_schema(item.cost),
         purchased=item.purchased,
         recipe_quantity=(

@@ -1,10 +1,11 @@
 import csv
 import io
+import math
 from typing import Any
 
 from backend.domain.entities.shopping_list import ShoppingList
 
-_HEADERS = ["category", "name", "quantity", "unit", "cost", "purchased"]
+_HEADERS = ["category", "name", "recipe_quantity", "recipe_unit", "buy_quantity", "buy_unit", "cost", "purchased"]
 
 
 class ShoppingListCsvExporter:
@@ -13,11 +14,15 @@ class ShoppingListCsvExporter:
     def _write_rows(self, writer: csv.writer, shopping_list: ShoppingList) -> None:  # type: ignore[type-arg]
         writer.writerow(_HEADERS)
         for item in shopping_list.items:
+            rq = item.recipe_quantity if item.recipe_quantity is not None else item.quantity
+            bq = item.buy_quantity
             writer.writerow([
                 item.category,
                 item.product_name,
-                f"{item.quantity.amount:g}",
-                item.quantity.unit,
+                f"{rq.amount:g}",
+                rq.unit,
+                f"{bq.amount:g}",
+                bq.unit,
                 f"{item.cost.amount:.2f}",
                 item.purchased,
             ])
@@ -36,7 +41,7 @@ class ShoppingListCsvExporter:
         buf = io.StringIO()
         writer = csv.writer(buf)
         writer.writerow(_HEADERS)
-        writer.writerow(["Молочные", "Молоко", "1", "l", "80.00", False])
+        writer.writerow(["Молочные", "Молоко", "1", "l", "1", "l", "80.00", False])
         return buf.getvalue().encode("utf-8")
 
     def content_type(self) -> str:

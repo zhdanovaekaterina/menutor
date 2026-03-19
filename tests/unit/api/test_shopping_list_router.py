@@ -36,6 +36,21 @@ def _shopping_list() -> ShoppingList:
     )
 
 
+def _shopping_list_with_decimal_quantity() -> ShoppingList:
+    return ShoppingList(
+        items=[
+            ShoppingListItem(
+                product_id=ProductId(1),
+                product_name="Масло",
+                category="Молочные",
+                quantity=Quantity(1.3, "l"),
+                cost=Money(Decimal("200")),
+                purchased=False,
+            ),
+        ]
+    )
+
+
 # ---- POST /api/menus/{menu_id}/shopping-list ----
 
 
@@ -50,9 +65,23 @@ class TestGenerateShoppingList:
         assert len(data["items"]) == 2
         assert data["items"][0]["product_name"] == "Мука"
         assert data["items"][0]["quantity"] == {"amount": 0.2, "unit": "kg"}
+        assert data["items"][0]["buy_quantity"] == {"amount": 1, "unit": "kg"}
         assert data["items"][0]["cost"] == {"amount": "16", "currency": "RUB"}
         assert data["items"][0]["recipe_quantity"] == {"amount": 200.0, "unit": "g"}
         assert data["items"][1]["recipe_quantity"] is None
+        assert data["items"][1]["buy_quantity"] == {"amount": 1, "unit": "l"}
+
+    def test_buy_quantity_rounds_up_decimal(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.generate_shopping_list.execute.return_value = (
+            _shopping_list_with_decimal_quantity()
+        )
+        resp = client.post("/api/menus/1/shopping-list")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["items"][0]["quantity"] == {"amount": 1.3, "unit": "l"}
+        assert data["items"][0]["buy_quantity"] == {"amount": 2, "unit": "l"}
 
     def test_returns_total_cost(
         self, client: TestClient, container: MagicMock

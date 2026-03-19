@@ -1,3 +1,5 @@
+import math
+
 from backend.domain.entities.menu import WeeklyMenu
 from backend.domain.entities.recipe import Recipe
 from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
@@ -76,7 +78,13 @@ class ShoppingListBuilder:
                 recipe_qty = qty.convert_to(product.recipe_unit)
             except UnitConversionError:
                 continue  # skip product with incompatible units
-            purchase_qty, cost = product.compute_purchase(recipe_qty.amount)
+            purchase_qty, _ = product.compute_purchase(recipe_qty.amount)
+            buy_amount = (
+                purchase_qty.amount
+                if purchase_qty.unit == "kg"
+                else math.ceil(purchase_qty.amount)
+            )
+            cost = product.purchase_cost(buy_amount)
 
             items.append(ShoppingListItem(
                 product_id=product_id,

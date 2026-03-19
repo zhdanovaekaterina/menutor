@@ -18,17 +18,20 @@ const emit = defineEmits<{
 }>()
 
 const UNIT_MAP: Record<string, string> = {
-  g: 'г', kg: 'кг', ml: 'мл', l: 'л', pcs: 'шт', box: 'кор', pack: 'уп',
+  g: 'г', kg: 'кг', ml: 'мл', l: 'л', pcs: 'шт', box: 'кор', pack: 'уп', tsp: 'ч.л.', tbsp: 'ст.л.',
 }
 
 function fmtUnit(u: string) { return UNIT_MAP[u] ?? u }
 
 function fmtQty(item: ShoppingListItem) {
-  const main = `${Number(item.quantity.amount.toFixed(2))} ${fmtUnit(item.quantity.unit)}`
-  if (item.recipe_quantity && item.recipe_quantity.unit !== item.quantity.unit) {
-    return `${main} (${Number(item.recipe_quantity.amount.toFixed(1))} ${fmtUnit(item.recipe_quantity.unit)})`
-  }
-  return main
+  if (!item.recipe_quantity) return '—'
+  return `${Number(item.recipe_quantity.amount.toFixed(2))} ${fmtUnit(item.recipe_quantity.unit)}`
+}
+
+function fmtBuyQty(item: ShoppingListItem) {
+  const q = item.buy_quantity
+  const amount = q.unit === 'kg' ? Number(q.amount.toFixed(2)) : q.amount
+  return `${amount} ${fmtUnit(q.unit)}`
 }
 
 const allProductIds = computed(() => {
@@ -58,14 +61,15 @@ const allChecked = computed(() =>
         </th>
         <th v-else class="w-8 px-2 py-2"></th>
         <th class="px-4 py-2">Продукт</th>
-        <th class="px-4 py-2 text-right">Количество</th>
+        <th class="px-4 py-2 text-right">Кол-во по рецепту</th>
+        <th class="px-4 py-2 text-right">Купить</th>
         <th class="px-4 py-2 text-right">Сумма, руб.</th>
       </tr>
     </thead>
     <tbody>
       <template v-for="(items, category) in itemsByCategory" :key="category">
         <tr class="bg-slate-200">
-          <td :colspan="selectMode ? 5 : 4" class="px-4 py-2 font-semibold text-slate-700 text-sm">
+          <td :colspan="selectMode ? 6 : 5" class="px-4 py-2 font-semibold text-slate-700 text-sm">
             {{ category }}
           </td>
         </tr>
@@ -105,11 +109,22 @@ const allChecked = computed(() =>
             {{ item.product_name }}
           </td>
           <td
-            :class="!selectMode && item.purchased ? 'text-gray-400' : !selectMode ? 'cursor-pointer hover:text-blue-600' : ''"
+            :class="!selectMode && item.purchased ? 'text-gray-400' : ''"
             class="px-4 py-2 text-right"
-            @click="!selectMode && !item.purchased && emit('editQuantity', item.product_id)"
           >
             {{ fmtQty(item) }}
+          </td>
+          <td
+            :class="!selectMode && item.purchased ? 'text-gray-400' : !selectMode ? 'cursor-pointer hover:text-blue-600' : ''"
+            class="px-4 py-2 text-right tabular-nums font-medium"
+            @click="!selectMode && !item.purchased && emit('editQuantity', item.product_id)"
+          >
+            {{ fmtBuyQty(item) }}
+            <span
+              v-if="item.buy_quantity_overridden"
+              class="ml-1 text-orange-400 text-xs font-normal"
+              title="Изменено вручную"
+            >✎</span>
           </td>
           <td
             :class="!selectMode && item.purchased ? 'text-gray-400' : ''"

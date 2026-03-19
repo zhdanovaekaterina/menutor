@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass, field
 from decimal import Decimal
 
@@ -15,6 +16,12 @@ class ShoppingListItem:
     cost: Money
     purchased: bool = field(default=False)
     recipe_quantity: Quantity | None = field(default=None)
+
+    @property
+    def buy_quantity(self) -> Quantity:
+        if self.quantity.unit == "kg":
+            return self.quantity
+        return Quantity(amount=math.ceil(self.quantity.amount), unit=self.quantity.unit)
 
 
 @dataclass

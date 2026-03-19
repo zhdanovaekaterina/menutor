@@ -37,7 +37,7 @@ def test_csv_header_columns(tmp_path: Path) -> None:
     fp = str(tmp_path / "list.csv")
     ShoppingListCsvExporter().export(ShoppingList(items=[_item()]), fp)
     rows = _read_csv(fp)
-    assert rows[0] == ["category", "name", "quantity", "unit", "cost", "purchased"]
+    assert rows[0] == ["category", "name", "recipe_quantity", "unit", "buy_quantity", "cost", "purchased"]
 
 
 def test_csv_single_item_row(tmp_path: Path) -> None:
@@ -65,7 +65,7 @@ def test_csv_cost_formatted_to_two_decimals(tmp_path: Path) -> None:
     fp = str(tmp_path / "list.csv")
     ShoppingListCsvExporter().export(ShoppingList(items=[_item(cost=80.5)]), fp)
     rows = _read_csv(fp)
-    assert rows[1][4] == "80.50"
+    assert rows[1][5] == "80.50"
 
 
 def test_csv_empty_list_only_header(tmp_path: Path) -> None:
@@ -78,7 +78,7 @@ def test_csv_empty_list_only_header(tmp_path: Path) -> None:
 def test_export_bytes_header() -> None:
     data = ShoppingListCsvExporter().export_bytes([ShoppingList()])
     rows = list(csv.reader(data.decode("utf-8").splitlines()))
-    assert rows[0] == ["category", "name", "quantity", "unit", "cost", "purchased"]
+    assert rows[0] == ["category", "name", "recipe_quantity", "unit", "buy_quantity", "cost", "purchased"]
 
 
 def test_export_bytes_single_item() -> None:
@@ -87,6 +87,14 @@ def test_export_bytes_single_item() -> None:
     rows = list(csv.reader(data.decode("utf-8").splitlines()))
     assert len(rows) == 2
     assert rows[1][1] == "Мука"
+
+
+def test_csv_buy_quantity_rounds_up(tmp_path: Path) -> None:
+    fp = str(tmp_path / "list.csv")
+    ShoppingListCsvExporter().export(ShoppingList(items=[_item(qty=1.3)]), fp)
+    rows = _read_csv(fp)
+    assert rows[1][2] == "1.3"   # recipe_quantity: original amount
+    assert rows[1][4] == "2"     # buy_quantity: ceil(1.3) == 2
 
 
 def test_example_bytes_is_parseable() -> None:

@@ -18,6 +18,7 @@ class ShoppingListItemResponse(BaseModel):
     product_name: str
     category: str
     quantity: QuantitySchema
+    buy_quantity: QuantitySchema
     cost: MoneySchema
     purchased: bool
     recipe_quantity: QuantitySchema | None
