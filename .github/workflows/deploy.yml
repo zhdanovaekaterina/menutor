@@ -12,7 +12,7 @@ jobs:
 
     steps:
     - name: Update version
-      run: ./update_version.sh
+      run: ~/menutor/update_version.sh
     - name: Down the containers
       run: docker compose -f ~/menutor/docker-compose.yml down
     - name: Pull the containers
