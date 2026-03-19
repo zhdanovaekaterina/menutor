@@ -12,7 +12,7 @@ jobs:
 
     steps:
     - name: Update version
-      run: source ~/menutor/.config/.env ; curl -L -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw+json" -H "X-GitHub-Api-Version: 2026-03-10" -o ~/menutor/VERSION "https://api.github.com/repos/zhdanovaekaterina/menutor/contents/VERSION"
+      run: ~/menutor/update_version.sh
     - name: Down the containers
       run: docker compose -f ~/menutor/docker-compose.yml down
     - name: Pull the containers
