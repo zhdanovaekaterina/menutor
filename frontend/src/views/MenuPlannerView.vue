@@ -54,12 +54,16 @@ const editSlot = ref<MenuSlot | null>(null)
 const editValue = ref('')
 
 onMounted(async () => {
+  const previousId = menuStore.selectedId
   await Promise.all([
     menuStore.load(),
     recipeStore.load(),
     productStore.load(),
     familyStore.load(),
   ])
+  if (previousId !== null) {
+    await menuStore.select(previousId)
+  }
 })
 
 const selectedId = computed(() => menuStore.current?.id ?? null)
