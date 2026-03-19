@@ -24,3 +24,7 @@ class CategoryRepository(ABC):
 
     @abstractmethod
     def is_used(self, category_id: int) -> bool: ...
+
+    @abstractmethod
+    def move_and_delete(self, from_id: int, to_id: int) -> None:
+        """Move all linked rows from `from_id` category to `to_id`, then delete `from_id`. Transactional."""

@@ -17,13 +17,24 @@ const selectedId = ref<number | null>(null)
 const name = ref('')
 const confirmOpen = ref(false)
 const confirmDeleteOpen = ref(false)
-const confirmHardOpen = ref(false)
 const formOpen = ref(false)
+
+// Two-step "used category" dialog state
+type DialogStep = 'options' | 'select-target' | null
+const dialogStep = ref<DialogStep>(null)
+const targetCategoryId = ref<number | null>(null)
+const moveLoading = ref(false)
 
 watch(() => props.type, () => store.load(props.type), { immediate: true })
 
 const selected = computed(() => categories.value.find((c) => c.id === selectedId.value))
 const isInactive = computed(() => selected.value?.active === false)
+
+// Active categories of the same type excluding the one being deleted
+const moveTargetOptions = computed(() =>
+  store.list(props.type).value.filter((c) => c.active && c.id !== selectedId.value),
+)
+const canMoveAndDelete = computed(() => moveTargetOptions.value.length > 0)
 
 function selectCategory(c: Category) {
   selectedId.value = c.id
@@ -42,6 +53,12 @@ function clearForm() {
   formOpen.value = false
 }
 
+function closeUsedDialog() {
+  dialogStep.value = null
+  targetCategoryId.value = null
+  moveLoading.value = false
+}
+
 async function onSave() {
   if (!name.value.trim()) { toast.show('Введите название', 'error'); return }
   try {
@@ -55,7 +72,8 @@ async function onDelete() {
   if (!selectedId.value) return
   const used = await store.isUsed(props.type, selectedId.value)
   if (used) {
-    confirmHardOpen.value = true
+    dialogStep.value = 'options'
+    targetCategoryId.value = moveTargetOptions.value[0]?.id ?? null
   } else {
     confirmDeleteOpen.value = true
   }
@@ -76,17 +94,38 @@ async function onConfirmDelete() {
 }
 
 async function onConfirmHard() {
-  confirmHardOpen.value = false
+  closeUsedDialog()
   if (!selectedId.value) return
   await store.remove(props.type, selectedId.value, true)
   clearForm()
 }
 
 async function onHideUsed() {
-  confirmHardOpen.value = false
+  closeUsedDialog()
   if (!selectedId.value) return
   await store.remove(props.type, selectedId.value, false)
   clearForm()
+}
+
+function onSelectMoveTarget() {
+  dialogStep.value = 'select-target'
+}
+
+async function onConfirmMoveAndDelete() {
+  if (!selectedId.value || !targetCategoryId.value) return
+  moveLoading.value = true
+  try {
+    await store.moveAndDelete(props.type, selectedId.value, targetCategoryId.value)
+    toast.show('Категория перемещена и удалена', 'success')
+    closeUsedDialog()
+    clearForm()
+  } catch (err: unknown) {
+    const detail =
+      (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      ?? 'Ошибка при перемещении категории'
+    toast.show(detail, 'error')
+    moveLoading.value = false
+  }
 }
 
 async function onHideActive() {
@@ -219,19 +258,71 @@ const title = computed(() =>
       @cancel="confirmDeleteOpen = false"
     />
 
-    <!-- Used category dialog: hide or hard delete -->
+    <!-- Used category dialog: step 1 — choose action -->
     <Teleport to="body">
-      <div v-if="confirmHardOpen" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+      <div v-if="dialogStep === 'options'" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6">
           <h3 class="text-lg font-semibold mb-2">Категория используется</h3>
           <p class="text-sm text-gray-600 mb-6">Эта категория привязана к записям. Что сделать?</p>
           <div class="flex justify-end gap-2">
-            <button class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
-              @click="confirmHardOpen = false">Отмена</button>
-            <button class="px-4 py-2 rounded-lg border border-orange-300 text-orange-600 text-sm hover:bg-orange-50"
-              @click="onHideUsed">Скрыть</button>
-            <button class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
-              @click="onConfirmHard">Удалить полностью</button>
+            <button
+              class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+              @click="closeUsedDialog"
+            >Отмена</button>
+            <button
+              class="px-4 py-2 rounded-lg border border-orange-300 text-orange-600 text-sm hover:bg-orange-50"
+              @click="onHideUsed"
+            >Скрыть</button>
+            <button
+              class="px-4 py-2 rounded-lg border border-blue-300 text-blue-700 text-sm hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="!canMoveAndDelete"
+              :title="canMoveAndDelete ? undefined : 'Нет других категорий для перемещения'"
+              @click="onSelectMoveTarget"
+            >Переместить и удалить</button>
+            <button
+              class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
+              @click="onConfirmHard"
+            >Удалить полностью</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Used category dialog: step 2 — select target category -->
+    <Teleport to="body">
+      <div v-if="dialogStep === 'select-target'" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+          <h3 class="text-lg font-semibold mb-2">Переместить записи в другую категорию</h3>
+          <p class="text-sm text-gray-600 mb-4">
+            Выберите категорию, в которую будут перемещены все связанные записи. После этого текущая категория будет удалена.
+          </p>
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Целевая категория</label>
+            <select
+              v-model="targetCategoryId"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              :disabled="moveLoading"
+            >
+              <option v-for="c in moveTargetOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button
+              class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-40"
+              :disabled="moveLoading"
+              @click="dialogStep = 'options'"
+            >Назад</button>
+            <button
+              class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              :disabled="moveLoading || !targetCategoryId"
+              @click="onConfirmMoveAndDelete"
+            >
+              <svg v-if="moveLoading" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              {{ moveLoading ? 'Перемещение...' : 'Переместить и удалить' }}
+            </button>
           </div>
         </div>
       </div>

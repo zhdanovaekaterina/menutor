@@ -176,6 +176,11 @@ export const activateCategory = (type: 'product' | 'recipe', id: number) =>
   api.post(`/${type}-categories/${id}/activate`)
 export const checkCategoryUsed = (type: 'product' | 'recipe', id: number) =>
   api.get<{ used: boolean }>(`/${type}-categories/${id}/used`).then((r) => r.data.used)
+export const moveCategoryAndDelete = (
+  type: 'product' | 'recipe',
+  fromId: number,
+  targetCategoryId: number,
+) => api.post(`/${type}-categories/${fromId}/move-and-delete`, { target_category_id: targetCategoryId })
 
 /* Shopping List */
 export const generateShoppingList = (menuId: number) =>

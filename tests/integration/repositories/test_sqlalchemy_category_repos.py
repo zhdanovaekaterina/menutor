@@ -400,6 +400,133 @@ def test_recipe_category_activate_restores_hidden(conn) -> None:
     assert "Скрытая" in active_names
 
 
+# ── move_and_delete tests ────────────────────────────────────────────
+
+
+def test_product_category_move_and_delete(conn) -> None:
+    """Products are moved to the target category, then the source category is deleted."""
+    repo = SqlAlchemyProductCategoryRepository(conn)
+    from_id = repo.save("Переносимая")
+    to_id = repo.save("Целевая")
+
+    conn.execute(
+        text(
+            "INSERT INTO products (name, brand, supplier, category_id, recipe_unit, purchase_unit, user_id) "
+            "VALUES ('Продукт1', '', '', :cat_id, 'g', 'kg', 1)"
+        ),
+        {"cat_id": from_id},
+    )
+    conn.execute(
+        text(
+            "INSERT INTO products (name, brand, supplier, category_id, recipe_unit, purchase_unit, user_id) "
+            "VALUES ('Продукт2', '', '', :cat_id, 'g', 'kg', 1)"
+        ),
+        {"cat_id": from_id},
+    )
+    conn.commit()
+
+    repo.move_and_delete(from_id, to_id)
+
+    # Source category must be gone
+    all_names = [name for _, name, _ in repo.find_all()]
+    assert "Переносимая" not in all_names
+
+    # Both products are now in the target category
+    count = conn.execute(
+        text("SELECT COUNT(*) FROM products WHERE category_id = :cat_id"),
+        {"cat_id": to_id},
+    ).scalar()
+    assert count == 2
+
+    # No products remain in the (now deleted) source category
+    count_old = conn.execute(
+        text("SELECT COUNT(*) FROM products WHERE category_id = :cat_id"),
+        {"cat_id": from_id},
+    ).scalar()
+    assert count_old == 0
+
+
+def test_product_category_move_and_delete_rollback_on_invalid_target(conn) -> None:
+    """If the target category does not exist, rollback and source category survives."""
+    import pytest
+
+    from backend.domain.exceptions import AppError
+
+    repo = SqlAlchemyProductCategoryRepository(conn)
+    from_id = repo.save("Источник")
+
+    non_existent_to_id = 999999
+
+    with pytest.raises(AppError):
+        repo.move_and_delete(from_id, non_existent_to_id)
+
+    # Source category must still exist
+    all_names = [name for _, name, _ in repo.find_all()]
+    assert "Источник" in all_names
+
+
+def test_recipe_category_move_and_delete(conn) -> None:
+    """Recipes are moved to the target category, then the source category is deleted."""
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
+    from_id = repo.save("Источник рецептов")
+    to_id = repo.save("Цель рецептов")
+
+    conn.execute(
+        text(
+            "INSERT INTO recipes (name, category_id, servings, user_id) "
+            "VALUES ('Рецепт1', :cat_id, 1, 1)"
+        ),
+        {"cat_id": from_id},
+    )
+    conn.execute(
+        text(
+            "INSERT INTO recipes (name, category_id, servings, user_id) "
+            "VALUES ('Рецепт2', :cat_id, 1, 1)"
+        ),
+        {"cat_id": from_id},
+    )
+    conn.commit()
+
+    repo.move_and_delete(from_id, to_id)
+
+    # Source category must be gone
+    all_names = [name for _, name, _ in repo.find_all()]
+    assert "Источник рецептов" not in all_names
+
+    # Both recipes are now in the target category
+    count = conn.execute(
+        text("SELECT COUNT(*) FROM recipes WHERE category_id = :cat_id"),
+        {"cat_id": to_id},
+    ).scalar()
+    assert count == 2
+
+    # No recipes remain in the (now deleted) source category
+    count_old = conn.execute(
+        text("SELECT COUNT(*) FROM recipes WHERE category_id = :cat_id"),
+        {"cat_id": from_id},
+    ).scalar()
+    assert count_old == 0
+
+
+def test_recipe_category_move_and_delete_rollback_on_invalid_target(conn) -> None:
+    """If the target category does not exist, rollback and source category survives."""
+    import pytest
+
+    from backend.domain.exceptions import AppError
+
+    repo = SqlAlchemyRecipeCategoryRepository(conn)
+    from_id = repo.save("Источник рец.")
+
+    non_existent_to_id = 999999
+
+    with pytest.raises(AppError):
+        repo.move_and_delete(from_id, non_existent_to_id)
+
+    # Source category must still exist
+    all_names = [name for _, name, _ in repo.find_all()]
+    assert "Источник рец." in all_names
+
+
 def test_product_category_save_reactivates_on_edit(conn) -> None:
     """Editing an inactive category should reactivate it."""
     repo = SqlAlchemyProductCategoryRepository(conn)
