@@ -4,7 +4,9 @@ services:
     build:
       context: .
       dockerfile: .docker/prod/frontend.dockerfile
-    image: ghcr.io/zhdanovaekaterina/menutor-frontend:$VERSION
+      tags:
+        - ghcr.io/zhdanovaekaterina/menutor-frontend:$VERSION
+    image: ghcr.io/zhdanovaekaterina/menutor-frontend:latest
     container_name: frontend
     ports:
       - '80:80'
@@ -19,7 +21,9 @@ services:
     build:
       context: .
       dockerfile: .docker/prod/backend.dockerfile
-    image: ghcr.io/zhdanovaekaterina/menutor-backend:$VERSION
+      tags:
+        - ghcr.io/zhdanovaekaterina/menutor-backend:$VERSION
+    image: ghcr.io/zhdanovaekaterina/menutor-backend:latest
     container_name: backend
     ports:
       - '8000:8000'
