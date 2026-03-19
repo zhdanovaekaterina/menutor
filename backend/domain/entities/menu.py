@@ -13,6 +13,7 @@ class MenuSlot:
     quantity: float | None = field(default=None)
     unit: str | None = field(default=None)
     servings_override: float | None = field(default=None)
+    pieces_override: int | None = field(default=None)
     position: int = 0
 
     def __post_init__(self) -> None:

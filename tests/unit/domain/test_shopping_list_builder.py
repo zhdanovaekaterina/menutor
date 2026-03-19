@@ -763,3 +763,227 @@ def test_sub_recipe_servings_based_scaling_unchanged() -> None:
 
     # 1 serv of a 2-serv recipe → scale = 0.5; onion = 100 * 0.5 = 50g
     assert result[ProductId(1)] == Quantity(50.0, "g")
+
+
+# ---- pieces-mode recipes ----
+
+
+def _pieces_recipe(
+    rid: int,
+    pid: int,
+    amount: float = 500.0,
+    unit: str = "g",
+    base_servings: int = 4,
+    total_pieces: int = 10,
+    pieces_per_portion: int = 2,
+) -> Recipe:
+    return Recipe(
+        id=RecipeId(rid),
+        name=f"PiecesRecipe{rid}",
+        servings=base_servings,
+        total_pieces=total_pieces,
+        pieces_per_portion=pieces_per_portion,
+        ingredients=[RecipeIngredient(product_id=ProductId(pid), quantity=Quantity(amount, unit))],
+    )
+
+
+# 1. pieces recipe (10 pcs, flour 500g), slot servings_override=2.5, pieces_per_portion=2
+#    → pcs = max(1, round(2.5 * 2)) = 5, scale = 5/10 = 0.5 → 250g flour
+def test_pieces_mode_recipe_scale_factor() -> None:
+    flour = _product(1, "g", "g", 1.0, 5.0)
+    recipe = _pieces_recipe(1, 1, amount=500.0, total_pieces=10, pieces_per_portion=2)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = recipe
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = flour
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+                        servings_override=2.5)],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(250.0, "g")
+
+
+# 2. pieces recipe, pieces_override=15, total_pieces=10 → scale=1.5
+def test_pieces_mode_with_pieces_override() -> None:
+    flour = _product(1, "g", "g", 1.0, 5.0)
+    recipe = _pieces_recipe(1, 1, amount=500.0, total_pieces=10, pieces_per_portion=2)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = recipe
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = flour
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+                        pieces_override=15)],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    # scale = 15/10 = 1.5; 500g * 1.5 = 750g
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(750.0, "g")
+
+
+# 3. two slots of same pieces recipe → pieces sum (FR-17)
+def test_pieces_mode_two_slots_aggregated() -> None:
+    flour = _product(1, "g", "g", 1.0, 5.0)
+    recipe = _pieces_recipe(1, 1, amount=500.0, total_pieces=10, pieces_per_portion=2)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = recipe
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = flour
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[
+            # slot1: pieces_override=5 → scale=0.5 → 250g
+            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1), pieces_override=5),
+            # slot2: pieces_override=5 → scale=0.5 → 250g
+            MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(1), pieces_override=5),
+        ],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    # aggregated: 250g + 250g = 500g
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(500.0, "g")
+
+
+# 4. one pieces + one normal recipe in same menu
+def test_pieces_mode_and_normal_in_same_menu() -> None:
+    flour = _product(1, "g", "g", 1.0, 5.0)
+    sugar = _product(2, "g", "g", 1.0, 3.0)
+
+    pieces_r = _pieces_recipe(1, 1, amount=500.0, total_pieces=10, pieces_per_portion=2)
+    # normal recipe: 2 servings, 200g sugar, scale_factor=1 → 200g
+    normal_r = Recipe(
+        id=RecipeId(2),
+        name="Normal",
+        servings=2,
+        ingredients=[RecipeIngredient(product_id=ProductId(2), quantity=Quantity(200.0, "g"))],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = (
+        lambda rid: pieces_r if rid == RecipeId(1) else normal_r
+    )
+    product_repo = MagicMock()
+    product_repo.get_by_id.side_effect = (
+        lambda pid: flour if pid == ProductId(1) else sugar
+    )
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[
+            # pieces: pieces_override=5 → scale=0.5 → 250g flour
+            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1), pieces_override=5),
+            # normal: no override → scale=1.0 → 200g sugar
+            MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(2)),
+        ],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    assert len(result.items) == 2
+    by_product = {item.product_id: item.quantity for item in result.items}
+    assert by_product[ProductId(1)] == Quantity(250.0, "g")
+    assert by_product[ProductId(2)] == Quantity(200.0, "g")
+
+
+# 5. minimum one piece: 0.1 * 2 = 0.2 → round=0 → max(1,0)=1
+def test_pieces_mode_minimum_one_piece() -> None:
+    flour = _product(1, "g", "g", 1.0, 5.0)
+    # total_pieces=10, pieces_per_portion=2, amount=500g
+    recipe = _pieces_recipe(1, 1, amount=500.0, total_pieces=10, pieces_per_portion=2)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = recipe
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = flour
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        # servings_override=0.1 → pcs = max(1, round(0.1*2)) = max(1, round(0.2)) = max(1,0) = 1
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+                        servings_override=0.1)],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    # scale = 1/10 = 0.1; 500g * 0.1 = 50g
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(50.0, "g")
+
+
+# 6. rounding: 2.1 * 2 = 4.2 → round=4
+def test_pieces_mode_rounding() -> None:
+    flour = _product(1, "g", "g", 1.0, 5.0)
+    recipe = _pieces_recipe(1, 1, amount=500.0, total_pieces=10, pieces_per_portion=2)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = recipe
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = flour
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        # servings_override=2.1 → pcs = max(1, round(2.1*2)) = max(1, round(4.2)) = 4
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+                        servings_override=2.1)],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    # scale = 4/10 = 0.4; 500g * 0.4 = 200g
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(200.0, "g")
+
+
+# 7. normal parent with pieces sub-recipe
+def test_nested_pieces_recipe_in_normal_parent() -> None:
+    flour = _product(1, "g", "g", 1.0, 5.0)
+
+    # pieces sub-recipe: total_pieces=10, pieces_per_portion=2, 500g flour, servings=4
+    sub_recipe = Recipe(
+        id=RecipeId(2),
+        name="PiecesSub",
+        servings=4,
+        total_pieces=10,
+        pieces_per_portion=2,
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(500.0, "g"))],
+    )
+    # normal parent: 1 serving, uses 3 serv of sub-recipe
+    parent_recipe = Recipe(
+        id=RecipeId(1),
+        name="Parent",
+        servings=1,
+        ingredients=[
+            RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(3.0, "serv")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = (
+        lambda rid: parent_recipe if rid == RecipeId(1) else sub_recipe
+    )
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = flour
+
+    menu = WeeklyMenu(
+        id=MenuId(1), name="Week",
+        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+    )
+    result = _builder(recipe_repo, product_repo).build(menu)
+
+    # parent: scale_factor=1.0 (1 serv / 1 serv)
+    # sub-recipe ingredient: scaled_amount = 3.0 * 1.0 = 3.0 serv
+    # sub_recipe.is_pieces_mode=True: pcs = max(1, round(3.0 * 2)) = 6
+    # sub_scale = 6 / 10 = 0.6
+    # flour: 500g * 0.6 = 300g
+    assert len(result.items) == 1
+    assert result.items[0].quantity == Quantity(300.0, "g")
