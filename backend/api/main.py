@@ -3,6 +3,7 @@
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -36,7 +37,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Menutor API",
     description="API планировщика меню",
-    version=os.environ.get("VERSION", "unknown"),
+    version=_version_file.read_text().strip() if (_version_file := Path(__file__).parents[2] / "VERSION").exists() else os.environ.get("VERSION", "unknown"),
     lifespan=lifespan,
 )
 
