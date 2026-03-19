@@ -18,7 +18,9 @@ import IconClose from '@/components/ui/icons/IconClose.vue'
 import IconDownload from '@/components/ui/icons/IconDownload.vue'
 import IconHamburger from '@/components/ui/icons/IconHamburger.vue'
 import IconUpload from '@/components/ui/icons/IconUpload.vue'
+import { exportEntities } from '@/api/client'
 import { useContextMenu } from '@/composables/useContextMenu'
+import { downloadBlob } from '@/composables/useFileDownload'
 import { useFamilyStore } from '@/stores/family'
 import { useMenuStore } from '@/stores/menus'
 import { useProductStore } from '@/stores/products'
@@ -185,6 +187,16 @@ async function onClear() {
   await menuStore.clear()
 }
 
+async function onExportCurrentMenu() {
+  if (!menuStore.current) return
+  try {
+    const blob = await exportEntities('menus', 'json', [menuStore.current.id])
+    downloadBlob(blob, `menu_${menuStore.current.name}.json`)
+  } catch (e: any) {
+    toast.show(e?.response?.data?.detail ?? 'Ошибка экспорта меню', 'error')
+  }
+}
+
 async function onGenerateShoppingList() {
   if (!menuStore.current) { toast.show('Сначала выберите меню', 'error'); return }
   await shoppingStore.generate(menuStore.current.id)
@@ -274,9 +286,18 @@ async function onGenerateShoppingList() {
               class="p-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               :disabled="!menuStore.current"
               @click="exportOpen = true"
-              title="Экспорт"
+              title="Экспорт (выбор формата)"
             >
               <IconDownload class="w-4 h-4" />
+            </button>
+            <button
+              class="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-blue-300 text-blue-700 bg-blue-50 text-sm hover:bg-blue-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="!menuStore.current"
+              @click="onExportCurrentMenu"
+              title="Скачать текущее меню как JSON"
+            >
+              <IconDownload class="w-4 h-4" />
+              <span class="hidden sm:inline">Скачать меню</span>
             </button>
           </div>
 
