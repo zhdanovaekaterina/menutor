@@ -3,6 +3,9 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import Sortable from 'sortablejs'
 import type { MenuSlot } from '@/api/types'
 import { useContextMenu } from '@/composables/useContextMenu'
+import { usePlannerClipboard } from '@/composables/usePlannerClipboard'
+import { useMenuStore } from '@/stores/menus'
+import { useToastStore } from '@/stores/toast'
 import ItemRow from './ItemRow.vue'
 
 const props = defineProps<{
@@ -27,14 +30,39 @@ const dragOver = ref(false)
 const listRef = ref<HTMLElement>()
 
 // Context menu
-const { open: openContextMenu } = useContextMenu()
+const { open: openContextMenu, close: closeContextMenu } = useContextMenu()
+const { hasClipboard, copySlot, pasteSlot } = usePlannerClipboard()
+const menuStore = useMenuStore()
+const toast = useToastStore()
 
-const contextMenuItems = [
-  { label: 'Действие', action: () => {} },
-]
+function buildContextMenuItems() {
+  return [
+    {
+      label: 'Копировать',
+      action: () => {
+        copySlot(cellSlots.value)
+        closeContextMenu()
+      },
+    },
+    {
+      label: 'Вставить',
+      disabled: !hasClipboard.value,
+      action: async () => {
+        const items = pasteSlot()
+        if (!items || items.length === 0) return
+        if (!menuStore.current) {
+          toast.show('Сначала выберите меню', 'error')
+          return
+        }
+        await menuStore.mergeItemsIntoSlot(props.day, props.mealType, items)
+        closeContextMenu()
+      },
+    },
+  ]
+}
 
 function onContextMenu(e: MouseEvent) {
-  openContextMenu(e.clientX, e.clientY, contextMenuItems)
+  openContextMenu(e.clientX, e.clientY, buildContextMenuItems())
 }
 
 // Long-press for mobile context menu
@@ -46,7 +74,7 @@ function onTouchStart(e: TouchEvent) {
   const touch = e.touches[0]
   longPressTimer = setTimeout(() => {
     if (!touchMoved) {
-      openContextMenu(touch.clientX, touch.clientY, contextMenuItems)
+      openContextMenu(touch.clientX, touch.clientY, buildContextMenuItems())
     }
   }, 500)
 }

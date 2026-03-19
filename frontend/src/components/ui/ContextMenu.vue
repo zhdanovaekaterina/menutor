@@ -28,8 +28,14 @@ const { close } = useContextMenu()
     <button
       v-for="item in items"
       :key="item.label"
-      class="w-full text-left px-4 py-2 hover:bg-gray-50 active:bg-gray-100 transition-colors text-gray-700"
-      @click="item.action(); close()"
+      :disabled="item.disabled"
+      :class="[
+        'w-full text-left px-4 py-2 transition-colors',
+        item.disabled
+          ? 'text-gray-300 cursor-not-allowed'
+          : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100',
+      ]"
+      @click="!item.disabled && (item.action(), close())"
     >
       {{ item.label }}
     </button>

@@ -3,6 +3,7 @@ import { ref } from 'vue'
 export interface ContextMenuItem {
   label: string
   action: () => void
+  disabled?: boolean
 }
 
 interface ContextMenuState {
