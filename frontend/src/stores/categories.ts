@@ -7,6 +7,7 @@ import {
   deleteCategoryApi,
   editCategory,
   fetchAllCategories,
+  moveCategoryAndDelete,
 } from '@/api/client'
 import type { Category } from '@/api/types'
 import { useToastStore } from './toast'
@@ -66,5 +67,10 @@ export const useCategoryStore = defineStore('categories', () => {
     return checkCategoryUsed(type, id)
   }
 
-  return { productCategories, recipeCategories, loading, list, load, create, edit, remove, activate, isUsed }
+  async function moveAndDelete(type: 'product' | 'recipe', fromId: number, targetId: number): Promise<void> {
+    await moveCategoryAndDelete(type, fromId, targetId)
+    list(type).value = list(type).value.filter((c) => c.id !== fromId)
+  }
+
+  return { productCategories, recipeCategories, loading, list, load, create, edit, remove, activate, isUsed, moveAndDelete }
 })

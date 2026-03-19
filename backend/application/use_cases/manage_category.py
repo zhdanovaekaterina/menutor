@@ -58,6 +58,14 @@ class CheckCategoryUsed:
         return self._repo.is_used(category_id)
 
 
+class MoveCategoryAndDelete:
+    def __init__(self, repo: CategoryRepository) -> None:
+        self._repo = repo
+
+    def execute(self, from_id: int, to_id: int) -> None:
+        self._repo.move_and_delete(from_id, to_id)
+
+
 class CategoryBundle:
     """Groups all category use cases for one category type."""
 
@@ -69,3 +77,4 @@ class CategoryBundle:
         self.hard_delete = HardDeleteCategory(repo)
         self.activate = ActivateCategory(repo)
         self.check_used = CheckCategoryUsed(repo)
+        self.move_and_delete = MoveCategoryAndDelete(repo)

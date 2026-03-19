@@ -1,11 +1,15 @@
 /// <reference types="vitest/config" />
 import { fileURLToPath, URL } from 'node:url'
+import { readFileSync, existsSync } from 'node:fs'
+import { resolve } from 'node:path'
+// import path from 'node:path'
 
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
+  // envDir: path.resolve(__dirname, '../.config'),  // todo: remove later
   plugins: [vue(), tailwindcss()],
   resolve: {
     alias: {
@@ -21,7 +25,9 @@ export default defineConfig({
     },
   },
   define: {
-    __APP_VERSION__: JSON.stringify(process.env.VERSION ?? 'unknown'),
+    __APP_VERSION__: JSON.stringify(
+      (() => { const f = resolve(__dirname, '../VERSION'); return existsSync(f) ? readFileSync(f, 'utf-8').trim() : (process.env.VERSION ?? 'unknown') })()
+    ),
   },
   test: {
     environment: 'happy-dom',

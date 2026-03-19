@@ -102,6 +102,22 @@ export const useMenuStore = defineStore('menus', () => {
     if (updated) _updateMenu(updated)
   }
 
+  async function mergeItemsIntoSlot(day: number, mealType: string, items: MenuSlot[]) {
+    if (!current.value) return
+    for (const src of items) {
+      // Remap the copied slot to target day/meal_type, preserving quantity fields
+      const slot: MenuSlot = {
+        ...src,
+        day,
+        meal_type: mealType,
+      }
+      // addSlot on the backend is an upsert keyed on (day, meal_type, recipe_id, product_id),
+      // so calling it for an existing item overwrites quantity/servings_override,
+      // and for a new item it appends it.
+      await addSlotToMenu(slot)
+    }
+  }
+
   async function clear() {
     if (!current.value) return
     const updated = await clearMenu(current.value.id)
@@ -109,5 +125,20 @@ export const useMenuStore = defineStore('menus', () => {
     useToastStore().show('Меню очищено', 'success')
   }
 
-  return { menus, current, selectedId, loading, load, select, create, remove, addSlotToMenu, removeSlotFromMenu, moveSlot, reorderSlots, clear }
+  function _autoMenuName(): string {
+    const now = new Date()
+    const hh = String(now.getHours()).padStart(2, '0')
+    const mm = String(now.getMinutes()).padStart(2, '0')
+    const dd = String(now.getDate()).padStart(2, '0')
+    const mo = String(now.getMonth() + 1).padStart(2, '0')
+    const yyyy = now.getFullYear()
+    return `${hh}:${mm}_${dd}.${mo}.${yyyy}`
+  }
+
+  async function ensureMenuSelected(): Promise<void> {
+    if (current.value) return
+    await create(_autoMenuName())
+  }
+
+  return { menus, current, selectedId, loading, load, select, create, remove, addSlotToMenu, removeSlotFromMenu, moveSlot, reorderSlots, mergeItemsIntoSlot, clear, ensureMenuSelected }
 })

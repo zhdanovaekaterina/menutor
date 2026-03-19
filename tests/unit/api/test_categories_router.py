@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.domain.exceptions import AppError
 from backend.domain.value_objects.category import Category
 
 
@@ -92,6 +93,32 @@ class TestProductCategories:
         resp = client.get("/api/product-categories/1/used")
         assert resp.json() == {"used": False}
 
+    # ---- POST move-and-delete ----
+
+    def test_move_and_delete_success(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.product_categories.move_and_delete.execute.return_value = None
+        resp = client.post(
+            "/api/product-categories/1/move-and-delete",
+            json={"target_category_id": 2},
+        )
+        assert resp.status_code == 204
+        container.product_categories.move_and_delete.execute.assert_called_once_with(1, 2)
+
+    def test_move_and_delete_error_returns_422(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.product_categories.move_and_delete.execute.side_effect = AppError(
+            "Категория назначения с id=99 не найдена"
+        )
+        resp = client.post(
+            "/api/product-categories/1/move-and-delete",
+            json={"target_category_id": 99},
+        )
+        assert resp.status_code == 422
+        assert "Категория назначения с id=99 не найдена" in resp.json()["detail"]
+
 
 class TestRecipeCategories:
     """Tests for /api/recipe-categories endpoints."""
@@ -159,3 +186,29 @@ class TestRecipeCategories:
         resp = client.get("/api/recipe-categories/1/used")
         assert resp.status_code == 200
         assert resp.json() == {"used": False}
+
+    # ---- POST move-and-delete ----
+
+    def test_move_and_delete_success(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.recipe_categories.move_and_delete.execute.return_value = None
+        resp = client.post(
+            "/api/recipe-categories/2/move-and-delete",
+            json={"target_category_id": 3},
+        )
+        assert resp.status_code == 204
+        container.recipe_categories.move_and_delete.execute.assert_called_once_with(2, 3)
+
+    def test_move_and_delete_error_returns_422(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.recipe_categories.move_and_delete.execute.side_effect = AppError(
+            "Категория назначения с id=99 не найдена"
+        )
+        resp = client.post(
+            "/api/recipe-categories/2/move-and-delete",
+            json={"target_category_id": 99},
+        )
+        assert resp.status_code == 422
+        assert "Категория назначения с id=99 не найдена" in resp.json()["detail"]

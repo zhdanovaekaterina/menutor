@@ -4,6 +4,8 @@ branch=$(git rev-parse --abbrev-ref HEAD)
 
 if [ "master" = "$branch" ]; then
     echo "Running pre-push actions for the master branch..."
-    docker compose --env-file .config/.env build
-    docker compose --env-file .config/.env push
+    VERSION=$(cat VERSION)                                                                                                          
+    export VERSION 
+    docker compose build
+    docker compose push
 fi

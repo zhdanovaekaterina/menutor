@@ -2,6 +2,9 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import Sortable from 'sortablejs'
 import type { MenuSlot } from '@/api/types'
+import { useContextMenu } from '@/composables/useContextMenu'
+import { usePlannerClipboard } from '@/composables/usePlannerClipboard'
+import { useMenuStore } from '@/stores/menus'
 import ItemRow from './ItemRow.vue'
 
 const props = defineProps<{
@@ -24,6 +27,69 @@ const emit = defineEmits<{
 
 const dragOver = ref(false)
 const listRef = ref<HTMLElement>()
+
+// Context menu
+const { open: openContextMenu, close: closeContextMenu } = useContextMenu()
+const { hasClipboard, copySlot, pasteSlot } = usePlannerClipboard()
+const menuStore = useMenuStore()
+
+function buildContextMenuItems() {
+  return [
+    {
+      label: 'Копировать',
+      action: () => {
+        copySlot(cellSlots.value)
+        closeContextMenu()
+      },
+    },
+    {
+      label: 'Вставить',
+      disabled: !hasClipboard.value,
+      action: async () => {
+        const items = pasteSlot()
+        if (!items || items.length === 0) return
+        await menuStore.ensureMenuSelected()
+        await menuStore.mergeItemsIntoSlot(props.day, props.mealType, items)
+        closeContextMenu()
+      },
+    },
+  ]
+}
+
+function onContextMenu(e: MouseEvent) {
+  openContextMenu(e.clientX, e.clientY, buildContextMenuItems())
+}
+
+// Long-press for mobile context menu
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+let touchMoved = false
+
+function onTouchStart(e: TouchEvent) {
+  touchMoved = false
+  const touch = e.touches[0]
+  if (!touch) return
+  longPressTimer = setTimeout(() => {
+    if (!touchMoved) {
+      openContextMenu(touch.clientX, touch.clientY, buildContextMenuItems())
+    }
+  }, 500)
+}
+
+function onTouchMove() {
+  touchMoved = true
+  if (longPressTimer !== null) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+function onTouchEnd() {
+  if (longPressTimer !== null) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
 let sortable: Sortable | null = null
 
 const cellSlots = computed(() =>
@@ -137,6 +203,10 @@ watch(
       !dragOver && !pickerActive ? 'bg-white' : ''
     ]"
     class="relative h-full min-h-[100px] p-1 flex flex-col gap-1"
+    @contextmenu.prevent="onContextMenu"
+    @touchstart.passive="onTouchStart"
+    @touchmove.passive="onTouchMove"
+    @touchend.passive="onTouchEnd"
     @dragover="onDragOver"
     @dragleave="dragOver = false"
     @drop="onDrop"

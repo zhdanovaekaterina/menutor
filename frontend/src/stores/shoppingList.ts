@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { downloadShoppingListText, generateShoppingList } from '@/api/client'
+import { generateShoppingList } from '@/api/client'
 import type { ShoppingList, ShoppingListItem } from '@/api/types'
 import { useToastStore } from './toast'
 
@@ -9,7 +9,10 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
   const loading = ref(false)
 
   const items = computed(() => data.value?.items ?? [])
-  const totalCost = computed(() => data.value?.total_cost ?? { amount: '0', currency: 'RUB' })
+  const totalCost = computed(() => {
+    const sum = items.value.reduce((acc, i) => acc + Number(i.cost.amount), 0)
+    return { amount: sum.toFixed(2), currency: 'RUB' }
+  })
   const purchasedCount = computed(() => items.value.filter((i) => i.purchased).length)
   const progressPercent = computed(() =>
     items.value.length ? Math.round((purchasedCount.value / items.value.length) * 100) : 0,
@@ -34,15 +37,6 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     }
   }
 
-  async function exportText(menuId: number) {
-    try {
-      return await downloadShoppingListText(menuId)
-    } catch {
-      useToastStore().show('Ошибка экспорта', 'error')
-      return null
-    }
-  }
-
   function togglePurchased(productId: number) {
     const item = items.value.find((i) => i.product_id === productId)
     if (item) item.purchased = !item.purchased
@@ -60,8 +54,20 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
   }
 
   function updateQuantity(productId: number, newAmount: number) {
-    const item = items.value.find((i) => i.product_id === productId)
-    if (item) item.quantity.amount = newAmount
+    if (!data.value) return
+    const index = data.value.items.findIndex((i) => i.product_id === productId)
+    if (index === -1) return
+    const item = data.value.items[index]
+    if (!item) return
+    const pricePerUnit = item.buy_quantity.amount > 0
+      ? Number(item.cost.amount) / item.buy_quantity.amount
+      : 0
+    data.value.items[index] = {
+      ...item,
+      buy_quantity: { amount: newAmount, unit: item.buy_quantity.unit },
+      buy_quantity_overridden: true,
+      cost: { amount: (pricePerUnit * newAmount).toFixed(2), currency: item.cost.currency },
+    }
   }
 
   function addItem(item: ShoppingListItem) {
@@ -80,7 +86,6 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     progressPercent,
     itemsByCategory,
     generate,
-    exportText,
     togglePurchased,
     removeItem,
     removeMany,

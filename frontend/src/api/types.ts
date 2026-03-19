@@ -162,6 +162,8 @@ export interface ShoppingListItem {
   product_name: string
   category: string
   quantity: Quantity
+  buy_quantity: Quantity
+  buy_quantity_overridden?: boolean
   cost: Money
   purchased: boolean
   recipe_quantity: Quantity | null

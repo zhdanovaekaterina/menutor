@@ -5,6 +5,7 @@ from backend.domain.entities.shopping_list import ShoppingList
 _UNIT_RU: dict[str, str] = {
     "g": "г", "kg": "кг", "ml": "мл", "l": "л",
     "pcs": "шт", "pack": "упак", "box": "кор",
+    "tsp": "ч.л.", "tbsp": "ст.л.",
 }
 
 
@@ -21,9 +22,14 @@ class ShoppingListTextExporter:
         for category, items in sorted(shopping_list.items_by_category().items()):
             lines.append(f"{category}:")
             for item in items:
-                qty_str = f"{item.quantity.amount:g} {_to_display(item.quantity.unit)}"
+                rq = item.recipe_quantity if item.recipe_quantity is not None else item.quantity
+                bq = item.buy_quantity
+                recipe_qty_str = f"{rq.amount:g} {_to_display(rq.unit)}"
+                buy_qty_str = f"{bq.amount:g} {_to_display(bq.unit)}"
                 cost_str = f"{item.cost.amount:.2f} руб"
-                lines.append(f"• {item.product_name} — {qty_str} — {cost_str}")
+                lines.append(
+                    f"• {item.product_name} — купить: {buy_qty_str} (рецепт: {recipe_qty_str}) — {cost_str}"
+                )
             lines.append("")
 
         total = shopping_list.total_cost()

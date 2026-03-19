@@ -7,6 +7,7 @@ import PlannerGrid from '@/components/planner/PlannerGrid.vue'
 import SavedMenuList from '@/components/planner/SavedMenuList.vue'
 import SourcePanel from '@/components/planner/SourcePanel.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import ContextMenu from '@/components/ui/ContextMenu.vue'
 import ExportModal from '@/components/ui/ExportModal.vue'
 import ImportModal from '@/components/ui/ImportModal.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
@@ -17,6 +18,9 @@ import IconClose from '@/components/ui/icons/IconClose.vue'
 import IconDownload from '@/components/ui/icons/IconDownload.vue'
 import IconHamburger from '@/components/ui/icons/IconHamburger.vue'
 import IconUpload from '@/components/ui/icons/IconUpload.vue'
+import { exportEntities } from '@/api/client'
+import { useContextMenu } from '@/composables/useContextMenu'
+import { downloadBlob } from '@/composables/useFileDownload'
 import { useFamilyStore } from '@/stores/family'
 import { useMenuStore } from '@/stores/menus'
 import { useProductStore } from '@/stores/products'
@@ -25,6 +29,7 @@ import { useShoppingListStore } from '@/stores/shoppingList'
 import { useToastStore } from '@/stores/toast'
 
 const router = useRouter()
+const { state: contextMenuState } = useContextMenu()
 const menuStore = useMenuStore()
 const recipeStore = useRecipeStore()
 const productStore = useProductStore()
@@ -51,12 +56,16 @@ const editSlot = ref<MenuSlot | null>(null)
 const editValue = ref('')
 
 onMounted(async () => {
+  const previousId = menuStore.selectedId
   await Promise.all([
     menuStore.load(),
     recipeStore.load(),
     productStore.load(),
     familyStore.load(),
   ])
+  if (previousId !== null) {
+    await menuStore.select(previousId)
+  }
 })
 
 const selectedId = computed(() => menuStore.current?.id ?? null)
@@ -99,11 +108,8 @@ async function onDeleteMenu() {
   await menuStore.remove(selectedId.value)
 }
 
-function onOpenPicker(day: number, mealType: string) {
-  if (!menuStore.current) {
-    toast.show('Сначала выберите меню', 'error')
-    return
-  }
+async function onOpenPicker(day: number, mealType: string) {
+  await menuStore.ensureMenuSelected()
   pickerDay.value = day
   pickerMealType.value = mealType
   pickerOpen.value = true
@@ -113,8 +119,15 @@ function onPickerSelect(data: { type: 'recipe' | 'product'; id: number }) {
   onAddItem(pickerDay.value, pickerMealType.value, data)
 }
 
+function onPickerRemove(data: { type: 'recipe' | 'product'; id: number }) {
+  onRemoveItem(pickerDay.value, pickerMealType.value, {
+    recipe_id: data.type === 'recipe' ? data.id : null,
+    product_id: data.type === 'product' ? data.id : null,
+  })
+}
+
 async function onAddItem(day: number, mealType: string, data: { type: 'recipe' | 'product'; id: number }) {
-  if (!menuStore.current) { toast.show('Сначала выберите меню', 'error'); return }
+  await menuStore.ensureMenuSelected()
   const slot: MenuSlot = {
     day,
     meal_type: mealType,
@@ -179,6 +192,16 @@ async function onReorderItems(day: number, mealType: string, orderedSlots: MenuS
 async function onClear() {
   confirmClearOpen.value = false
   await menuStore.clear()
+}
+
+async function onExportCurrentMenu() {
+  if (!menuStore.current) return
+  try {
+    const blob = await exportEntities('menus', 'json', [menuStore.current.id])
+    downloadBlob(blob, `menu_${menuStore.current.name}.json`)
+  } catch (e: any) {
+    toast.show(e?.response?.data?.detail ?? 'Ошибка экспорта меню', 'error')
+  }
 }
 
 async function onGenerateShoppingList() {
@@ -270,9 +293,18 @@ async function onGenerateShoppingList() {
               class="p-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               :disabled="!menuStore.current"
               @click="exportOpen = true"
-              title="Экспорт"
+              title="Экспорт (выбор формата)"
             >
               <IconDownload class="w-4 h-4" />
+            </button>
+            <button
+              class="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-blue-300 text-blue-700 bg-blue-50 text-sm hover:bg-blue-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="!menuStore.current"
+              @click="onExportCurrentMenu"
+              title="Скачать текущее меню как JSON"
+            >
+              <IconDownload class="w-4 h-4" />
+              <span class="hidden sm:inline">Скачать меню</span>
             </button>
           </div>
 
@@ -373,6 +405,7 @@ async function onGenerateShoppingList() {
       :product-categories="productStore.categories"
       @close="pickerOpen = false"
       @select="onPickerSelect"
+      @remove="onPickerRemove"
     />
 
     <!-- Mobile: Left drawer (SavedMenuList) -->
@@ -397,6 +430,15 @@ async function onGenerateShoppingList() {
           />
         </div>
       </Transition>
+    </Teleport>
+
+    <Teleport to="body">
+      <ContextMenu
+        v-if="contextMenuState.visible"
+        :items="contextMenuState.items"
+        :x="contextMenuState.x"
+        :y="contextMenuState.y"
+      />
     </Teleport>
 
   </div>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { downloadShoppingListCsv, downloadShoppingListText } from '@/api/client'
 import type { ShoppingListItem } from '@/api/types'
 import AddProductForm from '@/components/shopping/AddProductForm.vue'
 import ShoppingSummary from '@/components/shopping/ShoppingSummary.vue'
@@ -9,14 +8,12 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
 import { downloadBlob } from '@/composables/useFileDownload'
 import { useSelection } from '@/composables/useSelection'
-import { useMenuStore } from '@/stores/menus'
 import { useProductStore } from '@/stores/products'
 import { useShoppingListStore } from '@/stores/shoppingList'
 import { useToastStore } from '@/stores/toast'
 
 const store = useShoppingListStore()
 const productStore = useProductStore()
-const menuStore = useMenuStore()
 const toast = useToastStore()
 const selection = useSelection()
 
@@ -36,7 +33,7 @@ function onEditQuantity(productId: number) {
   const item = store.items.find((i) => i.product_id === productId)
   if (!item) return
   editProductId.value = productId
-  editQtyValue.value = String(item.quantity.amount)
+  editQtyValue.value = String(item.buy_quantity.amount)
 }
 
 function onEditConfirm(val: string) {
@@ -62,24 +59,57 @@ function onConfirmRemove() {
   }
 }
 
-async function onExportText() {
-  if (!menuStore.current) { toast.show('Нет активного меню', 'error'); return }
-  try {
-    const blob = await downloadShoppingListText(menuStore.current.id)
-    downloadBlob(blob, 'shopping_list.txt')
-  } catch {
-    toast.show('Ошибка экспорта', 'error')
+const UNIT_MAP: Record<string, string> = {
+  g: 'г', kg: 'кг', ml: 'мл', l: 'л', pcs: 'шт', box: 'кор', pack: 'уп', tsp: 'ч.л.', tbsp: 'ст.л.',
+}
+function fmtUnit(u: string) { return UNIT_MAP[u] ?? u }
+function fmtRound2(n: number) { return String(Number(n.toFixed(2))) }
+function fmtBuyAmt(amount: number, unit: string) { return unit === 'kg' ? fmtRound2(amount) : String(amount) }
+
+function buildTextExport(): string {
+  const lines: string[] = ['Список покупок', '']
+  for (const [category, items] of Object.entries(store.itemsByCategory).sort()) {
+    lines.push(`${category}:`)
+    for (const item of items) {
+      const rq = item.recipe_quantity
+      const bq = item.buy_quantity
+      const recipeStr = rq ? `${fmtRound2(rq.amount)} ${fmtUnit(rq.unit)}` : '-'
+      const buyStr = `${fmtBuyAmt(bq.amount, bq.unit)} ${fmtUnit(bq.unit)}`
+      lines.push(`• ${item.product_name} — купить: ${buyStr} (рецепт: ${recipeStr}) — ${Number(item.cost.amount).toFixed(2)} руб`)
+    }
+    lines.push('')
   }
+  lines.push(`Итого: ${store.totalCost.amount} руб`)
+  return lines.join('\n')
 }
 
-async function onExportCsv() {
-  if (!menuStore.current) { toast.show('Нет активного меню', 'error'); return }
-  try {
-    const blob = await downloadShoppingListCsv(menuStore.current.id)
-    downloadBlob(blob, 'shopping_list.csv')
-  } catch {
-    toast.show('Ошибка экспорта', 'error')
+function buildCsvExport(): string {
+  const esc = (v: string) => `"${v.replace(/"/g, '""')}"`
+  const rows: string[][] = [
+    ['category', 'name', 'recipe_quantity', 'recipe_unit', 'buy_quantity', 'buy_unit', 'cost', 'purchased'],
+  ]
+  for (const item of store.items) {
+    const rq = item.recipe_quantity
+    const bq = item.buy_quantity
+    rows.push([
+      item.category, item.product_name,
+      rq ? fmtRound2(rq.amount) : '-', rq ? rq.unit : '',
+      fmtBuyAmt(bq.amount, bq.unit), bq.unit,
+      Number(item.cost.amount).toFixed(2),
+      String(item.purchased),
+    ])
   }
+  return rows.map((r) => r.map(esc).join(',')).join('\n')
+}
+
+function onExportText() {
+  if (!store.data) { toast.show('Список покупок пуст', 'info'); return }
+  downloadBlob(new Blob([buildTextExport()], { type: 'text/plain;charset=utf-8' }), 'shopping_list.txt')
+}
+
+function onExportCsv() {
+  if (!store.data) { toast.show('Список покупок пуст', 'info'); return }
+  downloadBlob(new Blob([buildCsvExport()], { type: 'text/csv;charset=utf-8' }), 'shopping_list.csv')
 }
 
 function onAddProduct(productId: number, quantity: number) {
@@ -89,7 +119,8 @@ function onAddProduct(productId: number, quantity: number) {
     product_id: product.id,
     product_name: product.name,
     category: '',
-    quantity: { amount: quantity, unit: product.recipe_unit },
+    quantity: { amount: quantity, unit: product.purchase_unit },
+    buy_quantity: { amount: product.purchase_unit === 'kg' ? quantity : Math.ceil(quantity), unit: product.purchase_unit },
     cost: { amount: '0', currency: 'RUB' },
     purchased: false,
     recipe_quantity: null,

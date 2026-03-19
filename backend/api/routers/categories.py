@@ -5,19 +5,21 @@
   /recipe-categories  — категории рецептов
 """
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.api.auth import get_current_user
 from backend.api.converters import category_to_response
 from backend.api.deps import get_container
 from backend.api.schemas.category import (
     CategoryCreate,
+    CategoryMoveDeleteRequest,
     CategoryResponse,
     CategoryUsedResponse,
 )
 from backend.application.use_cases.manage_category import CategoryBundle
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
+from backend.domain.exceptions import AppError
 
 router = APIRouter(tags=["categories"])
 
@@ -96,6 +98,22 @@ def check_product_category_used(
     return CategoryUsedResponse(used=_bundle(container, "product").check_used.execute(category_id))
 
 
+@router.post(
+    "/product-categories/{category_id}/move-and-delete",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def move_and_delete_product_category(
+    category_id: int,
+    body: CategoryMoveDeleteRequest,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> None:
+    try:
+        _bundle(container, "product").move_and_delete.execute(category_id, body.target_category_id)
+    except AppError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+
+
 # ── Recipe Categories ──────────────────────────────────────────────
 
 
@@ -164,3 +182,19 @@ def check_recipe_category_used(
     user: User = Depends(get_current_user),
 ) -> CategoryUsedResponse:
     return CategoryUsedResponse(used=_bundle(container, "recipe").check_used.execute(category_id))
+
+
+@router.post(
+    "/recipe-categories/{category_id}/move-and-delete",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def move_and_delete_recipe_category(
+    category_id: int,
+    body: CategoryMoveDeleteRequest,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> None:
+    try:
+        _bundle(container, "recipe").move_and_delete.execute(category_id, body.target_category_id)
+    except AppError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))

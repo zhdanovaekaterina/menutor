@@ -18,3 +18,7 @@ class ActiveCategoryResponse(BaseModel):
 
 class CategoryUsedResponse(BaseModel):
     used: bool
+
+
+class CategoryMoveDeleteRequest(BaseModel):
+    target_category_id: int
