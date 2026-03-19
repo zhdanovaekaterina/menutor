@@ -7,6 +7,7 @@ import PlannerGrid from '@/components/planner/PlannerGrid.vue'
 import SavedMenuList from '@/components/planner/SavedMenuList.vue'
 import SourcePanel from '@/components/planner/SourcePanel.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import ContextMenu from '@/components/ui/ContextMenu.vue'
 import ExportModal from '@/components/ui/ExportModal.vue'
 import ImportModal from '@/components/ui/ImportModal.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
@@ -17,6 +18,7 @@ import IconClose from '@/components/ui/icons/IconClose.vue'
 import IconDownload from '@/components/ui/icons/IconDownload.vue'
 import IconHamburger from '@/components/ui/icons/IconHamburger.vue'
 import IconUpload from '@/components/ui/icons/IconUpload.vue'
+import { useContextMenu } from '@/composables/useContextMenu'
 import { useFamilyStore } from '@/stores/family'
 import { useMenuStore } from '@/stores/menus'
 import { useProductStore } from '@/stores/products'
@@ -25,6 +27,7 @@ import { useShoppingListStore } from '@/stores/shoppingList'
 import { useToastStore } from '@/stores/toast'
 
 const router = useRouter()
+const { state: contextMenuState } = useContextMenu()
 const menuStore = useMenuStore()
 const recipeStore = useRecipeStore()
 const productStore = useProductStore()
@@ -397,6 +400,15 @@ async function onGenerateShoppingList() {
           />
         </div>
       </Transition>
+    </Teleport>
+
+    <Teleport to="body">
+      <ContextMenu
+        v-if="contextMenuState.visible"
+        :items="contextMenuState.items"
+        :x="contextMenuState.x"
+        :y="contextMenuState.y"
+      />
     </Teleport>
 
   </div>
