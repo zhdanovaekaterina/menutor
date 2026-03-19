@@ -19,6 +19,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   select: [data: { type: 'recipe' | 'product'; id: number }]
+  remove: [data: { type: 'recipe' | 'product'; id: number }]
 }>()
 
 const tab = ref<'recipes' | 'products'>('recipes')
@@ -50,6 +51,12 @@ const justAdded = ref<Set<string>>(new Set())
 
 function onSelectItem(type: 'recipe' | 'product', id: number) {
   const key = `${type}-${id}`
+  const alreadySelected =
+    type === 'recipe' ? existingRecipeIds.value.has(id) : existingProductIds.value.has(id)
+  if (alreadySelected) {
+    emit('remove', { type, id })
+    return
+  }
   if (justAdded.value.has(key)) return // debounce
   justAdded.value = new Set([...justAdded.value, key])
   emit('select', { type, id })

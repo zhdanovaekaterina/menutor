@@ -119,6 +119,13 @@ function onPickerSelect(data: { type: 'recipe' | 'product'; id: number }) {
   onAddItem(pickerDay.value, pickerMealType.value, data)
 }
 
+function onPickerRemove(data: { type: 'recipe' | 'product'; id: number }) {
+  onRemoveItem(pickerDay.value, pickerMealType.value, {
+    recipe_id: data.type === 'recipe' ? data.id : null,
+    product_id: data.type === 'product' ? data.id : null,
+  })
+}
+
 async function onAddItem(day: number, mealType: string, data: { type: 'recipe' | 'product'; id: number }) {
   await menuStore.ensureMenuSelected()
   const slot: MenuSlot = {
@@ -398,6 +405,7 @@ async function onGenerateShoppingList() {
       :product-categories="productStore.categories"
       @close="pickerOpen = false"
       @select="onPickerSelect"
+      @remove="onPickerRemove"
     />
 
     <!-- Mobile: Left drawer (SavedMenuList) -->
