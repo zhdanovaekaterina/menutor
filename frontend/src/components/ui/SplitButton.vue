@@ -19,8 +19,8 @@
       </svg>
     </button>
     <div
-      v-if="open"
-      class="absolute right-0 top-full z-50 mt-1 min-w-[10rem] rounded-md border border-gray-200 bg-white shadow-lg"
+      v-show="open"
+      class="absolute left-0 top-full z-50 mt-1 min-w-[10rem] rounded-md border border-gray-200 bg-white shadow-lg"
       role="menu"
     >
       <button
