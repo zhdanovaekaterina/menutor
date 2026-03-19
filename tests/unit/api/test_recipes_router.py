@@ -16,7 +16,7 @@ from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
 from backend.domain.value_objects.types import ProductId, RecipeCategoryId, RecipeId
 
 
-def _recipe(id: int = 1) -> Recipe:
+def _recipe(id: int = 1, total_pieces: int | None = None, pieces_per_portion: int | None = None) -> Recipe:
     return Recipe(
         id=RecipeId(id),
         name="Блины",
@@ -25,6 +25,8 @@ def _recipe(id: int = 1) -> Recipe:
         steps=[CookingStep(1, "Смешать")],
         category_id=RecipeCategoryId(1),
         weight=300,
+        total_pieces=total_pieces,
+        pieces_per_portion=pieces_per_portion,
     )
 
 
@@ -505,3 +507,52 @@ class TestDeleteWithCheckDependents:
         resp = client.delete("/api/recipes/5?check_dependents=true")
         assert resp.status_code == 204
         container.delete_recipe.execute.assert_called_once()
+
+
+# ---- Pieces mode fields ----
+
+
+class TestPiecesMode:
+    def test_create_pieces_recipe(self, client: TestClient, container: MagicMock) -> None:
+        """POST /recipes с total_pieces и pieces_per_portion."""
+        container.create_recipe.execute.return_value = _recipe(1, total_pieces=10, pieces_per_portion=2)
+        resp = client.post("/api/recipes", json={
+            "name": "Котлеты", "category_id": 1, "servings": 5,
+            "total_pieces": 10, "pieces_per_portion": 2,
+        })
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["total_pieces"] == 10
+        assert data["pieces_per_portion"] == 2
+
+    def test_create_normal_recipe_pieces_null(self, client: TestClient, container: MagicMock) -> None:
+        """POST /recipes без штучных полей -- поля null в ответе."""
+        container.create_recipe.execute.return_value = _recipe(1)
+        resp = client.post("/api/recipes", json={
+            "name": "Борщ", "category_id": 1, "servings": 4,
+        })
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["total_pieces"] is None
+        assert data["pieces_per_portion"] is None
+
+    def test_get_pieces_recipe(self, client: TestClient, container: MagicMock) -> None:
+        """GET /recipes/{id} возвращает штучные поля."""
+        container.get_recipe.execute.return_value = _recipe(1, total_pieces=10, pieces_per_portion=2)
+        resp = client.get("/api/recipes/1")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_pieces"] == 10
+        assert data["pieces_per_portion"] == 2
+
+    def test_list_recipes_includes_pieces_fields(self, client: TestClient, container: MagicMock) -> None:
+        """GET /recipes включает штучные поля."""
+        container.list_recipes.execute.return_value = [
+            _recipe(1, total_pieces=10, pieces_per_portion=2),
+            _recipe(2),
+        ]
+        resp = client.get("/api/recipes")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data[0]["total_pieces"] == 10
+        assert data[1]["total_pieces"] is None

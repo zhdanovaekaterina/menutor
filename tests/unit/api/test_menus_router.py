@@ -13,8 +13,8 @@ def _menu(id: int = 1, slots: list[MenuSlot] | None = None) -> WeeklyMenu:
     return WeeklyMenu(id=MenuId(id), name="Неделя 1", slots=slots or [])
 
 
-def _slot_recipe() -> MenuSlot:
-    return MenuSlot(day=0, meal_type="Завтрак", recipe_id=RecipeId(1))
+def _slot_recipe(pieces_override: int | None = None) -> MenuSlot:
+    return MenuSlot(day=0, meal_type="Завтрак", recipe_id=RecipeId(1), pieces_override=pieces_override)
 
 
 def _slot_product() -> MenuSlot:
@@ -233,3 +233,36 @@ class TestClearMenu:
         )
         resp = client.post("/api/menus/999/clear")
         assert resp.status_code == 404
+
+
+# ---- pieces_override in slots ----
+
+
+class TestPiecesOverride:
+    def test_add_slot_with_pieces_override(self, client: TestClient, container: MagicMock) -> None:
+        """POST /menus/{id}/slots с pieces_override."""
+        container.add_dish_to_slot.execute.return_value = _menu(1, [_slot_recipe(pieces_override=5)])
+        resp = client.post("/api/menus/1/slots", json={
+            "day": 0, "meal_type": "Завтрак", "recipe_id": 1, "pieces_override": 5,
+        })
+        assert resp.status_code == 200
+        slot = resp.json()["slots"][0]
+        assert slot["pieces_override"] == 5
+
+    def test_add_slot_without_pieces_override(self, client: TestClient, container: MagicMock) -> None:
+        """POST /menus/{id}/slots без pieces_override -- null в ответе."""
+        container.add_dish_to_slot.execute.return_value = _menu(1, [_slot_recipe()])
+        resp = client.post("/api/menus/1/slots", json={
+            "day": 0, "meal_type": "Завтрак", "recipe_id": 1,
+        })
+        assert resp.status_code == 200
+        slot = resp.json()["slots"][0]
+        assert slot["pieces_override"] is None
+
+    def test_get_menu_includes_pieces_override(self, client: TestClient, container: MagicMock) -> None:
+        """GET /menus/{id} возвращает pieces_override."""
+        container.load_menu.execute.return_value = _menu(1, [_slot_recipe(pieces_override=8)])
+        resp = client.get("/api/menus/1")
+        assert resp.status_code == 200
+        slot = resp.json()["slots"][0]
+        assert slot["pieces_override"] == 8
