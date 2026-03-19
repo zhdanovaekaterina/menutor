@@ -1,11 +1,13 @@
 /// <reference types="vitest/config" />
 import { fileURLToPath, URL } from 'node:url'
+// import path from 'node:path'
 
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
+  // envDir: path.resolve(__dirname, '../.config'),  // todo: remove later
   plugins: [vue(), tailwindcss()],
   resolve: {
     alias: {
