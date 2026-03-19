@@ -58,6 +58,7 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     const index = data.value.items.findIndex((i) => i.product_id === productId)
     if (index === -1) return
     const item = data.value.items[index]
+    if (!item) return
     const pricePerUnit = item.buy_quantity.amount > 0
       ? Number(item.cost.amount) / item.buy_quantity.amount
       : 0

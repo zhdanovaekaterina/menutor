@@ -67,6 +67,7 @@ let touchMoved = false
 function onTouchStart(e: TouchEvent) {
   touchMoved = false
   const touch = e.touches[0]
+  if (!touch) return
   longPressTimer = setTimeout(() => {
     if (!touchMoved) {
       openContextMenu(touch.clientX, touch.clientY, buildContextMenuItems())
