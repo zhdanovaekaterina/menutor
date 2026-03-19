@@ -41,18 +41,24 @@ class RecipeJsonExporter:
                 elif "sub_recipe_id" in ing_dict:
                     entry["sub_recipe_id"] = ing_dict["sub_recipe_id"]
                 compact_ingredients.append(entry)
-            return {
+            result: dict[str, Any] = {
                 "id": recipe.id,
                 "name": recipe.name,
                 "servings": recipe.servings,
                 "ingredients": compact_ingredients,
             }
+            if recipe.total_pieces is not None:
+                result["total_pieces"] = recipe.total_pieces
+                result["pieces_per_portion"] = recipe.pieces_per_portion
+            return result
         return {
             "id": recipe.id,
             "name": recipe.name,
             "category_id": recipe.category_id,
             "servings": recipe.servings,
             "weight": recipe.weight,
+            "total_pieces": recipe.total_pieces,
+            "pieces_per_portion": recipe.pieces_per_portion,
             "ingredients": ingredients,
             "steps": [
                 {"order": s.order, "description": s.description}

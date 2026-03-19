@@ -117,6 +117,8 @@ class RecipeCsvImporter:
                 category_id=RecipeCategoryId(category_id),
                 weight=weight,
                 user_id=user_id,
+                total_pieces=int(row["total_pieces"]) if row.get("total_pieces") else None,
+                pieces_per_portion=int(row["pieces_per_portion"]) if row.get("pieces_per_portion") else None,
             )
             self._repo.save(recipe)
 
