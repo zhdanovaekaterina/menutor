@@ -1,5 +1,7 @@
 """add_pieces_mode_fields
 
+Adds total_pieces, pieces_per_portion to recipes and pieces_override to menu_slots.
+
 Revision ID: 94b6b0751ebe
 Revises: da00777f78e8
 Create Date: 2026-03-20 00:40:33.115900

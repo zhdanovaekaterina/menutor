@@ -69,6 +69,8 @@ def recipe_to_response(
             for s in recipe.steps
         ],
         weight=recipe.weight,
+        total_pieces=recipe.total_pieces,
+        pieces_per_portion=recipe.pieces_per_portion,
     )
 
 
@@ -100,6 +102,7 @@ def menu_slot_to_schema(slot: MenuSlot) -> MenuSlotSchema:
         quantity=slot.quantity,
         unit=slot.unit,
         servings_override=slot.servings_override,
+        pieces_override=slot.pieces_override,
         position=slot.position,
     )
 
@@ -189,6 +192,8 @@ def schema_to_recipe_data(body: RecipeCreate) -> RecipeData:
             for s in body.steps
         ],
         weight=body.weight,
+        total_pieces=body.total_pieces,
+        pieces_per_portion=body.pieces_per_portion,
     )
 
 
@@ -223,5 +228,6 @@ def schema_to_menu_slot(s: MenuSlotSchema) -> MenuSlot:
         quantity=s.quantity,
         unit=s.unit,
         servings_override=s.servings_override,
+        pieces_override=s.pieces_override,
         position=s.position,
     )

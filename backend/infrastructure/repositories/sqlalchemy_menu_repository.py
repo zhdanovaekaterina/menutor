@@ -46,6 +46,7 @@ class SqlAlchemyMenuRepository(
                     quantity=s.quantity,
                     unit=s.unit,
                     servings_override=s.servings_override,
+                    pieces_override=s.pieces_override,
                     position=s.slot_position,
                 )
                 for s in sorted(row.slots, key=lambda s: s.slot_position)
@@ -71,5 +72,6 @@ class SqlAlchemyMenuRepository(
             quantity=slot.quantity,
             unit=slot.unit,
             servings_override=slot.servings_override,
+            pieces_override=slot.pieces_override,
             slot_position=slot.position,
         )

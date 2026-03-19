@@ -43,6 +43,8 @@ class SqlAlchemyRecipeRepository(
             category_id=entity.category_id,
             servings=entity.servings,
             weight=entity.weight,
+            total_pieces=entity.total_pieces,
+            pieces_per_portion=entity.pieces_per_portion,
         )
         row.ingredients = [
             RecipeIngredientRow(
@@ -65,6 +67,8 @@ class SqlAlchemyRecipeRepository(
         row.category_id = entity.category_id
         row.servings = entity.servings
         row.weight = entity.weight
+        row.total_pieces = entity.total_pieces
+        row.pieces_per_portion = entity.pieces_per_portion
         row.ingredients = [
             RecipeIngredientRow(
                 product_id=int(ing.product_id) if ing.product_id is not None else None,
@@ -101,6 +105,8 @@ class SqlAlchemyRecipeRepository(
             category_id=RecipeCategoryId(row.category_id),
             weight=row.weight,
             user_id=UserId(row.user_id),
+            total_pieces=row.total_pieces,
+            pieces_per_portion=row.pieces_per_portion,
         )
 
     def find_all(self, user_id: UserId) -> list[Recipe]:
