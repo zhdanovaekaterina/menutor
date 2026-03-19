@@ -11,6 +11,7 @@ import ContextMenu from '@/components/ui/ContextMenu.vue'
 import ExportModal from '@/components/ui/ExportModal.vue'
 import ImportModal from '@/components/ui/ImportModal.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
+import SlotEditDialog from '@/components/ui/SlotEditDialog.vue'
 import IconCart from '@/components/ui/icons/IconCart.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
@@ -54,6 +55,10 @@ const exportOpen = ref(false)
 const importOpen = ref(false)
 const editSlot = ref<MenuSlot | null>(null)
 const editValue = ref('')
+const editPiecesMode = ref(false)
+const editPortions = ref('')
+const editPieces = ref('')
+const editCalculatedPieces = ref(0)
 
 onMounted(async () => {
   const previousId = menuStore.selectedId
@@ -147,6 +152,21 @@ async function onRemoveItem(day: number, mealType: string, data: { recipe_id?: n
 
 function onEditItem(slot: MenuSlot) {
   editSlot.value = slot
+
+  if (slot.recipe_id != null) {
+    const recipe = recipeStore.items.find(r => r.id === slot.recipe_id)
+    if (recipe?.total_pieces != null && recipe?.pieces_per_portion != null) {
+      editPiecesMode.value = true
+      const portions = slot.servings_override ?? totalFamilyPortions.value
+      editPortions.value = String(portions)
+      const calculated = Math.max(1, Math.round(portions * recipe.pieces_per_portion))
+      editCalculatedPieces.value = calculated
+      editPieces.value = String(slot.pieces_override ?? calculated)
+      return
+    }
+  }
+
+  editPiecesMode.value = false
   editValue.value = String(slot.servings_override ?? slot.quantity ?? 1)
 }
 
@@ -154,6 +174,7 @@ async function onEditDelete() {
   const s = editSlot.value
   if (!s) return
   editSlot.value = null
+  editPiecesMode.value = false
   await onRemoveItem(s.day, s.meal_type, { recipe_id: s.recipe_id, product_id: s.product_id })
 }
 
@@ -161,6 +182,18 @@ async function onEditConfirm(val: string) {
   const s = editSlot.value
   if (!s || !menuStore.current) return
   editSlot.value = null
+
+  if (editPiecesMode.value) {
+    const pcs = parseInt(editPieces.value)
+    if (isNaN(pcs) || pcs < 1) return
+    const updated: MenuSlot = {
+      ...s,
+      pieces_override: pcs !== editCalculatedPieces.value ? pcs : null,
+    }
+    await menuStore.addSlotToMenu(updated)
+    return
+  }
+
   const num = parseFloat(val)
   if (isNaN(num) || num <= 0) return
   const updated: MenuSlot = {
@@ -366,8 +399,9 @@ async function onGenerateShoppingList() {
       @confirm="onClear"
       @cancel="confirmClearOpen = false"
     />
+    <!-- Edit dialog: standard (non-pieces) -->
     <InputDialog
-      :open="!!editSlot"
+      :open="!!editSlot && !editPiecesMode"
       :title="editSlot?.recipe_id != null ? 'Порции' : 'Количество'"
       :label="editSlot?.recipe_id != null ? 'Количество порций' : 'Количество'"
       :initial-value="editValue"
@@ -375,6 +409,19 @@ async function onGenerateShoppingList() {
       :show-delete="true"
       @confirm="onEditConfirm"
       @cancel="editSlot = null"
+      @delete="onEditDelete"
+    />
+
+    <!-- Edit dialog: pieces mode -->
+    <SlotEditDialog
+      :open="!!editSlot && editPiecesMode"
+      :recipe-name="editSlot?.recipe_id != null ? (recipeNames[editSlot.recipe_id] ?? '') : ''"
+      :portions="editPortions"
+      :calculated-pieces="editCalculatedPieces"
+      v-model:pieces="editPieces"
+      :show-delete="true"
+      @confirm="onEditConfirm('')"
+      @cancel="editSlot = null; editPiecesMode = false"
       @delete="onEditDelete"
     />
 
