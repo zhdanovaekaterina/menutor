@@ -106,11 +106,8 @@ async function onDeleteMenu() {
   await menuStore.remove(selectedId.value)
 }
 
-function onOpenPicker(day: number, mealType: string) {
-  if (!menuStore.current) {
-    toast.show('Сначала выберите меню', 'error')
-    return
-  }
+async function onOpenPicker(day: number, mealType: string) {
+  await menuStore.ensureMenuSelected()
   pickerDay.value = day
   pickerMealType.value = mealType
   pickerOpen.value = true
@@ -121,7 +118,7 @@ function onPickerSelect(data: { type: 'recipe' | 'product'; id: number }) {
 }
 
 async function onAddItem(day: number, mealType: string, data: { type: 'recipe' | 'product'; id: number }) {
-  if (!menuStore.current) { toast.show('Сначала выберите меню', 'error'); return }
+  await menuStore.ensureMenuSelected()
   const slot: MenuSlot = {
     day,
     meal_type: mealType,

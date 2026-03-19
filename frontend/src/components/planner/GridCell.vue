@@ -5,7 +5,6 @@ import type { MenuSlot } from '@/api/types'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { usePlannerClipboard } from '@/composables/usePlannerClipboard'
 import { useMenuStore } from '@/stores/menus'
-import { useToastStore } from '@/stores/toast'
 import ItemRow from './ItemRow.vue'
 
 const props = defineProps<{
@@ -33,7 +32,6 @@ const listRef = ref<HTMLElement>()
 const { open: openContextMenu, close: closeContextMenu } = useContextMenu()
 const { hasClipboard, copySlot, pasteSlot } = usePlannerClipboard()
 const menuStore = useMenuStore()
-const toast = useToastStore()
 
 function buildContextMenuItems() {
   return [
@@ -50,10 +48,7 @@ function buildContextMenuItems() {
       action: async () => {
         const items = pasteSlot()
         if (!items || items.length === 0) return
-        if (!menuStore.current) {
-          toast.show('Сначала выберите меню', 'error')
-          return
-        }
+        await menuStore.ensureMenuSelected()
         await menuStore.mergeItemsIntoSlot(props.day, props.mealType, items)
         closeContextMenu()
       },

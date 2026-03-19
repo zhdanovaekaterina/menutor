@@ -125,5 +125,20 @@ export const useMenuStore = defineStore('menus', () => {
     useToastStore().show('Меню очищено', 'success')
   }
 
-  return { menus, current, selectedId, loading, load, select, create, remove, addSlotToMenu, removeSlotFromMenu, moveSlot, reorderSlots, mergeItemsIntoSlot, clear }
+  function _autoMenuName(): string {
+    const now = new Date()
+    const hh = String(now.getHours()).padStart(2, '0')
+    const mm = String(now.getMinutes()).padStart(2, '0')
+    const dd = String(now.getDate()).padStart(2, '0')
+    const mo = String(now.getMonth() + 1).padStart(2, '0')
+    const yyyy = now.getFullYear()
+    return `${hh}:${mm}_${dd}.${mo}.${yyyy}`
+  }
+
+  async function ensureMenuSelected(): Promise<void> {
+    if (current.value) return
+    await create(_autoMenuName())
+  }
+
+  return { menus, current, selectedId, loading, load, select, create, remove, addSlotToMenu, removeSlotFromMenu, moveSlot, reorderSlots, mergeItemsIntoSlot, clear, ensureMenuSelected }
 })
