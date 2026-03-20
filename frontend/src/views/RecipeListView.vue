@@ -8,33 +8,38 @@ import ExportModal from '@/components/ui/ExportModal.vue'
 import ImportModal from '@/components/ui/ImportModal.vue'
 import MoreActionsDropdown from '@/components/ui/MoreActionsDropdown.vue'
 import SlidePanel from '@/components/ui/SlidePanel.vue'
-import { useSelection } from '@/composables/useSelection'
+import { useCrudView } from '@/composables/useCrudView'
 import { useProductStore } from '@/stores/products'
 import { useRecipeStore } from '@/stores/recipes'
-import { useToastStore } from '@/stores/toast'
 import { fetchRecipeDependents } from '@/api/client'
+import { useToastStore } from '@/stores/toast'
 
 const store = useRecipeStore()
 const productStore = useProductStore()
 const toast = useToastStore()
-const selection = useSelection()
 
-const selectedId = ref<number | null>(null)
-const confirmDeleteOpen = ref(false)
-const formOpen = ref(false)
-const exportOpen = ref(false)
-const importOpen = ref(false)
+const {
+  selection,
+  selectedId,
+  selectedItem: selectedRecipe,
+  confirmDeleteOpen,
+  formOpen,
+  exportOpen,
+  importOpen,
+  confirmBatchDeleteOpen,
+  confirmDeleteAllOpen,
+  onSelect: baseOnSelect,
+  openNew,
+  onSave,
+  onClear: baseClear,
+  toggleSelectMode,
+  onConfirmBatchDelete,
+  onConfirmDeleteAll,
+} = useCrudView<(typeof store.items)[number], RecipeCreate>(store)
 
+// Recipe-specific: sub-recipe navigation
 const recipeStack = ref<number[]>([])
 const dependentRecipes = ref<{ id: number; name: string }[]>([])
-
-onMounted(async () => {
-  await Promise.all([store.load(), productStore.load()])
-})
-
-const selectedRecipe = computed(() =>
-  store.items.find((r) => r.id === selectedId.value) ?? null,
-)
 
 const parentRecipeName = computed(() => {
   if (recipeStack.value.length === 0) return undefined
@@ -42,7 +47,6 @@ const parentRecipeName = computed(() => {
   return store.items.find((r) => r.id === parentId)?.name
 })
 
-// For MVP: prevent self-reference only; deep cycles caught by backend
 const ancestorIds = computed(() => {
   if (selectedId.value == null) return new Set<number>()
   return new Set([selectedId.value])
@@ -50,27 +54,7 @@ const ancestorIds = computed(() => {
 
 function onSelect(id: number) {
   recipeStack.value = []
-  selectedId.value = id
-  formOpen.value = true
-}
-
-function openNew() {
-  selectedId.value = null
-  formOpen.value = true
-}
-
-async function onSave(data: RecipeCreate, id: number | null) {
-  try {
-    if (id) {
-      await store.update(id, data)
-    } else {
-      const created = await store.create(data)
-      selectedId.value = created.id
-    }
-    formOpen.value = false
-  } catch (e: any) {
-    toast.show(e?.response?.data?.detail ?? 'Ошибка сохранения', 'error')
-  }
+  baseOnSelect(id)
 }
 
 async function onRemove(id: number) {
@@ -98,8 +82,7 @@ async function onConfirmDelete() {
 
 function onClear() {
   recipeStack.value = []
-  selectedId.value = null
-  formOpen.value = false
+  baseClear()
 }
 
 function onNavigateToSubRecipe(subRecipeId: number) {
@@ -116,35 +99,9 @@ function onNavigateBack() {
   }
 }
 
-const confirmBatchDeleteOpen = ref(false)
-const confirmDeleteAllOpen = ref(false)
-
-function toggleSelectMode() {
-  if (selection.active.value) selection.exit()
-  else { selection.enter(); formOpen.value = false }
-}
-
-async function onConfirmBatchDelete() {
-  confirmBatchDeleteOpen.value = false
-  const ids = [...selection.selected.value]
-  try {
-    await store.removeMany(ids)
-    selection.clear()
-  } catch (e: any) {
-    toast.show(e?.response?.data?.detail ?? 'Ошибка удаления', 'error')
-  }
-}
-
-async function onConfirmDeleteAll() {
-  confirmDeleteAllOpen.value = false
-  const ids = store.items.map((r) => r.id)
-  try {
-    await store.removeMany(ids)
-    selection.exit()
-  } catch (e: any) {
-    toast.show(e?.response?.data?.detail ?? 'Ошибка удаления', 'error')
-  }
-}
+onMounted(async () => {
+  await Promise.all([store.load(), productStore.load()])
+})
 </script>
 
 <template>
