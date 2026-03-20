@@ -30,7 +30,7 @@ class BaseOrmCategoryRepository:
     def find_active(self) -> list[ActiveCategory]:
         rows: list[Any] = (
             self._session.query(self._cat_class)
-            .filter(self._cat_class.active == 1)
+            .filter(self._cat_class.active == True)  # noqa: E712
             .order_by(self._cat_class.name)
             .all()
         )
@@ -55,14 +55,14 @@ class BaseOrmCategoryRepository:
         row = self._session.get(self._cat_class, category_id)
         if row is not None:
             row.name = name
-            row.active = 1
+            row.active = True
         self._session.commit()
         return category_id
 
     def delete(self, category_id: int) -> None:
         row = self._session.get(self._cat_class, category_id)
         if row is not None:
-            row.active = 0
+            row.active = False
             self._session.commit()
 
     def hard_delete(self, category_id: int) -> None:
@@ -77,7 +77,7 @@ class BaseOrmCategoryRepository:
     def activate(self, category_id: int) -> None:
         row = self._session.get(self._cat_class, category_id)
         if row is not None:
-            row.active = 1
+            row.active = True
             self._session.commit()
 
     def is_used(self, category_id: int) -> bool:
