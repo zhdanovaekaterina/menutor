@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 import type { ActiveCategory, FamilyMember, Product, Recipe } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
-import { useCategoryFilter } from '@/composables/useCategoryFilter'
+import { useTabbedFilter } from '@/composables/useTabbedFilter'
 
 const props = defineProps<{
   recipes: Recipe[]
@@ -12,20 +11,12 @@ const props = defineProps<{
   productCategories: ActiveCategory[]
 }>()
 
-const tab = ref<'recipes' | 'products'>('recipes')
-const search = ref('')
-const recipeCF = useCategoryFilter<Recipe>()
-const productCF = useCategoryFilter<Product>()
-
-function switchTab(next: 'recipes' | 'products') {
-  tab.value = next
-  search.value = ''
-  recipeCF.reset()
-  productCF.reset()
-}
-
-const filteredRecipes = computed(() => recipeCF.applyFilter(props.recipes, search.value))
-const filteredProducts = computed(() => productCF.applyFilter(props.products, search.value))
+const {
+  tab, search, recipeCF, productCF, switchTab, filteredRecipes, filteredProducts,
+} = useTabbedFilter<Recipe, Product>(
+  () => props.recipes,
+  () => props.products,
+)
 
 function onDragStart(e: DragEvent, type: 'recipe' | 'product', id: number) {
   e.dataTransfer?.setData('application/json', JSON.stringify({ type, id }))
