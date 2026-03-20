@@ -1,14 +1,14 @@
-# API Layer — FastAPI, Routers, Schemas, Auth
+# Слой API — FastAPI, маршруты, схемы, аутентификация
 
-**File location:** `backend/api/`
+**Расположение:** `backend/api/`
 
-The API layer is a thin HTTP adapter translating requests to domain operations and responses. It handles routing, validation (Pydantic schemas), authentication middleware, and error handling.
+Слой API является тонким HTTP-адаптером, преобразующим запросы в доменные операции и ответы. Он обрабатывает маршрутизацию, валидацию (схемы Pydantic), middleware аутентификации и обработку ошибок.
 
 ---
 
-## FastAPI App Setup
+## Настройка FastAPI приложения
 
-**File:** `backend/api/main.py`
+**Файл:** `backend/api/main.py`
 
 ```python
 import os
@@ -21,16 +21,16 @@ from backend.domain.exceptions import (
     CircularDependencyError, NestingDepthExceededError,
 )
 
-# ─── Lifespan: Create ApplicationContainer at startup ────────
+# ─── Lifespan: Создание ApplicationContainer при запуске ────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize dependencies when app starts."""
+    """Инициализация зависимостей при запуске приложения."""
     app.state.container = ApplicationContainer()
     yield
-    # Cleanup on shutdown (if needed)
+    # Очистка при завершении (если необходимо)
 
-# ─── Create FastAPI app ───────────────────────────────────────
+# ─── Создание FastAPI приложения ───────────────────────────────────────
 
 app = FastAPI(
     title="Menutor API",
@@ -43,14 +43,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # Allow all origins in dev
+    allow_origins=["*"],          # Разрешить все источники в разработке
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ─── Exception Handlers ────────────────────────────────────────
-# Map domain exceptions to HTTP responses
+# ─── Обработчики исключений ────────────────────────────────────────
+# Преобразование доменных исключений в HTTP ответы
 
 @app.exception_handler(AuthenticationError)
 async def auth_error_handler(request, exc):
@@ -79,7 +79,7 @@ async def domain_error_handler(request, exc):
 async def app_error_handler(request, exc):
     return JSONResponse(status_code=400, content={"detail": str(exc)})
 
-# ─── Router Registration ──────────────────────────────────────
+# ─── Регистрация маршрутизаторов ──────────────────────────────────────
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(recipes.router, prefix="/api")
@@ -92,7 +92,7 @@ app.include_router(import_export.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
 ```
 
-**Run:**
+**Запуск:**
 ```bash
 uvicorn backend.api.main:app --reload
 # Swagger UI: http://localhost:8000/docs
@@ -102,9 +102,9 @@ uvicorn backend.api.main:app --reload
 
 ---
 
-## Authentication Middleware
+## Middleware аутентификации
 
-**File:** `backend/api/auth.py`
+**Файл:** `backend/api/auth.py`
 
 ```python
 from fastapi import Depends, HTTPException, Request, status
@@ -118,12 +118,12 @@ def get_current_user(
     container: ApplicationContainer = Depends(get_container),
 ) -> User:
     """
-    Extract and validate JWT from Authorization header.
+    Извлечение и валидация JWT из заголовка Authorization.
 
-    Expected header: Authorization: Bearer <jwt_token>
+    Ожидаемый заголовок: Authorization: Bearer <jwt_token>
 
-    Raises:
-        HTTPException(401): No token, invalid token, or user not found
+    Вызывает исключение:
+        HTTPException(401): Нет токена, неверный токен или пользователь не найден
     """
     auth_header = request.headers.get("Authorization")
 
@@ -137,7 +137,7 @@ def get_current_user(
     token = auth_header.removeprefix("Bearer ")
 
     try:
-        # Use GetCurrentUser use case to validate token and fetch user
+        # Использование use case GetCurrentUser для валидации токена и получения пользователя
         return container.get_current_user.execute(token)
     except AuthenticationError as exc:
         raise HTTPException(
@@ -147,12 +147,12 @@ def get_current_user(
         ) from exc
 ```
 
-**Usage in routes:**
+**Использование в маршрутах:**
 
 ```python
 @router.get("/recipes")
 def list_recipes(
-    user: User = Depends(get_current_user),  # ← Injected by FastAPI
+    user: User = Depends(get_current_user),  # ← Внедрено FastAPI
     container: ApplicationContainer = Depends(get_container),
 ) -> list[RecipeResponse]:
     recipes = container.list_recipes.execute(user.id)
@@ -161,9 +161,9 @@ def list_recipes(
 
 ---
 
-## Dependency Injection
+## Внедрение зависимостей
 
-**File:** `backend/api/deps.py`
+**Файл:** `backend/api/deps.py`
 
 ```python
 from fastapi import Request
@@ -171,27 +171,27 @@ from backend.composition_root import ApplicationContainer
 
 def get_container(request: Request) -> ApplicationContainer:
     """
-    FastAPI dependency: retrieve ApplicationContainer from app.state.
+    Зависимость FastAPI: получение ApplicationContainer из app.state.
 
-    The container is created once during app startup (lifespan).
-    It holds all use cases and repositories.
+    Контейнер создается один раз при запуске приложения (lifespan).
+    Он содержит все use case и репозитории.
     """
     return request.app.state.container
 ```
 
 ---
 
-## Pydantic Schemas
+## Схемы Pydantic
 
-**File:** `backend/api/schemas/recipe.py`
+**Файл:** `backend/api/schemas/recipe.py`
 
-Request/response models with validation.
+Модели запроса/ответа с валидацией.
 
 ```python
 from pydantic import BaseModel, Field
 from typing import Optional
 
-# ─── Request Schemas ──────────────────────────────────────────
+# ─── Схемы запроса ──────────────────────────────────────────
 
 class RecipeIngredientCreate(BaseModel):
     product_id: int
@@ -223,14 +223,14 @@ class RecipeUpdate(BaseModel):
     total_pieces: Optional[int] = None
     pieces_per_portion: Optional[int] = None
 
-# ─── Response Schemas ─────────────────────────────────────────
+# ─── Схемы ответа ─────────────────────────────────────────
 
 class RecipeIngredientResponse(BaseModel):
     product_id: int
     sub_recipe_id: Optional[int]
     quantity_amount: float
     quantity_unit: str
-    sub_recipe_name: Optional[str] = None  # Name of sub-recipe if present
+    sub_recipe_name: Optional[str] = None  # Имя под-рецепта если присутствует
 
 class CookingStepResponse(BaseModel):
     description: str
@@ -248,10 +248,10 @@ class RecipeResponse(BaseModel):
     pieces_per_portion: Optional[int]
 
     class Config:
-        from_attributes = True  # Allow creating from ORM models
+        from_attributes = True  # Разрешить создание из ORM моделей
 ```
 
-Other schema files:
+Другие файлы схем:
 - `backend/api/schemas/auth.py` — LoginRequest, RegisterRequest, TokenResponse
 - `backend/api/schemas/product.py` — ProductCreate, ProductResponse
 - `backend/api/schemas/menu.py` — MenuCreate, MenuSlotCreate, MenuResponse
@@ -262,11 +262,11 @@ Other schema files:
 
 ---
 
-## Converters
+## Конвертеры
 
-**File:** `backend/api/converters.py`
+**Файл:** `backend/api/converters.py`
 
-Convert domain entities ↔ Pydantic schemas.
+Преобразование доменных сущностей ↔ схемы Pydantic.
 
 ```python
 from backend.domain.entities.recipe import Recipe
@@ -274,9 +274,9 @@ from backend.api.schemas.recipe import RecipeResponse, RecipeIngredientResponse
 
 def recipe_to_response(
     recipe: Recipe,
-    name_lookup: callable = None,  # Function to get sub-recipe names
+    name_lookup: callable = None,  # Функция для получения имен под-рецептов
 ) -> RecipeResponse:
-    """Convert domain Recipe to API response."""
+    """Преобразование доменного рецепта в API ответ."""
     return RecipeResponse(
         id=int(recipe.id),
         name=recipe.name,
@@ -305,7 +305,7 @@ def recipe_to_response(
     )
 
 def schema_to_recipe_data(schema: RecipeCreate) -> dict:
-    """Convert request schema to use-case parameters."""
+    """Преобразование схемы запроса в параметры use case."""
     return {
         "name": schema.name,
         "servings": schema.servings,
@@ -334,11 +334,11 @@ def schema_to_recipe_data(schema: RecipeCreate) -> dict:
 
 ---
 
-## Router Endpoints
+## Маршруты эндпоинтов
 
-**File:** `backend/api/routers/recipes.py`
+**Файл:** `backend/api/routers/recipes.py`
 
-Each router handles one domain concept (recipes, products, menus, etc.).
+Каждый маршрутизатор обрабатывает одну доменную концепцию (рецепты, продукты, меню и т.д.).
 
 ```python
 from fastapi import APIRouter, Depends, Query, status
@@ -352,7 +352,7 @@ from backend.domain.value_objects.types import RecipeId, RecipeCategoryId
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
-# ─── GET / List recipes ───────────────────────────────────────
+# ─── GET / Список рецептов ───────────────────────────────────────
 
 @router.get("", response_model=list[RecipeResponse])
 def list_recipes(
@@ -361,24 +361,24 @@ def list_recipes(
     container: ApplicationContainer = Depends(get_container),
 ) -> list[RecipeResponse]:
     """
-    List all user's recipes, optionally filtered by category.
+    Получить все рецепты пользователя, опционально отфильтрованные по категории.
 
-    Query Parameters:
-        category_id (optional): Filter by recipe category
+    Параметры запроса:
+        category_id (опционально): Фильтр по категории рецепта
     """
     recipes = container.list_recipes.execute(
         user.id,
         RecipeCategoryId(category_id) if category_id else None
     )
 
-    # Name lookup for sub-recipes
+    # Поиск имен для под-рецептов
     def name_lookup(recipe_id):
         r = container.get_recipe.execute(recipe_id, user.id)
         return r.name if r else None
 
     return [recipe_to_response(r, name_lookup) for r in recipes]
 
-# ─── GET /{id} Get one recipe ────────────────────────────────
+# ─── GET /{id} Получить один рецепт ────────────────────────────
 
 @router.get("/{recipe_id}", response_model=RecipeResponse)
 def get_recipe(
@@ -386,14 +386,14 @@ def get_recipe(
     user: User = Depends(get_current_user),
     container: ApplicationContainer = Depends(get_container),
 ) -> RecipeResponse:
-    """Get recipe by ID."""
+    """Получить рецепт по ID."""
     recipe = container.get_recipe.execute(RecipeId(recipe_id), user.id)
     def name_lookup(rid):
         r = container.get_recipe.execute(rid, user.id)
         return r.name if r else None
     return recipe_to_response(recipe, name_lookup)
 
-# ─── POST Create recipe ────────────────────────────────────────
+# ─── POST Создать рецепт ────────────────────────────────────────
 
 @router.post("", response_model=RecipeResponse, status_code=status.HTTP_201_CREATED)
 def create_recipe(
@@ -402,16 +402,16 @@ def create_recipe(
     container: ApplicationContainer = Depends(get_container),
 ) -> RecipeResponse:
     """
-    Create a new recipe.
+    Создать новый рецепт.
 
-    Request Body:
-        name: Recipe name (required)
-        servings: Number of servings (required)
-        category_id: Recipe category ID (required)
-        ingredients: List of ingredients with quantities
-        steps: Cooking instructions
-        total_pieces: Optional, for pieces-based recipes
-        pieces_per_portion: Optional, for pieces-based recipes
+    Тело запроса:
+        name: Название рецепта (обязательно)
+        servings: Количество порций (обязательно)
+        category_id: ID категории рецепта (обязательно)
+        ingredients: Список ингредиентов с количеством
+        steps: Инструкции приготовления
+        total_pieces: Опционально, для штучных рецептов
+        pieces_per_portion: Опционально, для штучных рецептов
     """
     data = schema_to_recipe_data(body)
 
@@ -423,7 +423,7 @@ def create_recipe(
     recipe = container.get_recipe.execute(recipe_id, user.id)
     return recipe_to_response(recipe)
 
-# ─── PUT Update recipe ─────────────────────────────────────────
+# ─── PUT Обновить рецепт ─────────────────────────────────────────
 
 @router.put("/{recipe_id}", response_model=RecipeResponse)
 def update_recipe(
@@ -432,7 +432,7 @@ def update_recipe(
     user: User = Depends(get_current_user),
     container: ApplicationContainer = Depends(get_container),
 ) -> RecipeResponse:
-    """Update recipe fields."""
+    """Обновить поля рецепта."""
     data = {
         key: val for key, val in schema_to_recipe_data(body).items()
         if val is not None
@@ -447,7 +447,7 @@ def update_recipe(
     recipe = container.get_recipe.execute(RecipeId(recipe_id), user.id)
     return recipe_to_response(recipe)
 
-# ─── DELETE Delete recipe ──────────────────────────────────────
+# ─── DELETE Удалить рецепт ──────────────────────────────────────
 
 @router.delete("/{recipe_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_recipe(
@@ -455,13 +455,13 @@ def delete_recipe(
     user: User = Depends(get_current_user),
     container: ApplicationContainer = Depends(get_container),
 ) -> None:
-    """Delete recipe."""
+    """Удалить рецепт."""
     container.delete_recipe.execute(RecipeId(recipe_id), user.id)
 ```
 
-### Auth Router
+### Маршрутизатор аутентификации
 
-**File:** `backend/api/routers/auth.py`
+**Файл:** `backend/api/routers/auth.py`
 
 ```python
 from fastapi import APIRouter
@@ -475,14 +475,14 @@ def register(
     body: RegisterRequest,
     container: ApplicationContainer = Depends(get_container),
 ) -> TokenResponse:
-    """Register new user."""
+    """Регистрация нового пользователя."""
     user_id = container.register_user.execute(
         email=body.email,
         password=body.password,
         nickname=body.nickname,
     )
 
-    # Auto-login after registration
+    # Автоматический вход после регистрации
     login_resp = container.login_user.execute(body.email, body.password)
     return login_resp
 
@@ -491,7 +491,7 @@ def login(
     body: LoginRequest,
     container: ApplicationContainer = Depends(get_container),
 ) -> TokenResponse:
-    """Login user and return tokens."""
+    """Вход пользователя и возврат токенов."""
     return container.login_user.execute(body.email, body.password)
 
 @router.post("/refresh", response_model=str)
@@ -499,14 +499,14 @@ def refresh(
     refresh_token: str,
     container: ApplicationContainer = Depends(get_container),
 ) -> str:
-    """Refresh access token using refresh token."""
+    """Обновить токен доступа используя refresh token."""
     return container.refresh_access_token.execute(refresh_token)
 
 @router.get("/me", response_model=UserResponse)
 def get_me(
     user: User = Depends(get_current_user),
 ) -> UserResponse:
-    """Get current user profile."""
+    """Получить профиль текущего пользователя."""
     return UserResponse(
         id=int(user.id),
         email=user.email,
@@ -514,29 +514,29 @@ def get_me(
     )
 ```
 
-### Other Routers
+### Другие маршрутизаторы
 
-- `products.py` — CRUD products (similar to recipes)
-- `menus.py` — Create, load, manage menu slots
-- `family.py` — CRUD family members
-- `categories.py` — CRUD product and recipe categories
-- `shopping_list.py` — Generate and export shopping lists
-- `import_export.py` — Import/export recipes and products
-- `system.py` — Health check, version info
+- `products.py` — CRUD продукты (аналогично рецептам)
+- `menus.py` — Создание, загрузка, управление слотами меню
+- `family.py` — CRUD члены семьи
+- `categories.py` — CRUD категории продукты и рецепты
+- `shopping_list.py` — Генерация и экспорт списков покупок
+- `import_export.py` — Импорт/экспорт рецептов и продуктов
+- `system.py` — Проверка здоровья, информация о версии
 
 ---
 
-## Error Responses
+## Ответы об ошибках
 
-All errors follow this JSON format:
+Все ошибки следуют этому формату JSON:
 
 ```json
 {
-  "detail": "Human-readable error message"
+  "detail": "Понятное для человека сообщение об ошибке"
 }
 ```
 
-Or for validation errors:
+Или для ошибок валидации:
 
 ```json
 {
@@ -550,24 +550,24 @@ Or for validation errors:
 }
 ```
 
-**HTTP Status Codes:**
+**HTTP коды состояния:**
 
-| Code | Exception | Use Case |
+| Код | Исключение | Случай использования |
 |------|-----------|----------|
-| 201 | — | Resource created (POST) |
-| 204 | — | Deleted successfully (DELETE) |
-| 400 | `AppError` | Generic application error |
-| 401 | `AuthenticationError` | Invalid token or credentials |
-| 404 | `EntityNotFoundError` | Resource not found |
-| 409 | `UserAlreadyExistsError` | Conflict (email already registered) |
-| 422 | `DomainError`, `CircularDependencyError` | Business rule violation |
-| 500 | `RepositoryError` | Database error |
+| 201 | — | Ресурс создан (POST) |
+| 204 | — | Успешно удалено (DELETE) |
+| 400 | `AppError` | Общая ошибка приложения |
+| 401 | `AuthenticationError` | Неверный токен или учетные данные |
+| 404 | `EntityNotFoundError` | Ресурс не найден |
+| 409 | `UserAlreadyExistsError` | Конфликт (email уже зарегистрирован) |
+| 422 | `DomainError`, `CircularDependencyError` | Нарушение бизнес-правила |
+| 500 | `RepositoryError` | Ошибка базы данных |
 
 ---
 
-## API Testing
+## Тестирование API
 
-**Pattern:** Use TestClient from `fastapi.testclient`.
+**Паттерн:** Использование TestClient из `fastapi.testclient`.
 
 ```python
 # tests/unit/api/test_recipes.py
@@ -577,10 +577,10 @@ from backend.api.main import app
 from unittest.mock import Mock, patch
 
 def test_list_recipes():
-    """Test GET /api/recipes"""
+    """Тест GET /api/recipes"""
     client = TestClient(app)
 
-    # Mock authentication
+    # Мок аутентификации
     with patch("backend.api.auth.get_current_user") as mock_auth:
         mock_auth.return_value = User(
             id=UserId(1),
@@ -590,7 +590,7 @@ def test_list_recipes():
             created_at=datetime.utcnow(),
         )
 
-        # Mock container
+        # Мок контейнера
         with patch("backend.api.deps.get_container") as mock_container:
             mock_container.return_value.list_recipes.execute.return_value = [
                 Recipe(id=RecipeId(1), name="Блины", ...),
@@ -604,7 +604,7 @@ def test_list_recipes():
             assert response.json()[0]["name"] == "Блины"
 
 def test_create_recipe():
-    """Test POST /api/recipes"""
+    """Тест POST /api/recipes"""
     client = TestClient(app)
 
     body = {
@@ -627,7 +627,7 @@ def test_create_recipe():
         assert response.json()["name"] == "Новый рецепт"
 
 def test_auth_required():
-    """Test that endpoints require authentication"""
+    """Тест что эндпоинты требуют аутентификацию"""
     client = TestClient(app)
 
     response = client.get("/api/recipes")
@@ -638,24 +638,24 @@ def test_auth_required():
 
 ---
 
-## Summary
+## Резюме
 
-The API layer:
-- **Accepts** HTTP requests and validates with Pydantic
-- **Extracts** current user via JWT middleware
-- **Calls** use cases via ApplicationContainer
-- **Converts** domain entities to response schemas
-- **Returns** JSON with appropriate status codes
-- **Handles** errors via exception handlers
+Слой API:
+- **Принимает** HTTP запросы и валидирует с Pydantic
+- **Извлекает** текущего пользователя через JWT middleware
+- **Вызывает** use case через ApplicationContainer
+- **Преобразует** доменные сущности в схемы ответов
+- **Возвращает** JSON с соответствующими кодами состояния
+- **Обрабатывает** ошибки через обработчики исключений
 
-Key principles:
-- Stateless (no session storage)
-- Type-safe (Pydantic validation)
-- Testable (via mocking)
-- Clear error messages (for frontend)
+Ключевые принципы:
+- Stateless (без хранилища сессий)
+- Type-safe (валидация Pydantic)
+- Testable (через моки)
+- Clear error messages (для фронтенда)
 
-All endpoints are documented in Swagger UI at `/docs`.
+Все эндпоинты документированы в Swagger UI по адресу `/docs`.
 
 ---
 
-**Next:** See [frontend.md](07-frontend.md) for Vue 3 frontend architecture.
+**Далее:** См. [frontend.md](07-frontend.md) для архитектуры Vue 3 фронтенда.

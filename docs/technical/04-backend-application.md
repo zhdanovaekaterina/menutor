@@ -1,14 +1,14 @@
-# Application Layer — Use Cases
+# Слой приложения — Use Cases
 
-**File location:** `backend/application/use_cases/`
+**Расположение файла:** `backend/application/use_cases/`
 
-The Application layer orchestrates Domain logic. **One class = one user operation.** Use cases are decoupled from HTTP, databases, and UI.
+Слой приложения оркестрирует логику доменного слоя. **Один класс = одна пользовательская операция.** Use cases развязаны от HTTP, БД и UI.
 
 ---
 
-## Use Case Pattern
+## Паттерн Use case
 
-Each use case is a class with an `execute()` method. The pattern:
+Каждый use case — это класс с методом `execute()`. Паттерн:
 
 ```python
 class SomeUseCase:
@@ -17,43 +17,43 @@ class SomeUseCase:
         self.other_service = other_service
 
     def execute(self, param1: str, param2: int, user_id: UserId) -> ResultType:
-        # 1. Validate input
+        # 1. Валидировать входные данные
         if not param1.strip():
-            raise DomainError("param1 is required")
+            raise DomainError("param1 требуется")
 
-        # 2. Fetch domain objects
+        # 2. Получить доменные объекты
         entity = self.repository.get_by_id(entity_id, user_id)
         if not entity:
-            raise EntityNotFoundError("Entity not found")
+            raise EntityNotFoundError("Сущность не найдена")
 
-        # 3. Apply business logic
+        # 3. Применить бизнес-логику
         entity.some_property = param2
         modified = self.other_service.transform(entity)
 
-        # 4. Persist
+        # 4. Персистировать
         result_id = self.repository.save(modified)
 
-        # 5. Return value (typically ID or full entity)
+        # 5. Вернуть значение (обычно ID или полная сущность)
         return result_id
 ```
 
-**Benefits:**
-- **Testable:** inject mock repositories
-- **Reusable:** can be called from API, CLI, events
-- **Isolated:** each operation is independent
-- **Debuggable:** clear input → output flow
+**Преимущества:**
+- **Тестируемо:** внедрить mock репозитории
+- **Переиспользуемо:** можно вызвать из API, CLI, событий
+- **Изолировано:** каждая операция независима
+- **Отлаживаемо:** ясный поток входа → выхода
 
 ---
 
-## Use Case Catalog
+## Каталог use cases
 
-### Auth Module
+### Модуль аутентификации
 
-**File:** `backend/application/use_cases/auth.py`
+**Файл:** `backend/application/use_cases/auth.py`
 
 #### RegisterUser
 
-Creates a new user account.
+Создает новую учетную запись пользователя.
 
 ```python
 class RegisterUser:
@@ -67,23 +67,23 @@ class RegisterUser:
 
     def execute(self, email: str, password: str, nickname: str) -> UserId:
         """
-        Register new user.
+        Зарегистрировать нового пользователя.
 
         Raises:
-            UserAlreadyExistsError: Email already registered
-            DomainError: Invalid email or password
+            UserAlreadyExistsError: Email уже зарегистрирован
+            DomainError: Неверный email или пароль
         """
-        # Check uniqueness
+        # Проверить уникальность
         existing = self.user_repo.get_by_email(email)
         if existing:
-            raise UserAlreadyExistsError(f"Email {email} already registered")
+            raise UserAlreadyExistsError(f"Email {email} уже зарегистрирован")
 
-        # Hash password
+        # Хешировать пароль
         password_hash = self.password_hasher.hash_password(password)
 
-        # Create and save
+        # Создать и сохранить
         user = User(
-            id=UserId(0),  # DB assigns
+            id=UserId(0),  # БД присвоит
             email=email,
             nickname=nickname,
             password_hash=password_hash,
@@ -94,7 +94,7 @@ class RegisterUser:
 
 #### LoginUser
 
-Validates credentials and returns tokens.
+Валидирует учетные данные и возвращает токены.
 
 ```python
 class LoginUser:
@@ -112,16 +112,16 @@ class LoginUser:
 
     def execute(self, email: str, password: str) -> LoginResponse:
         """
-        Authenticate user and return JWT tokens.
+        Аутентифицировать пользователя и вернуть JWT токены.
 
         Returns:
-            LoginResponse with access_token, refresh_token, token_type
+            LoginResponse с access_token, refresh_token, token_type
         """
         user = self.user_repo.get_by_email(email)
         if not user or not self.password_hasher.verify_password(password, user.password_hash):
-            raise AuthenticationError("Invalid email or password")
+            raise AuthenticationError("Неверный email или пароль")
 
-        # Create tokens
+        # Создать токены
         access_token = self.token_service.create_access_token(
             user.id, expires_in_minutes=30
         )
@@ -129,7 +129,7 @@ class LoginUser:
             user.id, expires_in_days=30
         )
 
-        # Store refresh token hash
+        # Сохранить хеш refresh токена
         token_hash = hash_token(refresh_token)
         self.refresh_token_repo.save(RefreshToken(
             id=RefreshTokenId(0),
@@ -148,7 +148,7 @@ class LoginUser:
 
 #### RefreshAccessToken
 
-Issues a new access token using a refresh token.
+Выдает новый токен доступа используя refresh токен.
 
 ```python
 class RefreshAccessToken:
@@ -161,16 +161,16 @@ class RefreshAccessToken:
         self.refresh_token_repo = refresh_token_repo
 
     def execute(self, refresh_token: str) -> str:
-        """Validate refresh token and return new access token."""
+        """Валидировать refresh токен и вернуть новый токен доступа."""
         payload = self.token_service.validate_token(refresh_token)
 
-        # Verify token not revoked
+        # Проверить что токен не отозван
         token_hash = hash_token(refresh_token)
         stored = self.refresh_token_repo.get_by_hash(token_hash)
         if not stored or stored.revoked or stored.expires_at < datetime.utcnow():
-            raise AuthenticationError("Refresh token invalid or expired")
+            raise AuthenticationError("Refresh токен неверный или истек")
 
-        # Issue new access token
+        # Выдать новый токен доступа
         new_access_token = self.token_service.create_access_token(
             stored.user_id, expires_in_minutes=30
         )
@@ -179,7 +179,7 @@ class RefreshAccessToken:
 
 #### GetCurrentUser
 
-Extracts and validates JWT token payload.
+Извлекает и валидирует JWT полезную нагрузку токена.
 
 ```python
 class GetCurrentUser:
@@ -188,20 +188,20 @@ class GetCurrentUser:
         self.token_service = token_service
 
     def execute(self, token: str) -> User:
-        """Validate token and return current user."""
+        """Валидировать токен и вернуть текущего пользователя."""
         payload = self.token_service.validate_token(token)
         user_id = UserId(payload.get("user_id"))
 
         user = self.user_repo.get_by_id(user_id)
         if not user:
-            raise AuthenticationError("User not found")
+            raise AuthenticationError("Пользователь не найден")
 
         return user
 ```
 
-### Recipe Management
+### Управление рецептами
 
-**File:** `backend/application/use_cases/manage_recipe.py`
+**Файл:** `backend/application/use_cases/manage_recipe.py`
 
 #### ListRecipes
 
@@ -213,24 +213,10 @@ class ListRecipes:
     def execute(
         self, user_id: UserId, category_id: RecipeCategoryId | None = None
     ) -> list[Recipe]:
-        """List all user's recipes, optionally filtered by category."""
+        """Вывести все рецепты пользователя, опционально отфильтровано по категориям."""
         if category_id:
             return self.recipe_repo.list_by_category(user_id, category_id)
         return self.recipe_repo.list_by_user(user_id)
-```
-
-#### GetRecipe
-
-```python
-class GetRecipe:
-    def __init__(self, recipe_repo: RecipeRepository):
-        self.recipe_repo = recipe_repo
-
-    def execute(self, recipe_id: RecipeId, user_id: UserId) -> Recipe:
-        recipe = self.recipe_repo.get_by_id(recipe_id, user_id)
-        if not recipe:
-            raise EntityNotFoundError(f"Recipe {recipe_id} not found")
-        return recipe
 ```
 
 #### CreateRecipe
@@ -252,11 +238,11 @@ class CreateRecipe:
         total_pieces: int | None = None,
         pieces_per_portion: int | None = None,
     ) -> RecipeId:
-        """Create a new recipe."""
+        """Создать новый рецепт."""
         if not name.strip():
-            raise DomainError("Recipe name is required")
+            raise DomainError("Требуется имя рецепта")
         if servings < 1:
-            raise DomainError("Servings must be >= 1")
+            raise DomainError("Порции должны быть >= 1")
 
         recipe = Recipe(
             id=RecipeId(0),
@@ -274,32 +260,6 @@ class CreateRecipe:
         return self.recipe_repo.save(recipe)
 ```
 
-#### UpdateRecipe
-
-```python
-class UpdateRecipe:
-    def __init__(self, recipe_repo: RecipeRepository):
-        self.recipe_repo = recipe_repo
-
-    def execute(
-        self,
-        recipe_id: RecipeId,
-        user_id: UserId,
-        **kwargs,  # name, servings, category_id, ingredients, steps, etc.
-    ) -> RecipeId:
-        """Update recipe fields."""
-        recipe = self.recipe_repo.get_by_id(recipe_id, user_id)
-        if not recipe:
-            raise EntityNotFoundError(f"Recipe {recipe_id} not found")
-
-        # Update fields
-        for key, value in kwargs.items():
-            if hasattr(recipe, key) and value is not None:
-                setattr(recipe, key, value)
-
-        return self.recipe_repo.save(recipe)
-```
-
 #### DeleteRecipe
 
 ```python
@@ -308,16 +268,16 @@ class DeleteRecipe:
         self.recipe_repo = recipe_repo
 
     def execute(self, recipe_id: RecipeId, user_id: UserId) -> None:
-        """Delete recipe."""
+        """Удалить рецепт."""
         recipe = self.recipe_repo.get_by_id(recipe_id, user_id)
         if not recipe:
-            raise EntityNotFoundError(f"Recipe {recipe_id} not found")
+            raise EntityNotFoundError(f"Рецепт {recipe_id} не найден")
         self.recipe_repo.delete(recipe_id, user_id)
 ```
 
-### Menu Planning
+### Планирование меню
 
-**File:** `backend/application/use_cases/plan_menu.py`
+**Файл:** `backend/application/use_cases/plan_menu.py`
 
 #### CreateMenu
 
@@ -327,9 +287,9 @@ class CreateMenu:
         self.menu_repo = menu_repo
 
     def execute(self, user_id: UserId, name: str) -> MenuId:
-        """Create a new menu."""
+        """Создать новое меню."""
         if not name.strip():
-            raise DomainError("Menu name is required")
+            raise DomainError("Требуется имя меню")
 
         menu = Menu(
             id=MenuId(0),
@@ -339,21 +299,6 @@ class CreateMenu:
             slots=[],
         )
         return self.menu_repo.save(menu)
-```
-
-#### LoadMenu
-
-```python
-class LoadMenu:
-    def __init__(self, menu_repo: MenuRepository):
-        self.menu_repo = menu_repo
-
-    def execute(self, menu_id: MenuId, user_id: UserId) -> Menu:
-        """Load menu with all slots."""
-        menu = self.menu_repo.get_by_id(menu_id, user_id)
-        if not menu:
-            raise EntityNotFoundError(f"Menu {menu_id} not found")
-        return menu
 ```
 
 #### AddMenuSlot
@@ -375,15 +320,15 @@ class AddMenuSlot:
         meal_type: str,
         day_of_week: int,
     ) -> MenuSlotId:
-        """Add recipe or product to menu slot."""
+        """Добавить рецепт или продукт в слот меню."""
         menu = self.menu_repo.get_by_id(menu_id, user_id)
         if not menu:
-            raise EntityNotFoundError(f"Menu {menu_id} not found")
+            raise EntityNotFoundError(f"Меню {menu_id} не найдено")
 
         if recipe_id:
             recipe = self.recipe_repo.get_by_id(recipe_id, user_id)
             if not recipe:
-                raise EntityNotFoundError(f"Recipe {recipe_id} not found")
+                raise EntityNotFoundError(f"Рецепт {recipe_id} не найден")
 
         slot = MenuSlot(
             id=MenuSlotId(0),
@@ -399,45 +344,13 @@ class AddMenuSlot:
         return self.menu_repo.add_slot(menu_id, slot)
 ```
 
-#### DeleteMenuSlot
+### Генерация списка покупок
 
-```python
-class DeleteMenuSlot:
-    def __init__(self, menu_repo: MenuRepository):
-        self.menu_repo = menu_repo
-
-    def execute(self, menu_id: MenuId, slot_id: MenuSlotId, user_id: UserId) -> None:
-        """Remove slot from menu."""
-        menu = self.menu_repo.get_by_id(menu_id, user_id)
-        if not menu:
-            raise EntityNotFoundError(f"Menu {menu_id} not found")
-        self.menu_repo.delete_slot(menu_id, slot_id)
-```
-
-#### ClearMenu
-
-```python
-class ClearMenu:
-    def __init__(self, menu_repo: MenuRepository):
-        self.menu_repo = menu_repo
-
-    def execute(self, menu_id: MenuId, user_id: UserId) -> None:
-        """Remove all slots from menu."""
-        menu = self.menu_repo.get_by_id(menu_id, user_id)
-        if not menu:
-            raise EntityNotFoundError(f"Menu {menu_id} not found")
-
-        for slot in menu.slots:
-            self.menu_repo.delete_slot(menu_id, slot.id)
-```
-
-### Shopping List Generation
-
-**File:** `backend/application/use_cases/generate_shopping_list.py`
+**Файл:** `backend/application/use_cases/generate_shopping_list.py`
 
 #### GenerateShoppingList
 
-Most important use case. Calls domain service to orchestrate the shopping list building.
+Самый важный use case. Вызывает доменный сервис для оркестрации построения списка покупок.
 
 ```python
 class GenerateShoppingList:
@@ -457,20 +370,20 @@ class GenerateShoppingList:
 
     def execute(self, menu_id: MenuId, user_id: UserId) -> ShoppingList:
         """
-        Generate shopping list from menu + family.
+        Генерировать список покупок из меню + семья.
 
-        Process:
-        1. Load menu with slots
-        2. Load all recipes referenced in slots
-        3. Load all products
-        4. Load family members
-        5. Call ShoppingListBuilder to aggregate
+        Процесс:
+        1. Загрузить меню со слотами
+        2. Загрузить все рецепты, на которые ссылаются слоты
+        3. Загрузить все продукты
+        4. Загрузить членов семьи
+        5. Вызвать ShoppingListBuilder для агрегирования
         """
         menu = self.menu_repo.get_by_id(menu_id, user_id)
         if not menu:
-            raise EntityNotFoundError(f"Menu {menu_id} not found")
+            raise EntityNotFoundError(f"Меню {menu_id} не найдено")
 
-        # Fetch all needed recipes
+        # Получить все нужные рецепты
         recipe_ids = {s.recipe_id for s in menu.slots if s.recipe_id}
         recipes = {}
         for rid in recipe_ids:
@@ -478,51 +391,39 @@ class GenerateShoppingList:
             if recipe:
                 recipes[rid] = recipe
 
-        # Fetch all products
+        # Получить все продукты
         products_list = self.product_repo.list_by_user(user_id)
         products = {p.id: p for p in products_list}
 
-        # Fetch family members
+        # Получить членов семьи
         family = self.family_member_repo.list_by_user(user_id)
 
-        # Build shopping list
+        # Построить список покупок
         return self.shopping_list_builder.build(menu, family, products, recipes)
 ```
 
-### Product Management
+### Вложенные рецепты (выравнивание)
 
-**File:** `backend/application/use_cases/manage_product.py`
+**Файл:** `backend/application/use_cases/flatten_recipe_products.py`
 
-Similar pattern to recipes: `ListProducts`, `GetProduct`, `CreateProduct`, `UpdateProduct`, `DeleteProduct`.
-
-### Family Management
-
-**File:** `backend/application/use_cases/manage_family.py`
-
-`CreateFamilyMember`, `UpdateFamilyMember`, `DeleteFamilyMember`, `ListFamilyMembers`.
-
-### Nested Recipes (Flattening)
-
-**File:** `backend/application/use_cases/flatten_recipe_products.py`
-
-Expands sub-recipes into leaf products.
+Разворачивает sub-рецепты в конечные продукты.
 
 ```python
 class FlattenRecipeProducts:
     """
-    Convert recipe with sub-recipes into final product list.
+    Преобразовать рецепт с sub-рецептами в итоговый список продуктов.
 
-    Example:
-        Recipe "Борщ" includes:
-        - Свёкла (product) 500g
-        - "Овощной бульон" (sub-recipe) 1 liter
+    Пример:
+        Рецепт "Борщ" включает:
+        - Свеклу (продукт) 500g
+        - "Овощной бульон" (sub-recipe) 1 литр
 
-        Flattening expands "Овощной бульон" into its products:
+        Выравнивание разворачивает "Овощной бульон" в его продукты:
         - Вода 1L
         - Морковь 200g
         - Сельдерей 100g
 
-        Result: Свёкла + Вода + Морковь + Сельдерей
+        Результат: Свекла + Вода + Морковь + Сельдерей
     """
 
     def __init__(self, recipe_repo: RecipeRepository):
@@ -533,21 +434,21 @@ class FlattenRecipeProducts:
         recipe_id: RecipeId,
         user_id: UserId,
     ) -> list[FlattenedProduct]:
-        """Recursively expand sub-recipes, detect cycles."""
+        """Рекурсивно разворачивать sub-рецепты, обнаруживать циклы."""
         visited: set[RecipeId] = set()
         flattened: list[FlattenedProduct] = []
 
         def flatten_recursive(rid: RecipeId, factor: float, depth: int = 0) -> None:
             if depth > MAX_NESTING_DEPTH:
-                raise NestingDepthExceededError(f"Nesting depth > {MAX_NESTING_DEPTH}")
+                raise NestingDepthExceededError(f"Глубина вложения > {MAX_NESTING_DEPTH}")
 
             if rid in visited:
-                raise CircularDependencyError(f"Circular dependency detected at {rid}")
+                raise CircularDependencyError(f"Циклическая зависимость обнаружена на {rid}")
 
             visited.add(rid)
             recipe = self.recipe_repo.get_by_id(rid, user_id)
             if not recipe:
-                raise EntityNotFoundError(f"Recipe {rid} not found")
+                raise EntityNotFoundError(f"Рецепт {rid} не найден")
 
             for ing in recipe.ingredients:
                 if ing.is_product():
@@ -557,7 +458,7 @@ class FlattenRecipeProducts:
                         quantity=scaled_qty,
                     ))
                 else:
-                    # Expand sub-recipe
+                    # Разворачивать sub-рецепт
                     flatten_recursive(ing.sub_recipe_id, ing.quantity.amount * factor, depth + 1)
 
             visited.discard(rid)
@@ -566,142 +467,36 @@ class FlattenRecipeProducts:
         return flattened
 ```
 
-### Export Operations
+---
 
-**File:** `backend/application/use_cases/export_shopping_list.py`
+## Обработка ошибок
 
-```python
-class ExportShoppingList:
-    def __init__(self, exporters: dict[str, ShoppingListExporter]):
-        self.exporters = exporters  # "csv", "json", "text"
+1. **Валидировать входные данные** → выбросить `DomainError` (400)
+2. **Сущность не найдена** → выбросить `EntityNotFoundError` (404)
+3. **Конфликт пользователя** → выбросить `UserAlreadyExistsError` (409)
+4. **Аутентификация не прошла** → выбросить `AuthenticationError` (401)
+5. **Нарушение бизнес-правила** → выбросить специфичную доменную ошибку (422)
 
-    def execute(self, shopping_list: ShoppingList, format: str) -> str:
-        """Export shopping list to specified format."""
-        if format not in self.exporters:
-            raise DomainError(f"Unsupported format: {format}")
-
-        exporter = self.exporters[format]
-        return exporter.export(shopping_list)
-```
-
-### Import Operations
-
-**File:** `backend/application/use_cases/import_entities.py`
-
-```python
-class ImportEntities:
-    def __init__(
-        self,
-        recipe_repo: RecipeRepository,
-        product_repo: ProductRepository,
-        importers: dict[str, EntityImporter],
-    ):
-        self.recipe_repo = recipe_repo
-        self.product_repo = product_repo
-        self.importers = importers
-
-    def execute(
-        self,
-        user_id: UserId,
-        entity_type: str,  # "recipe" or "product"
-        format: str,       # "json" or "csv"
-        data: str,
-    ) -> ImportResult:
-        """Import entities from file."""
-        if format not in self.importers:
-            raise DomainError(f"Unsupported format: {format}")
-
-        importer = self.importers[format]
-        entities = importer.import_entities(entity_type, data)
-
-        # Save imported entities
-        for entity in entities:
-            entity.user_id = user_id
-            if entity_type == "recipe":
-                self.recipe_repo.save(entity)
-            elif entity_type == "product":
-                self.product_repo.save(entity)
-
-        return ImportResult(
-            total_imported=len(entities),
-            errors=[],
-        )
-```
+Все исключения перехватываются обработчиками исключений FastAPI в `backend/api/main.py` и преобразуются в JSON ответы.
 
 ---
 
-## Input/Output (DTO) Patterns
+## Тестирование use cases
 
-### Request DTOs
-
-Input validation via dataclasses:
-
-```python
-@dataclass
-class CreateRecipeRequest:
-    name: str
-    servings: int
-    category_id: int
-    ingredients: list[RecipeIngredientData]
-    steps: list[CookingStepData]
-    weight: int = 0
-    total_pieces: int | None = None
-    pieces_per_portion: int | None = None
-
-    def validate(self) -> None:
-        if not self.name.strip():
-            raise DomainError("Name required")
-        if self.servings < 1:
-            raise DomainError("Servings >= 1")
-```
-
-### Response DTOs
-
-Pydantic schemas in `backend/api/schemas/` map domain objects to HTTP responses:
-
-```python
-class RecipeResponse(BaseModel):
-    id: int
-    name: str
-    servings: int
-    category_id: int
-    ingredients: list[RecipeIngredientResponse]
-    steps: list[CookingStepResponse]
-    weight: int
-    total_pieces: int | None
-    pieces_per_portion: int | None
-```
-
----
-
-## Error Handling Conventions
-
-1. **Validate input** → raise `DomainError` (400)
-2. **Entity not found** → raise `EntityNotFoundError` (404)
-3. **User conflict** → raise `UserAlreadyExistsError` (409)
-4. **Auth failed** → raise `AuthenticationError` (401)
-5. **Business rule violation** → raise domain-specific error (422)
-
-All exceptions are caught by FastAPI's `@exception_handler` decorators in `backend/api/main.py` and converted to JSON responses.
-
----
-
-## Testing Use Cases
-
-**Pattern:** Mock repositories, call `execute()`, assert results.
+**Паттерн:** Моки репозитории, вызвать `execute()`, утверждать результаты.
 
 ```python
 # tests/unit/application/test_manage_recipe.py
 
 def test_create_recipe():
-    # Mock repository
+    # Моки репозиторий
     repo = Mock(spec=RecipeRepository)
     repo.save.return_value = RecipeId(1)
 
-    # Create use case
+    # Создать use case
     uc = CreateRecipe(repo)
 
-    # Execute
+    # Выполнить
     result = uc.execute(
         user_id=UserId(1),
         name="Блины",
@@ -711,7 +506,7 @@ def test_create_recipe():
         steps=[...],
     )
 
-    # Assert
+    # Утверждать
     assert result == RecipeId(1)
     repo.save.assert_called_once()
 
@@ -719,11 +514,11 @@ def test_create_recipe_validation():
     repo = Mock(spec=RecipeRepository)
     uc = CreateRecipe(repo)
 
-    # Should raise DomainError on empty name
+    # Должно выбросить DomainError на пустое имя
     with pytest.raises(DomainError):
         uc.execute(
             user_id=UserId(1),
-            name="",  # Invalid
+            name="",  # Неверно
             servings=4,
             category_id=RecipeCategoryId(1),
             ingredients=[],
@@ -733,17 +528,17 @@ def test_create_recipe_validation():
 
 ---
 
-## Summary
+## Резюме
 
-The Application layer:
-- **Orchestrates** domain logic and repositories
-- **Validates** input and enforces business rules
-- **Handles transactions** and persistence
-- **Is testable** via dependency injection
-- **Is reusable** from API, CLI, or events
+Слой приложения:
+- **Оркестрирует** логику домена и репозитории
+- **Валидирует** входные данные и применяет бизнес-правила
+- **Обрабатывает** транзакции и персистентность
+- **Тестируемо** через внедрение зависимостей
+- **Переиспользуемо** из API, CLI или событий
 
-Each use case represents a single user operation, making the codebase easy to understand and maintain.
+Каждый use case представляет одну пользовательскую операцию, делая кодовую базу легко понятной и поддерживаемой.
 
 ---
 
-**Next:** See [backend-infrastructure.md](05-backend-infrastructure.md) for repository and ORM details.
+**Далее:** См. [backend-infrastructure.md](05-backend-infrastructure.md) для деталей репозиториев и ORM.

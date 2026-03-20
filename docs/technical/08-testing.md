@@ -1,16 +1,16 @@
-# Testing Strategy and Fixtures
+# Стратегия тестирования и фикстуры
 
-## Overview
+## Обзор
 
-Menu Planner follows a **testing pyramid**: many unit tests, fewer integration tests, minimal E2E tests. **490+ tests pass** across all layers.
+Menu Planner следует **пирамиде тестирования**: много модульных тестов, меньше интеграционных, минимум E2E. **490+ тестов проходят** на всех уровнях.
 
 ```
               /\
              /  \        E2E (1%)
-            /────\       Smoke tests only
+            /────\       Дымовые тесты
            /      \
           /Integration\ (10%)
-         /──────────────\  Repositories vs real DB
+         /──────────────\  Репозитории vs реальная БД
         /                \
        /    Unit Tests    \ (89%)
       /      (~430+)       \  Domain + Application
@@ -19,21 +19,21 @@ Menu Planner follows a **testing pyramid**: many unit tests, fewer integration t
 
 ---
 
-## Test Hierarchy
+## Иерархия тестов
 
-### 1. Unit Tests — Domain & Application
+### 1. Модульные тесты — Domain & Application
 
-**Location:** `tests/unit/domain/` and `tests/unit/application/`
+**Расположение:** `tests/unit/domain/` и `tests/unit/application/`
 
-**Coverage:** ~89% of tests (430+)
+**Покрытие:** ~89% тестов (430+)
 
-**Mocking:** Zero mocks for domain, mocks for repositories in application.
+**Мокирование:** Нет моков для domain, моки для репозиториев в application.
 
-**Execution:** < 100ms total
+**Выполнение:** < 100ms всего
 
-#### Domain Unit Tests
+#### Модульные тесты Domain
 
-Pure business logic. **No mocks, no I/O.**
+Чистая бизнес-логика. **Нет моков, нет I/O.**
 
 ```python
 # tests/unit/domain/test_recipe.py
@@ -45,7 +45,7 @@ from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.types import RecipeId, ProductId, RecipeCategoryId, UserId
 
 def test_recipe_scale_to():
-    """Test recipe scaling preserves immutability."""
+    """Тест масштабирования рецепта сохраняет неизменяемость."""
     recipe = Recipe(
         id=RecipeId(1),
         name="Блины",
@@ -62,19 +62,19 @@ def test_recipe_scale_to():
         user_id=UserId(1),
     )
 
-    # Scale to 6 servings
+    # Масштабировать на 6 порций
     scaled = recipe.scale_to(6)
 
-    # Original unchanged
+    # Оригинал не изменился
     assert recipe.servings == 4
     assert recipe.ingredients[0].quantity.amount == 200
 
-    # Scaled changed
+    # Масштабированный изменился
     assert scaled.servings == 6
     assert scaled.ingredients[0].quantity.amount == 300  # 200 * (6/4)
 
 def test_recipe_pieces_mode():
-    """Test pieces-based recipe scaling."""
+    """Тест масштабирования рецепта в штучном режиме."""
     recipe = Recipe(
         id=RecipeId(1),
         name="Печенье",
@@ -90,12 +90,12 @@ def test_recipe_pieces_mode():
     assert recipe.is_pieces_mode is True
     assert recipe.computed_servings == 4  # 12 / 3
 
-    scaled = recipe.scale_to(8)  # 8 servings = 24 pieces
+    scaled = recipe.scale_to(8)  # 8 порций = 24 штуки
     assert scaled.total_pieces == 24
     assert scaled.computed_servings == 8
 
 def test_recipe_pieces_mode_invalid():
-    """Test pieces-mode invariants."""
+    """Тест инвариантов штучного режима."""
     with pytest.raises(InvalidEntityError):
         Recipe(
             id=RecipeId(1),
@@ -106,11 +106,11 @@ def test_recipe_pieces_mode_invalid():
             category_id=RecipeCategoryId(1),
             user_id=UserId(1),
             total_pieces=12,
-            pieces_per_portion=None,  # ✗ Must be paired
+            pieces_per_portion=None,  # ✗ Должны быть в паре
         )
 
 def test_quantity_addition():
-    """Test quantity arithmetic with unit conversion."""
+    """Тест арифметики количества с преобразованием единиц."""
     flour_1 = Quantity(200, "g")
     flour_2 = Quantity(0.5, "kg")
 
@@ -119,7 +119,7 @@ def test_quantity_addition():
     assert total.unit == "g"
 
 def test_quantity_incompatible_units():
-    """Test that incompatible units raise error."""
+    """Тест что несовместимые единицы вызывают ошибку."""
     water = Quantity(500, "ml")
     apples = Quantity(5, "pcs")
 
@@ -127,7 +127,7 @@ def test_quantity_incompatible_units():
         water + apples
 
 def test_shopping_list_builder():
-    """Test shopping list aggregation."""
+    """Тест агрегации списка покупок."""
     builder = ShoppingListBuilder()
 
     menu = Menu(
@@ -161,7 +161,7 @@ def test_shopping_list_builder():
         FamilyMember(id=FamilyMemberId(1), name="Мама", portion_multiplier=1.0),
         FamilyMember(id=FamilyMemberId(2), name="Папа", portion_multiplier=1.0),
         FamilyMember(id=FamilyMemberId(3), name="Сын", portion_multiplier=0.5),
-    ]  # Total: 2.5 servings
+    ]  # Всего: 2.5 порций
 
     recipe = Recipe(
         id=RecipeId(1),
@@ -194,16 +194,16 @@ def test_shopping_list_builder():
 
     shopping_list = builder.build(menu, family, products, {RecipeId(1): recipe})
 
-    # 2 breakfasts × 2.5 servings × (200g / 4 servings) = 250g
+    # 2 завтрака × 2.5 порций × (200g / 4 порции) = 250g
     flour_item = next((item for item in shopping_list.items if item.product_id == ProductId(1)), None)
     assert flour_item is not None
     assert flour_item.quantity.amount == 0.25  # 250g = 0.25kg
     assert flour_item.total_cost == Money(Decimal("20"))  # 0.25 * 80
 ```
 
-#### Application Unit Tests
+#### Модульные тесты Application
 
-Mocks repositories, calls use cases.
+Мокирует репозитории, вызывает use case.
 
 ```python
 # tests/unit/application/test_manage_recipe.py
@@ -214,7 +214,7 @@ from backend.domain.entities.recipe import Recipe
 from backend.domain.exceptions import EntityNotFoundError
 
 def test_create_recipe():
-    """Test CreateRecipe use case."""
+    """Тест use case CreateRecipe."""
     repo = Mock(spec=RecipeRepository)
     repo.save.return_value = RecipeId(1)
 
@@ -235,14 +235,14 @@ def test_create_recipe():
     assert saved_recipe.name == "Блины"
 
 def test_create_recipe_validation():
-    """Test CreateRecipe validation."""
+    """Тест валидация CreateRecipe."""
     repo = Mock(spec=RecipeRepository)
     uc = CreateRecipe(repo)
 
     with pytest.raises(DomainError, match="Recipe name is required"):
         uc.execute(
             user_id=UserId(1),
-            name="",  # Invalid
+            name="",  # Невалидный
             servings=4,
             category_id=RecipeCategoryId(1),
             ingredients=[],
@@ -252,7 +252,7 @@ def test_create_recipe_validation():
     repo.save.assert_not_called()
 
 def test_delete_recipe_not_found():
-    """Test DeleteRecipe with non-existent recipe."""
+    """Тест DeleteRecipe с несуществующим рецептом."""
     repo = Mock(spec=RecipeRepository)
     repo.get_by_id.return_value = None
 
@@ -262,7 +262,7 @@ def test_delete_recipe_not_found():
         uc.execute(RecipeId(1), UserId(1))
 
 def test_generate_shopping_list():
-    """Test GenerateShoppingList use case."""
+    """Тест use case GenerateShoppingList."""
     menu_repo = Mock(spec=MenuRepository)
     recipe_repo = Mock(spec=RecipeRepository)
     product_repo = Mock(spec=ProductRepository)
@@ -291,15 +291,15 @@ def test_generate_shopping_list():
     builder.build.assert_called_once()
 ```
 
-### 2. Integration Tests — Repositories
+### 2. Интеграционные тесты — Репозитории
 
-**Location:** `tests/integration/repositories/`
+**Расположение:** `tests/integration/repositories/`
 
-**Coverage:** ~10% of tests (50+)
+**Покрытие:** ~10% тестов (50+)
 
-**Mocking:** Zero mocks. Real SQLite `:memory:` database.
+**Мокирование:** Нет моков. Реальная SQLite база `:memory:`.
 
-**Execution:** 1-5s
+**Выполнение:** 1-5s
 
 ```python
 # tests/integration/repositories/test_recipe_repository.py
@@ -313,7 +313,7 @@ from backend.domain.entities.recipe import Recipe
 
 @pytest.fixture
 def db_session():
-    """Create in-memory SQLite database for tests."""
+    """Создать базу данных SQLite в памяти для тестов."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
 
@@ -326,11 +326,11 @@ def db_session():
 
 @pytest.fixture
 def recipe_repo(db_session):
-    """Provide recipe repository with test DB."""
+    """Предоставить репозиторий рецептов с тестовой БД."""
     return SqlalchemyRecipeRepository(db_session)
 
 def test_save_and_get_recipe(recipe_repo):
-    """Test saving and retrieving a recipe."""
+    """Тест сохранение и получение рецепта."""
     recipe = Recipe(
         id=RecipeId(0),
         name="Блины",
@@ -350,7 +350,7 @@ def test_save_and_get_recipe(recipe_repo):
     assert len(loaded.ingredients) == len(recipe.ingredients)
 
 def test_list_by_user(recipe_repo):
-    """Test listing recipes by user."""
+    """Тест получение список рецептов пользователя."""
     recipe_1 = Recipe(id=RecipeId(0), name="Блины", ..., user_id=UserId(1))
     recipe_2 = Recipe(id=RecipeId(0), name="Борщ", ..., user_id=UserId(1))
     recipe_3 = Recipe(id=RecipeId(0), name="Суп", ..., user_id=UserId(2))
@@ -367,7 +367,7 @@ def test_list_by_user(recipe_repo):
     assert len(user_2_recipes) == 1
 
 def test_delete_recipe(recipe_repo):
-    """Test deleting a recipe."""
+    """Тест удаление рецепта."""
     recipe = Recipe(id=RecipeId(0), ..., user_id=UserId(1))
     recipe_id = recipe_repo.save(recipe)
 
@@ -376,21 +376,21 @@ def test_delete_recipe(recipe_repo):
     assert recipe_repo.get_by_id(recipe_id, UserId(1)) is None
 
 def test_user_scoping(recipe_repo):
-    """Test that queries are scoped by user_id."""
+    """Тест что запросы охватываются user_id."""
     recipe = Recipe(id=RecipeId(0), ..., user_id=UserId(1))
     recipe_id = recipe_repo.save(recipe)
 
-    # Different user cannot access
+    # Разные пользователи не могут получить доступ
     assert recipe_repo.get_by_id(recipe_id, UserId(2)) is None
 ```
 
-### 3. API Unit Tests
+### 3. Тесты API
 
-**Location:** `tests/unit/api/`
+**Расположение:** `tests/unit/api/`
 
-**Coverage:** ~10% of tests (50+)
+**Покрытие:** ~10% тестов (50+)
 
-**Mocking:** Mock container, use TestClient.
+**Мокирование:** Мок контейнера, используется TestClient.
 
 ```python
 # tests/unit/api/test_recipes.py
@@ -405,7 +405,7 @@ def client():
 
 @pytest.fixture
 def mock_auth():
-    """Mock authentication."""
+    """Мок аутентификации."""
     with patch("backend.api.auth.get_current_user") as mock:
         mock.return_value = User(
             id=UserId(1),
@@ -417,7 +417,7 @@ def mock_auth():
         yield mock
 
 def test_list_recipes(client, mock_auth):
-    """Test GET /api/recipes"""
+    """Тест GET /api/recipes"""
     with patch("backend.api.deps.get_container") as mock_container:
         mock_container.return_value.list_recipes.execute.return_value = [
             Recipe(id=RecipeId(1), name="Блины", ...),
@@ -432,7 +432,7 @@ def test_list_recipes(client, mock_auth):
         assert data[0]["name"] == "Блины"
 
 def test_create_recipe(client, mock_auth):
-    """Test POST /api/recipes"""
+    """Тест POST /api/recipes"""
     with patch("backend.api.deps.get_container") as mock_container:
         mock_container.return_value.create_recipe.execute.return_value = RecipeId(1)
         mock_container.return_value.get_recipe.execute.return_value = Recipe(
@@ -456,16 +456,16 @@ def test_create_recipe(client, mock_auth):
         assert response.json()["name"] == "Новый"
 
 def test_auth_required(client):
-    """Test that endpoints require auth."""
+    """Тест что эндпоинты требуют аутентификацию."""
     response = client.get("/api/recipes")
     assert response.status_code == 401
 ```
 
 ---
 
-## Test Configuration
+## Конфигурация тестов
 
-**File:** `pytest.ini`
+**Файл:** `pytest.ini`
 
 ```ini
 [pytest]
@@ -475,15 +475,15 @@ python_classes = Test*
 python_functions = test_*
 addopts = -v --tb=short --strict-markers
 markers =
-    unit: Unit tests (domain + application)
-    integration: Integration tests (repositories)
-    api: API endpoint tests
-    slow: Slow tests
+    unit: Модульные тесты (domain + application)
+    integration: Интеграционные тесты (репозитории)
+    api: Тесты эндпоинтов API
+    slow: Медленные тесты
 filterwarnings =
     ignore::DeprecationWarning
 ```
 
-**File:** `pyproject.toml`
+**Файл:** `pyproject.toml`
 
 ```toml
 [tool.pytest.ini_options]
@@ -503,40 +503,40 @@ line_length = 100
 
 ---
 
-## Running Tests
+## Запуск тестов
 
 ```bash
-# Run all tests
+# Запустить все тесты
 pytest tests/ -v
 
-# Run only unit tests
+# Запустить только модульные тесты
 pytest tests/unit/ -v
 
-# Run only integration tests
+# Запустить только интеграционные тесты
 pytest tests/integration/ -v -m "not slow"
 
-# Run specific test file
+# Запустить конкретный файл теста
 pytest tests/unit/domain/test_recipe.py -v
 
-# Run with coverage
+# Запустить с отчетом о покрытии
 pytest tests/ --cov=backend --cov-report=html
 
-# Run with markers
+# Запустить с маркерами
 pytest tests/ -m "unit" -v
 pytest tests/ -m "not slow" -v
 
-# Run and stop on first failure
+# Запустить и остановиться на первом сбое
 pytest tests/ -x
 
-# Run in parallel (requires pytest-xdist)
+# Запустить параллельно (требует pytest-xdist)
 pytest tests/ -n auto
 ```
 
 ---
 
-## Test Fixtures
+## Фикстуры тестов
 
-**File:** `tests/conftest.py`
+**Файл:** `tests/conftest.py`
 
 ```python
 import pytest
@@ -550,14 +550,14 @@ from backend.domain.value_objects.types import *
 
 @pytest.fixture
 def db_engine():
-    """In-memory SQLite engine."""
+    """Движок SQLite в памяти."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
     return engine
 
 @pytest.fixture
 def db_session(db_engine):
-    """SQLite session for test database."""
+    """Сессия SQLite для тестовой базы."""
     Session = sessionmaker(bind=db_engine)
     session = Session()
     yield session
@@ -565,7 +565,7 @@ def db_session(db_engine):
 
 @pytest.fixture
 def recipe_factory():
-    """Factory for creating test recipes."""
+    """Фабрика для создания тестовых рецептов."""
     def _make_recipe(
         id: int = 0,
         name: str = "Блины",
@@ -587,7 +587,7 @@ def recipe_factory():
 
 @pytest.fixture
 def product_factory():
-    """Factory for creating test products."""
+    """Фабрика для создания тестовых продуктов."""
     def _make_product(
         id: int = 0,
         name: str = "Мука",
@@ -610,7 +610,7 @@ def product_factory():
 
 @pytest.fixture
 def family_factory():
-    """Factory for creating test family members."""
+    """Фабрика для создания тестовых членов семьи."""
     def _make_family(
         id: int = 0,
         name: str = "Member",
@@ -630,11 +630,11 @@ def family_factory():
 
 ---
 
-## Pre-commit Hooks
+## Pre-commit хуки
 
-**File:** `.config/git-hooks/pre-commit`
+**Файл:** `.config/git-hooks/pre-commit`
 
-Runs checks before each commit:
+Запускает проверки перед каждым коммитом:
 
 ```bash
 #!/bin/bash
@@ -642,22 +642,22 @@ set -e
 
 echo "Running pre-commit checks..."
 
-# 1. Type checking
+# 1. Проверка типов
 echo "→ mypy"
 mypy backend/ tests/ --ignore-missing-imports
 
-# 2. Import sorting
+# 2. Сортировка импортов
 echo "→ isort"
 isort backend/ tests/ --check-only
 
-# 3. Tests
+# 3. Тесты
 echo "→ pytest"
 pytest tests/unit/ -q
 
 echo "✓ Pre-commit checks passed"
 ```
 
-Install:
+Установка:
 ```bash
 chmod +x .config/git-hooks/pre-commit
 git config core.hooksPath .config/git-hooks
@@ -665,18 +665,18 @@ git config core.hooksPath .config/git-hooks
 
 ---
 
-## Coverage Goals
+## Цели покрытия
 
-Target coverage by layer:
+Целевое покрытие по слоям:
 
-| Layer | Target | Current |
+| Слой | Цель | Текущее |
 |-------|--------|---------|
 | **Domain** | 95%+ | ✓ 98% |
 | **Application** | 80%+ | ✓ 87% |
 | **API** | 70%+ | ✓ 75% |
 | **Infrastructure** | 60%+ | ✓ 68% |
 
-Generate coverage report:
+Генерация отчета о покрытии:
 ```bash
 pytest tests/ --cov=backend --cov-report=html
 open htmlcov/index.html
@@ -684,7 +684,7 @@ open htmlcov/index.html
 
 ---
 
-## Test Patterns
+## Паттерны тестирования
 
 ### Arrange-Act-Assert
 
@@ -714,7 +714,7 @@ def test_recipe_scaling_given_base_recipe_when_scaled_then_ingredients_adjusted(
     assert scaled.ingredients[0].quantity.amount == 300
 ```
 
-### Parameterized Tests
+### Параметризованные тесты
 
 ```python
 @pytest.mark.parametrize("input,expected", [
@@ -730,26 +730,26 @@ def test_recipe_scaling(input, expected):
 
 ---
 
-## Summary
+## Резюме
 
-**Test Strategy:**
-- **Unit tests** (89%): Fast, isolated, zero mocks for domain
-- **Integration tests** (10%): Real DB, repository contracts
-- **API tests** (1%): Endpoint validation, mocked dependencies
+**Стратегия тестирования:**
+- **Модульные тесты** (89%): Быстрые, изолированные, нет моков для domain
+- **Интеграционные тесты** (10%): Реальная БД, контракты репозиториев
+- **API тесты** (1%): Валидация эндпоинтов, мокированные зависимости
 
-**Tools:**
+**Инструменты:**
 - `pytest`: Test runner
-- `unittest.mock`: Mocking repositories
-- `TestClient`: FastAPI testing
-- `pytest-cov`: Coverage reporting
+- `unittest.mock`: Мокирование репозиториев
+- `TestClient`: Тестирование FastAPI
+- `pytest-cov`: Отчет о покрытии
 
-**Best Practices:**
-- Write tests alongside code (TDD)
-- Test business rules, not implementation
-- Use factories for test data
-- Keep tests readable (Arrange-Act-Assert)
-- Run pre-commit checks before pushing
+**Лучшие практики:**
+- Писать тесты вместе с кодом (TDD)
+- Тестировать бизнес-правила, не реализацию
+- Использовать фабрики для тестовых данных
+- Сохранять читаемость тестов (Arrange-Act-Assert)
+- Запускать проверки pre-commit перед пушем
 
 ---
 
-**Next:** See [database.md](09-database.md) for schema and migration details.
+**Далее:** См. [database.md](09-database.md) для деталей схемы и миграций.

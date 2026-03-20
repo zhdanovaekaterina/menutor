@@ -1,307 +1,307 @@
-# Menu Planner — Technical Overview
+# Планировщик меню — Техническое обзор
 
-## Project Summary
+## Резюме проекта
 
-**Menu Planner** (Menutor) is a family meal planning web application that helps families plan weekly menus, manage recipes and products, automatically generate shopping lists with cost tracking, and accommodate dietary preferences. The project is a full-stack application currently in active development.
+**Планировщик меню** (Menutor) — это веб-приложение для планирования семейных приемов пищи, которое помогает семьям планировать еженедельные меню, управлять рецептами и продуктами, автоматически генерировать списки покупок с отслеживанием затрат и учитывать пищевые предпочтения. Проект — это полноценное приложение, находящееся в активной разработке.
 
-**Status:** MVP with web migration complete (490+ unit tests passing)
+**Статус:** MVP с завершенной веб-миграцией (490+ unit-тестов проходят)
 
-## Tech Stack
+## Технический стек
 
-| Layer | Technology | Version | Purpose |
+| Слой | Технология | Версия | Назначение |
 |-------|-----------|---------|---------|
-| **Backend Framework** | FastAPI | 0.100+ | HTTP API layer, request routing, dependency injection |
-| **Python** | Python | 3.14 | Core runtime via venv at `.venv3-14/` |
-| **Database** | PostgreSQL (prod) / SQLite (dev) | 15+ / 3.x | Persistent data storage |
-| **ORM** | SQLAlchemy | 2.0+ | Database abstraction, model mapping |
-| **Migrations** | Alembic | 1.12+ | Database schema versioning |
-| **Password Hashing** | bcrypt | 4.0+ | Secure password storage |
-| **JWT** | PyJWT | 2.8+ | Session token generation and validation |
-| **HTTP Server** | uvicorn | 0.23+ | ASGI server for FastAPI |
-| **Frontend Framework** | Vue 3 | 3.3+ | Reactive UI, component-based |
-| **Frontend Language** | TypeScript | 5.0+ | Type-safe JavaScript for frontend |
-| **State Management** | Pinia | 2.1+ | Centralized store (Vuex successor) |
-| **Routing** | Vue Router | 4.2+ | Client-side SPA routing |
-| **HTTP Client** | axios | 1.4+ | Frontend → backend API calls |
-| **CSS Framework** | Tailwind CSS | 4.0+ | Utility-first styling |
-| **Node.js** | Node.js | 24.x via nvm | JavaScript runtime, npm package manager |
-| **Testing (Backend)** | pytest | 7.4+ | Unit and integration test framework |
-| **Testing (Frontend)** | Vitest | 1.0+ | Vue component and TS unit tests |
-| **Code Quality** | mypy, isort, pre-commit | Latest | Type checking, import sorting, git hooks |
+| **Бэкенд-фреймворк** | FastAPI | 0.100+ | HTTP API слой, маршрутизация запросов, внедрение зависимостей |
+| **Python** | Python | 3.14 | Основное время выполнения через venv в `.venv3-14/` |
+| **База данных** | PostgreSQL (prod) / SQLite (dev) | 15+ / 3.x | Постоянное хранение данных |
+| **ORM** | SQLAlchemy | 2.0+ | Абстракция БД, маппинг моделей |
+| **Миграции** | Alembic | 1.12+ | Версионирование схемы БД |
+| **Хеширование пароля** | bcrypt | 4.0+ | Безопасное хранение пароля |
+| **JWT** | PyJWT | 2.8+ | Генерация и валидация токенов сессий |
+| **HTTP-сервер** | uvicorn | 0.23+ | ASGI-сервер для FastAPI |
+| **Фронтенд-фреймворк** | Vue 3 | 3.3+ | Реактивный UI, компонент-ориентированный |
+| **Язык фронтенда** | TypeScript | 5.0+ | Типобезопасный JavaScript для фронтенда |
+| **Управление состоянием** | Pinia | 2.1+ | Централизованное хранилище (преемник Vuex) |
+| **Маршрутизация** | Vue Router | 4.2+ | Клиентская SPA-маршрутизация |
+| **HTTP-клиент** | axios | 1.4+ | Вызовы фронтенд → бэкенд API |
+| **CSS-фреймворк** | Tailwind CSS | 4.0+ | Утилитарный стиль |
+| **Node.js** | Node.js | 24.x via nvm | JavaScript среда, npm пакетный менеджер |
+| **Тестирование (Бэкенд)** | pytest | 7.4+ | Unit и интеграционный тестовый фреймворк |
+| **Тестирование (Фронтенд)** | Vitest | 1.0+ | Vue компонент и TS unit-тесты |
+| **Качество кода** | mypy, isort, pre-commit | Latest | Проверка типов, сортировка импортов, git-hooks |
 
-## Quick Start
+## Быстрый старт
 
-### Backend Setup
+### Настройка бэкенда
 
 ```bash
-# Create and activate virtual environment
+# Создать и активировать виртуальную среду
 python3.14 -m venv .venv3-14
 source .venv3-14/bin/activate
 
-# Install dependencies
+# Установить зависимости
 pip install -r requirements.txt
 
-# Run database migrations
+# Запустить миграции БД
 alembic upgrade head
 
-# Start API server
+# Запустить API-сервер
 uvicorn backend.api.main:app --reload
 ```
 
-API runs at `http://localhost:8000/docs` (Swagger UI).
+API работает на `http://localhost:8000/docs` (Swagger UI).
 
-### Frontend Setup
+### Настройка фронтенда
 
 ```bash
-# Ensure Node.js 24 is installed (via nvm)
+# Убедиться, что установлен Node.js 24 (через nvm)
 nvm use 24
 
-# Install dependencies
+# Установить зависимости
 cd frontend
 npm install
 
-# Start development server
+# Запустить сервер разработки
 npm run dev
 ```
 
-Frontend runs at `http://localhost:5173`.
+Фронтенд работает на `http://localhost:5173`.
 
-### Run Tests
+### Запустить тесты
 
 ```bash
-# Backend unit and integration tests
+# Бэкенд unit и интеграционные тесты
 pytest tests/ -v
 
-# Frontend component tests
+# Фронтенд компонент-тесты
 cd frontend && npm run test
 
-# Pre-commit checks (mypy, isort, pytest)
+# Pre-commit проверки (mypy, isort, pytest)
 pre-commit run --all-files
 ```
 
-## Project Structure
+## Структура проекта
 
 ```
 menu-planner/
-├── backend/                            # Python backend (FastAPI + Clean Architecture)
-│   ├── api/                            # HTTP layer: routers, schemas, auth
-│   │   ├── main.py                     # FastAPI app, lifespan, exception handlers
-│   │   ├── auth.py                     # JWT extraction (get_current_user dependency)
-│   │   ├── deps.py                     # FastAPI dependency injection (get_container)
-│   │   ├── converters.py               # Domain entity → Pydantic schema conversion
-│   │   ├── routers/                    # 8 API routers (auth, recipes, products, menus, family, categories, shopping_list, import_export, system)
-│   │   └── schemas/                    # Pydantic request/response models
-│   ├── domain/                         # Core business logic (zero framework dependencies)
+├── backend/                            # Python бэкенд (FastAPI + Чистая архитектура)
+│   ├── api/                            # HTTP слой: маршрутизаторы, схемы, аутентификация
+│   │   ├── main.py                     # FastAPI приложение, lifespan, обработчики исключений
+│   │   ├── auth.py                     # JWT извлечение (get_current_user зависимость)
+│   │   ├── deps.py                     # FastAPI внедрение зависимостей (get_container)
+│   │   ├── converters.py               # Доменная сущность → Pydantic схема преобразование
+│   │   ├── routers/                    # 8 API маршрутизаторов (auth, recipes, products, menus, family, categories, shopping_list, import_export, system)
+│   │   └── schemas/                    # Pydantic модели запроса/ответа
+│   ├── domain/                         # Ядро бизнес-логики (ноль зависимостей фреймворка)
 │   │   ├── entities/                   # Recipe, Product, Menu, ShoppingList, User, FamilyMember, RefreshToken
 │   │   ├── value_objects/              # Quantity, Money, RecipeIngredient, CookingStep, Category
-│   │   ├── services/                   # Domain services: ShoppingListBuilder, PortionCalculator, UnitConverter
-│   │   ├── ports/                      # Abstract interfaces (repositories, services)
-│   │   └── exceptions.py               # Custom domain exceptions
-│   ├── application/                    # Use case orchestration layer
-│   │   └── use_cases/                  # ~20 use case classes (1 class = 1 operation)
-│   ├── infrastructure/                 # Implementation of domain ports
-│   │   ├── repositories/               # SQLAlchemy-based ORM models and repository implementations
+│   │   ├── services/                   # Доменные сервисы: ShoppingListBuilder, PortionCalculator, UnitConverter
+│   │   ├── ports/                      # Абстрактные интерфейсы (репозитории, сервисы)
+│   │   └── exceptions.py               # Пользовательские доменные исключения
+│   ├── application/                    # Use case слой оркестрации
+│   │   └── use_cases/                  # ~20 классов use case (1 класс = 1 операция)
+│   ├── infrastructure/                 # Реализация доменных портов
+│   │   ├── repositories/               # ORM модели SQLAlchemy и реализации репозиториев
 │   │   ├── auth/                       # BcryptPasswordHasher, JwtTokenService
-│   │   ├── database/                   # SQLAlchemy engine, migrations (Alembic)
-│   │   ├── export/                     # CSV/JSON exporters (Strategy pattern)
-│   │   └── import_/                    # CSV/JSON importers
-│   ├── composition/                    # Dependency injection container setup
-│   │   ├── container.py                # ApplicationContainer orchestrator
-│   │   ├── _auth.py, _recipes.py, etc. # Module-specific wiring
-│   │   └── _infrastructure.py          # DB and auth service initialization
-│   └── main.py                         # Entry point for desktop/CLI (if used)
+│   │   ├── database/                   # SQLAlchemy engine, миграции (Alembic)
+│   │   ├── export/                     # CSV/JSON экспортеры (паттерн Strategy)
+│   │   └── import_/                    # CSV/JSON импортеры
+│   ├── composition/                    # Настройка контейнера внедрения зависимостей
+│   │   ├── container.py                # ApplicationContainer орхестратор
+│   │   ├── _auth.py, _recipes.py, etc. # Специфичная для модуля подключение
+│   │   └── _infrastructure.py          # Инициализация БД и сервиса аутентификации
+│   └── main.py                         # Точка входа для desktop/CLI (если используется)
 │
 ├── frontend/                           # Vue 3 + TypeScript SPA
 │   ├── src/
-│   │   ├── main.ts                     # Vue app initialization
-│   │   ├── App.vue                     # Root layout component (AppLayout + router-view)
-│   │   ├── api/                        # HTTP client layer
-│   │   │   ├── client.ts               # axios instance with interceptors (JWT, auto-refresh)
-│   │   │   ├── auth.ts                 # Auth API calls (register, login, refresh)
-│   │   │   └── types.ts                # TypeScript interfaces matching Pydantic schemas
-│   │   ├── stores/                     # Pinia stores (reactive state)
-│   │   │   ├── auth.ts                 # User, tokens, login/logout
-│   │   │   ├── recipes.ts              # Recipe list, CRUD operations
-│   │   │   ├── products.ts             # Product list, CRUD operations
-│   │   │   ├── menus.ts                # Weekly menu state, slot management
-│   │   │   ├── family.ts               # Family members, dietary restrictions
-│   │   │   ├── categories.ts           # Product/recipe categories
-│   │   │   ├── shoppingList.ts         # Shopping list state, cost tracking
-│   │   │   ├── toast.ts                # Toast notification queue
-│   │   │   └── crud-factory.ts         # Generic CRUD store factory
-│   │   ├── router/                     # Vue Router configuration
-│   │   │   └── index.ts                # 6 main routes + nested /settings children
-│   │   ├── views/                      # Page-level components
-│   │   │   ├── MenuPlannerView.vue     # 7-day × 3-meal grid planner
-│   │   │   ├── ShoppingListView.vue    # Aggregated shopping list with cost tracking
-│   │   │   ├── RecipeListView.vue      # Recipe CRUD table + form
-│   │   │   ├── ProductListView.vue     # Product CRUD table + form
-│   │   │   ├── SettingsView.vue        # Settings container (family, categories, about)
-│   │   │   └── AuthView.vue            # Login/register page
-│   │   ├── components/                 # Reusable components
+│   │   ├── main.ts                     # Инициализация Vue приложения
+│   │   ├── App.vue                     # Root layout компонент (AppLayout + router-view)
+│   │   ├── api/                        # HTTP клиент слой
+│   │   │   ├── client.ts               # axios экземпляр с перехватчиками (JWT, auto-refresh)
+│   │   │   ├── auth.ts                 # Вызовы Auth API (register, login, refresh)
+│   │   │   └── types.ts                # TypeScript интерфейсы совпадающие с Pydantic схемами
+│   │   ├── stores/                     # Pinia хранилища (реактивное состояние)
+│   │   │   ├── auth.ts                 # Пользователь, токены доступа/обновления
+│   │   │   ├── recipes.ts              # Список рецептов, CRUD операции
+│   │   │   ├── products.ts             # Список продуктов, CRUD операции
+│   │   │   ├── menus.ts                # Состояние еженедельного меню, управление слотом
+│   │   │   ├── family.ts               # Члены семьи, пищевые ограничения
+│   │   │   ├── categories.ts           # Категории продукта/рецепта
+│   │   │   ├── shoppingList.ts         # Состояние списка покупок, отслеживание затрат
+│   │   │   ├── toast.ts                # Очередь push-уведомлений
+│   │   │   └── crud-factory.ts         # Генератор универсального CRUD хранилища
+│   │   ├── router/                     # Конфигурация Vue Router
+│   │   │   └── index.ts                # 6 основных маршрутов + вложенные дочерние /settings
+│   │   ├── views/                      # Компоненты уровня страницы
+│   │   │   ├── MenuPlannerView.vue     # Планировщик на 7 дней × 3 приема пищи сетка
+│   │   │   ├── ShoppingListView.vue    # Агрегированный список покупок с отслеживанием затрат
+│   │   │   ├── RecipeListView.vue      # CRUD таблица рецептов + форма
+│   │   │   ├── ProductListView.vue     # CRUD таблица продуктов + форма
+│   │   │   ├── SettingsView.vue        # Контейнер настроек (семья, категории, о программе)
+│   │   │   └── AuthView.vue            # Страница входа/регистрации
+│   │   ├── components/                 # Переиспользуемые компоненты
 │   │   │   ├── layout/                 # AppSidebar, MobileBottomNav
 │   │   │   ├── planner/                # PlannerGrid, GridCell, SourcePanel, SavedMenuList
 │   │   │   ├── shopping/               # ShoppingTable, ShoppingSummary, AddProductForm
 │   │   │   ├── recipes/                # RecipeTable, RecipeForm
 │   │   │   ├── products/               # ProductTable, ProductForm
 │   │   │   ├── settings/               # FamilyPanel, CategoryPanel, AboutPanel
-│   │   │   └── ui/                     # Reusable primitives (ConfirmDialog, InputDialog, ToastNotification, etc.)
-│   │   ├── composables/                # Reusable composition functions
-│   │   │   ├── useSelection.ts         # Multi-row selection logic
-│   │   │   ├── useDropdown.ts          # Dropdown open/close state
-│   │   │   ├── useCategoryFilter.ts    # Category filtering
-│   │   │   ├── useContextMenu.ts       # Right-click context menu
-│   │   │   └── useFileDownload.ts      # Download blob/CSV export
-│   │   └── utils/                      # Utility functions
-│   │       └── units.ts                # Unit conversion, label formatting
-│   ├── public/                         # Static assets
-│   └── vite.config.ts                  # Tailwind v4 plugin, API proxy to :8000
+│   │   │   └── ui/                     # Переиспользуемые примитивы (ConfirmDialog, InputDialog, ToastNotification, etc.)
+│   │   ├── composables/                # Переиспользуемые функции компоновки
+│   │   │   ├── useSelection.ts         # Логика многострочного выбора
+│   │   │   ├── useDropdown.ts          # Состояние открытия/закрытия выпадающего списка
+│   │   │   ├── useCategoryFilter.ts    # Логика фильтрации категорий
+│   │   │   ├── useContextMenu.ts       # Контекстное меню правого клика
+│   │   │   └── useFileDownload.ts      # Утилита загрузки blob/CSV экспорта
+│   │   └── utils/                      # Функции утилиты
+│   │       └── units.ts                # Преобразование единиц, форматирование меток
+│   ├── public/                         # Статические активы
+│   └── vite.config.ts                  # Плагин Tailwind v4, прокси API к :8000
 │
-├── tests/                              # Comprehensive test suite
+├── tests/                              # Полный набор тестов
 │   ├── unit/
-│   │   ├── domain/                     # Domain logic tests (Quantity, Recipe, etc.)
-│   │   ├── application/                # Use case tests
-│   │   └── api/                        # Router endpoint tests
+│   │   ├── domain/                     # Тесты логики доменного слоя (Quantity, Recipe, etc.)
+│   │   ├── application/                # Тесты use case
+│   │   └── api/                        # Тесты эндпоинта маршрутизатора
 │   └── integration/
-│       └── repositories/               # ORM repository tests against :memory: SQLite
+│       └── repositories/               # ORM репозиторий тесты против :memory: SQLite
 │
-├── alembic/                            # Database migrations (Alembic)
-│   ├── env.py                          # Migration environment setup
-│   └── versions/                       # Timestamped migration scripts
+├── alembic/                            # Миграции БД (Alembic)
+│   ├── env.py                          # Настройка среды миграции
+│   └── versions/                       # Скрипты миграции с временными метками
 │
 ├── .config/
-│   ├── .env                            # Environment variables (git-ignored)
+│   ├── .env                            # Переменные окружения (git-игнорируется)
 │   └── git-hooks/
-│       └── pre-commit                  # Runs pytest, isort, mypy before commit
+│       └── pre-commit                  # Запускает pytest, isort, mypy перед коммитом
 │
-├── docs/                               # User and technical documentation
-│   ├── technical/                      # This directory (architecture, API, implementation guides)
-│   └── ...                             # User guides, specifications (Russian)
+├── docs/                               # Пользовательская и техническая документация
+│   ├── technical/                      # Этот каталог (архитектура, API, руководства реализации)
+│   └── ...                             # Пользовательские руководства, спецификации (Russian)
 │
-├── requirements.txt                    # Python dependencies (backend + tests)
-├── frontend/package.json               # Node dependencies (frontend)
-├── pytest.ini                          # pytest configuration
-├── pyproject.toml                      # Python project config (mypy, isort)
-└── VERSION                             # API version string
+├── requirements.txt                    # Зависимости Python (бэкенд + тесты)
+├── frontend/package.json               # Зависимости Node (фронтенд)
+├── pytest.ini                          # Конфигурация pytest
+├── pyproject.toml                      # Конфигурация Python проекта (mypy, isort)
+└── VERSION                             # Строка версии API
 ```
 
-## Environment Setup
+## Настройка окружения
 
-### 1. Python Virtual Environment
+### 1. Виртуальная среда Python
 
 ```bash
 python3.14 -m venv .venv3-14
 source .venv3-14/bin/activate  # macOS/Linux
-# or
+# или
 .venv3-14\Scripts\activate     # Windows
 ```
 
-### 2. Environment Variables
+### 2. Переменные окружения
 
-Create `.config/.env`:
+Создать `.config/.env`:
 
 ```env
 DATABASE_URL=sqlite:///./test.db     # Dev: SQLite; Prod: postgresql://user:pass@host/db
-JWT_SECRET_KEY=your-secret-key-here  # Generate with: openssl rand -hex 32
+JWT_SECRET_KEY=your-secret-key-here  # Генерировать с: openssl rand -hex 32
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=30
 ```
 
-### 3. Database Initialization
+### 3. Инициализация БД
 
 ```bash
-# Create/update schema
+# Создать/обновить схему
 alembic upgrade head
 
-# If migrations don't run automatically
+# Если миграции не запускаются автоматически
 python -c "from backend.infrastructure.database.seed_defaults import seed_defaults; seed_defaults()"
 ```
 
-## Running the Application
+## Запуск приложения
 
-### Development (FastAPI + Vue)
+### Разработка (FastAPI + Vue)
 
-**Terminal 1 — Backend:**
+**Терминал 1 — Бэкенд:**
 
 ```bash
 source .venv3-14/bin/activate
 uvicorn backend.api.main:app --reload
-# Swagger API docs: http://localhost:8000/docs
+# Документация Swagger API: http://localhost:8000/docs
 # OpenAPI JSON: http://localhost:8000/openapi.json
 ```
 
-**Terminal 2 — Frontend:**
+**Терминал 2 — Фронтенд:**
 
 ```bash
 cd frontend
 npm run dev
-# Frontend: http://localhost:5173
+# Фронтенд: http://localhost:5173
 ```
 
-The frontend's `vite.config.ts` proxies API calls from `http://localhost:5173/api/*` to `http://localhost:8000/api/*`.
+Прокси фронтенда в `vite.config.ts` перенаправляет вызовы API с `http://localhost:5173/api/*` на `http://localhost:8000/api/*`.
 
-### Database Management
+### Управление БД
 
 ```bash
-# Create migration (auto-detect changes)
-alembic revision --autogenerate -m "Describe changes"
+# Создать миграцию (автоопределение изменений)
+alembic revision --autogenerate -m "Опишите изменения"
 
-# Apply all pending migrations
+# Применить все ожидающие миграции
 alembic upgrade head
 
-# Rollback one migration
+# Откатить одну миграцию
 alembic downgrade -1
 
-# Show migration history
+# Показать историю миграции
 alembic history
 ```
 
-## Key Design Decisions
+## Ключевые решения в проектировании
 
-### 1. Clean Architecture (4 Layers + API Adapter)
+### 1. Чистая архитектура (4 слоя + API адаптер)
 
-- **Domain:** Business logic, zero framework dependencies
-- **Application:** Use cases, orchestration, DTOs
-- **Infrastructure:** Persistence, auth, file I/O
-- **API:** FastAPI routers, Pydantic schemas, converters
-- **Frontend:** Vue 3 SPA with Pinia stores
+- **Доменный слой:** Бизнес-логика, ноль зависимостей от фреймворков
+- **Приложение:** Use cases, оркестрация, DTO
+- **Инфраструктура:** Персистентность, аутентификация, file I/O
+- **API:** FastAPI маршрутизаторы, Pydantic схемы, конвертеры
+- **Фронтенд:** Vue 3 SPA с хранилищами Pinia
 
-**Why:** Maximum testability, framework independence, clear separation of concerns.
+**Почему:** Максимальная тестируемость, независимость от фреймворка, четкое разделение ответственности.
 
-### 2. Typed IDs via `NewType`
+### 2. Типизированные ID через `NewType`
 
 ```python
 RecipeId = NewType("RecipeId", int)
 ProductId = NewType("ProductId", int)
 ```
 
-Prevents accidental ID mix-ups (e.g., passing `ProductId` to a method expecting `RecipeId`). Enforced by mypy at compile time.
+Предотвращает случайные ошибки смешивания ID (например, передача `ProductId` методу, ожидающему `RecipeId`). Применяется mypy во время компиляции.
 
 ### 3. SQLAlchemy + Alembic
 
-- **SQLAlchemy:** ORM layer between domain and database
-- **Alembic:** Version-controlled migrations
-- **Why:** Easy multi-database support (SQLite ↔ PostgreSQL), schema evolution safety, data integrity
+- **SQLAlchemy:** Слой ORM между доменом и БД
+- **Alembic:** Версионная миграция
+- **Почему:** Простая поддержка нескольких БД (SQLite ↔ PostgreSQL), безопасная эволюция схемы, целостность данных
 
-### 4. Pinia for Frontend State
+### 4. Pinia для управления состоянием фронтенда
 
-- Centralized, reactive state management
-- Less boilerplate than Vuex
-- Works seamlessly with Vue 3 Composition API
+- Централизованное, реактивное управление состоянием
+- Меньше шаблонного кода, чем Vuex
+- Плавная работа с Vue 3 Composition API
 
 ### 5. Tailwind CSS v4
 
-- Utility-first, responsive design
-- Zero CSS file management
-- Built into Vite build pipeline
+- Утилитарный, адаптивный дизайн
+- Ноль управления CSS файлами
+- Встроен в Vite конвейер сборки
 
-## Docker Setup (Optional)
+## Docker установка (опционально)
 
-For containerized deployment:
+Для контейнеризованного развертывания:
 
 ```yaml
-# docker-compose.yml structure
+# docker-compose.yml структура
 services:
   db:
     image: postgres:15
@@ -328,25 +328,25 @@ services:
       VITE_API_BASE: http://api:8000
 ```
 
-## Health & Monitoring Endpoints
+## Эндпоинты здоровья и мониторинга
 
-- `GET /api/system/health` — Health check (no auth required)
-- `GET /api/system/version` — API version
-- `GET /docs` — Swagger UI with all endpoints
-- `GET /openapi.json` — OpenAPI/Swagger spec
+- `GET /api/system/health` — Проверка здоровья (аутентификация не требуется)
+- `GET /api/system/version` — Версия API
+- `GET /docs` — Swagger UI со всеми эндпоинтами
+- `GET /openapi.json` — OpenAPI/Swagger спецификация
 
-## Common Development Tasks
+## Частые задачи разработки
 
-| Task | Command |
-|------|---------|
-| Run tests | `pytest tests/ -v --cov=backend` |
-| Run tests matching pattern | `pytest tests/ -k "test_recipe" -v` |
-| Format imports | `isort backend/ tests/` |
-| Type check | `mypy backend/ tests/` |
-| Pre-commit check | `pre-commit run --all-files` |
-| Build frontend | `cd frontend && npm run build` |
-| Serve frontend built assets | `cd frontend && npm run preview` |
+| Задача | Команда |
+|--------|---------|
+| Запустить тесты | `pytest tests/ -v --cov=backend` |
+| Запустить тесты, соответствующие шаблону | `pytest tests/ -k "test_recipe" -v` |
+| Форматировать импорты | `isort backend/ tests/` |
+| Проверка типов | `mypy backend/ tests/` |
+| Pre-commit проверка | `pre-commit run --all-files` |
+| Собрать фронтенд | `cd frontend && npm run build` |
+| Обслуживать построенные активы фронтенда | `cd frontend && npm run preview` |
 
 ---
 
-**Next:** See [architecture.md](02-architecture.md) for detailed layer descriptions and design patterns.
+**Далее:** См. [architecture.md](02-architecture.md) для подробных описаний слоев и паттернов проектирования.

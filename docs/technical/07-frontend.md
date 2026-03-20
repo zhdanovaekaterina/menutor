@@ -1,67 +1,67 @@
-# Frontend — Vue 3 + TypeScript + Pinia
+# Фронтенд — Vue 3 + TypeScript + Pinia
 
-**File location:** `frontend/src/`
+**Расположение:** `frontend/src/`
 
-The frontend is a Vue 3 SPA with TypeScript, Pinia state management, and Tailwind CSS v4. It mirrors the backend's architecture: views correspond to routes, stores manage state, and the API client handles HTTP communication.
+Фронтенд является Vue 3 SPA с TypeScript, управлением состоянием Pinia и Tailwind CSS v4. Он отражает архитектуру бэкенда: представления соответствуют маршрутам, хранилища управляют состоянием, а API клиент обрабатывает HTTP связь.
 
 ---
 
-## Project Structure
+## Структура проекта
 
 ```
 frontend/src/
-├── main.ts                        # Vue app initialization
-├── App.vue                        # Root layout component
+├── main.ts                        # Инициализация Vue приложения
+├── App.vue                        # Корневой компонент разметки
 ├── router/
-│   └── index.ts                   # Vue Router configuration (6 routes + nested settings)
-├── stores/                        # Pinia stores (state management)
-│   ├── auth.ts                    # User, tokens, login/logout
-│   ├── recipes.ts                 # Recipe state and CRUD operations
-│   ├── products.ts                # Product state and CRUD operations
-│   ├── menus.ts                   # Menu and slot state
-│   ├── family.ts                  # Family members state
-│   ├── categories.ts              # Product/recipe categories state
-│   ├── shoppingList.ts            # Shopping list items, cost tracking
-│   ├── toast.ts                   # Toast notification queue
-│   └── crud-factory.ts            # Reusable CRUD store generator
+│   └── index.ts                   # Конфигурация Vue Router (6 маршрутов + вложенные настройки)
+├── stores/                        # Pinia хранилища (управление состоянием)
+│   ├── auth.ts                    # Пользователь, токены, логин/логаут
+│   ├── recipes.ts                 # Состояние рецептов и операции CRUD
+│   ├── products.ts                # Состояние продуктов и операции CRUD
+│   ├── menus.ts                   # Состояние меню и слотов
+│   ├── family.ts                  # Состояние членов семьи
+│   ├── categories.ts              # Состояние категорий продуктов/рецептов
+│   ├── shoppingList.ts            # Элементы списка покупок, отслеживание стоимости
+│   ├── toast.ts                   # Очередь всплывающих уведомлений
+│   └── crud-factory.ts            # Переиспользуемый генератор CRUD хранилища
 ├── api/
-│   ├── client.ts                  # axios instance with JWT interceptor
-│   ├── auth.ts                    # Auth API calls
-│   └── types.ts                   # TypeScript interfaces (match Pydantic)
-├── views/                         # Page-level components
-│   ├── AuthView.vue               # Login/register
-│   ├── MenuPlannerView.vue        # 7-day meal planner
-│   ├── ShoppingListView.vue       # Shopping list page
-│   ├── RecipeListView.vue         # Recipe management page
-│   ├── ProductListView.vue        # Product management page
-│   └── SettingsView.vue           # Settings container
-├── components/                    # Reusable UI components
-│   ├── layout/                    # Layout components (AppSidebar, MobileBottomNav)
-│   ├── planner/                   # Planner-specific (PlannerGrid, GridCell, SourcePanel)
-│   ├── shopping/                  # Shopping-specific (ShoppingTable, ShoppingSummary)
-│   ├── recipes/                   # Recipe-specific (RecipeTable, RecipeForm)
-│   ├── products/                  # Product-specific (ProductTable, ProductForm)
-│   ├── settings/                  # Settings-specific (FamilyPanel, CategoryPanel)
-│   └── ui/                        # Generic UI primitives (ConfirmDialog, ToastNotification, etc.)
-├── composables/                   # Reusable Vue 3 composition functions
-│   ├── useSelection.ts            # Multi-row selection
-│   ├── useDropdown.ts             # Dropdown open/close state
-│   ├── useCategoryFilter.ts       # Category filtering logic
-│   ├── useContextMenu.ts          # Right-click context menu
-│   └── useFileDownload.ts         # File/blob download utility
+│   ├── client.ts                  # Экземпляр axios с JWT перехватчиком
+│   ├── auth.ts                    # Вызовы API аутентификации
+│   └── types.ts                   # TypeScript интерфейсы (соответствуют Pydantic)
+├── views/                         # Компоненты уровня страницы
+│   ├── AuthView.vue               # Логин/регистрация
+│   ├── MenuPlannerView.vue        # Планировщик меню на 7 дней
+│   ├── ShoppingListView.vue       # Страница списка покупок
+│   ├── RecipeListView.vue         # Страница управления рецептами
+│   ├── ProductListView.vue        # Страница управления продуктами
+│   └── SettingsView.vue           # Контейнер настроек
+├── components/                    # Переиспользуемые UI компоненты
+│   ├── layout/                    # Компоненты разметки (AppSidebar, MobileBottomNav)
+│   ├── planner/                   # Планировщик (PlannerGrid, GridCell, SourcePanel)
+│   ├── shopping/                  # Покупки (ShoppingTable, ShoppingSummary)
+│   ├── recipes/                   # Рецепты (RecipeTable, RecipeForm)
+│   ├── products/                  # Продукты (ProductTable, ProductForm)
+│   ├── settings/                  # Настройки (FamilyPanel, CategoryPanel)
+│   └── ui/                        # Примитивные UI (ConfirmDialog, ToastNotification, и т.д.)
+├── composables/                   # Переиспользуемые функции Vue 3 composition
+│   ├── useSelection.ts            # Выбор нескольких строк
+│   ├── useDropdown.ts             # Состояние открытия/закрытия выпадающего меню
+│   ├── useCategoryFilter.ts       # Логика фильтрации по категориям
+│   ├── useContextMenu.ts          # Контекстное меню по клику правой кнопки
+│   └── useFileDownload.ts         # Утилита скачивания файлов/blob
 ├── utils/
-│   ├── units.ts                   # Unit conversion, formatting helpers
-│   └── api.ts                     # API response error handling
+│   ├── units.ts                   # Преобразование единиц, вспомогательные функции форматирования
+│   └── api.ts                     # Обработка ошибок ответов API
 ├── assets/
-│   └── index.css                  # Tailwind CSS, global styles
-└── vite.config.ts                 # Vite + Tailwind plugin configuration
+│   └── index.css                  # Tailwind CSS, глобальные стили
+└── vite.config.ts                 # Конфигурация Vite + плагин Tailwind
 ```
 
 ---
 
-## Initialization
+## Инициализация
 
-**File:** `frontend/src/main.ts`
+**Файл:** `frontend/src/main.ts`
 
 ```typescript
 import { createApp } from 'vue'
@@ -72,25 +72,25 @@ import './assets/index.css'
 
 const app = createApp(App)
 
-app.use(createPinia())  // State management
-app.use(router)         // Routing
+app.use(createPinia())  // Управление состоянием
+app.use(router)         // Маршрутизация
 
 app.mount('#app')
 ```
 
 ---
 
-## Root Layout
+## Корневая разметка
 
-**File:** `frontend/src/App.vue`
+**Файл:** `frontend/src/App.vue`
 
 ```vue
 <template>
   <div class="flex h-screen bg-gray-50">
-    <!-- Sidebar navigation -->
+    <!-- Боковая навигация -->
     <AppSidebar />
 
-    <!-- Main content -->
+    <!-- Основное содержимое -->
     <main class="flex-1 overflow-auto">
       <router-view />
     </main>
@@ -106,7 +106,7 @@ import AppSidebar from '@/components/layout/AppSidebar.vue'
 
 ## Vue Router
 
-**File:** `frontend/src/router/index.ts`
+**Файл:** `frontend/src/router/index.ts`
 
 ```typescript
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
@@ -175,7 +175,7 @@ const router = createRouter({
   routes,
 })
 
-// Global navigation guard: check authentication
+// Глобальная защита маршрутов: проверка аутентификации
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
 
@@ -193,11 +193,11 @@ export default router
 
 ---
 
-## Pinia Stores
+## Pinia хранилища
 
-### Auth Store
+### Хранилище аутентификации
 
-**File:** `frontend/src/stores/auth.ts`
+**Файл:** `frontend/src/stores/auth.ts`
 
 ```typescript
 import { defineStore } from 'pinia'
@@ -211,11 +211,11 @@ export const useAuthStore = defineStore('auth', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // ─── Computed ───────────────────────────────────────────
+  // ─── Вычисляемые свойства ───────────────────────────────────────────
 
   const isAuthenticated = computed(() => !!accessToken.value)
 
-  // ─── Actions ─────────────────────────────────────────────
+  // ─── Действия ─────────────────────────────────────────────
 
   async function register(email: string, password: string, nickname: string) {
     loading.value = true
@@ -305,9 +305,9 @@ export const useAuthStore = defineStore('auth', () => {
 })
 ```
 
-### Recipe Store (CRUD Factory)
+### Хранилище рецептов (CRUD фабрика)
 
-**File:** `frontend/src/stores/recipes.ts`
+**Файл:** `frontend/src/stores/recipes.ts`
 
 ```typescript
 import { defineStore } from 'pinia'
@@ -418,20 +418,20 @@ export const useRecipeStore = defineStore('recipes', () => {
 })
 ```
 
-### Other Stores
+### Другие хранилища
 
-- `products.ts` — Product CRUD
-- `menus.ts` — Menu and slot management
-- `family.ts` — Family member CRUD
-- `categories.ts` — Category CRUD
-- `shoppingList.ts` — Shopping list state (items, total cost, purchased tracking)
-- `toast.ts` — Toast notification queue
+- `products.ts` — CRUD продукты
+- `menus.ts` — Управление меню и слотами
+- `family.ts` — CRUD члены семьи
+- `categories.ts` — CRUD категории
+- `shoppingList.ts` — Состояние списка покупок (элементы, общая стоимость, отслеживание покупок)
+- `toast.ts` — Очередь всплывающих уведомлений
 
 ---
 
-## API Client
+## API клиент
 
-**File:** `frontend/src/api/client.ts`
+**Файл:** `frontend/src/api/client.ts`
 
 ```typescript
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
@@ -444,7 +444,7 @@ const client: AxiosInstance = axios.create({
   },
 })
 
-// Request interceptor: add JWT token
+// Перехватчик запроса: добавление JWT токена
 client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const auth = useAuthStore()
   if (auth.accessToken) {
@@ -453,7 +453,7 @@ client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
-// Response interceptor: handle 401 (auto-refresh)
+// Перехватчик ответа: обработка 401 (автоматическое обновление)
 client.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -463,7 +463,7 @@ client.interceptors.response.use(
     if (error.response?.status === 401 && auth.refreshToken) {
       try {
         await auth.refreshAccessToken()
-        // Retry original request with new token
+        // Повтор исходного запроса с новым токеном
         return client(originalRequest)
       } catch {
         auth.logout()
@@ -477,7 +477,7 @@ client.interceptors.response.use(
 
 export default client
 
-// Typed API wrappers
+// Типизированные обертки API
 export const getRecipes = (params?: { category_id?: number }) =>
   client.get<Recipe[]>('/recipes', { params }).then(r => r.data)
 
@@ -490,12 +490,12 @@ export const updateRecipe = (id: number, data: RecipeUpdate) =>
 export const deleteRecipe = (id: number) =>
   client.delete(`/recipes/${id}`).then(r => r.data)
 
-// ... similar for products, menus, etc.
+// ... аналогично для продуктов, меню и т.д.
 ```
 
-**File:** `frontend/src/api/types.ts`
+**Файл:** `frontend/src/api/types.ts`
 
-TypeScript interfaces matching Pydantic schemas:
+TypeScript интерфейсы, соответствующие схемам Pydantic:
 
 ```typescript
 export interface User {
@@ -540,21 +540,21 @@ export interface CookingStep {
   order: number
 }
 
-// ... similar for Product, Menu, ShoppingList, etc.
+// ... аналогично для Product, Menu, ShoppingList и т.д.
 ```
 
 ---
 
-## Components
+## Компоненты
 
-### RecipeForm Component
+### Компонент RecipeForm
 
-**File:** `frontend/src/components/recipes/RecipeForm.vue`
+**Файл:** `frontend/src/components/recipes/RecipeForm.vue`
 
 ```vue
 <template>
   <form @submit.prevent="submit" class="space-y-4">
-    <!-- Name -->
+    <!-- Название -->
     <div>
       <label class="block text-sm font-medium mb-1">Название *</label>
       <input
@@ -566,7 +566,7 @@ export interface CookingStep {
       />
     </div>
 
-    <!-- Category & Servings -->
+    <!-- Категория & Порции -->
     <div class="grid grid-cols-2 gap-4">
       <div>
         <label class="block text-sm font-medium mb-1">Категория *</label>
@@ -589,7 +589,7 @@ export interface CookingStep {
       </div>
     </div>
 
-    <!-- Ingredients -->
+    <!-- Ингредиенты -->
     <fieldset>
       <legend class="block text-sm font-medium mb-2 bg-slate-200 px-3 py-2 rounded">
         Ингредиенты
@@ -637,7 +637,7 @@ export interface CookingStep {
       </button>
     </fieldset>
 
-    <!-- Steps -->
+    <!-- Шаги -->
     <fieldset>
       <legend class="block text-sm font-medium mb-2 bg-slate-200 px-3 py-2 rounded">
         Шаги приготовления
@@ -674,7 +674,7 @@ export interface CookingStep {
       </div>
     </fieldset>
 
-    <!-- Actions -->
+    <!-- Действия -->
     <div class="flex gap-2 pt-4 border-t">
       <button type="submit" class="btn-primary flex-1">Сохранить</button>
       <button
@@ -759,7 +759,7 @@ async function submit() {
     reset()
     emit('saved', form as Recipe)
   } catch (err) {
-    // Error handled by store
+    // Ошибка обработана хранилищем
   }
 }
 
@@ -774,22 +774,22 @@ function reset() {
 </script>
 ```
 
-### MenuPlannerView Component
+### Компонент MenuPlannerView
 
-Complex component with:
-- 7×3 drag-drop grid
-- Recipe/product source panel
-- Saved menus list
-- Family display
-- Shopping list generation
+Сложный компонент с:
+- Сеткой 7×3 с drag-drop
+- Панель источников рецептов/продуктов
+- Список сохраненных меню
+- Отображение семьи
+- Генерация списка покупок
 
-See `frontend/src/views/MenuPlannerView.vue` for full implementation.
+Смотрите `frontend/src/views/MenuPlannerView.vue` для полной реализации.
 
 ---
 
 ## Composables
 
-**File:** `frontend/src/composables/useSelection.ts`
+**Файл:** `frontend/src/composables/useSelection.ts`
 
 ```typescript
 import { ref, computed } from 'vue'
@@ -831,9 +831,9 @@ export function useSelection<T extends { id: number }>(items: Ref<T[]>) {
 
 ---
 
-## Vite Configuration
+## Конфигурация Vite
 
-**File:** `frontend/vite.config.ts`
+**Файл:** `frontend/vite.config.ts`
 
 ```typescript
 import { defineConfig } from 'vite'
@@ -876,17 +876,17 @@ export default defineConfig({
 
 ## Tailwind CSS v4
 
-**File:** `frontend/src/assets/index.css`
+**Файл:** `frontend/src/assets/index.css`
 
 ```css
 @import "tailwindcss";
 
-/* Global styles */
+/* Глобальные стили */
 body {
   @apply bg-gray-50;
 }
 
-/* Component-scoped styles */
+/* Стили компонентов */
 .btn-primary {
   @apply px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white
          hover:bg-blue-700 transition-colors;
@@ -910,22 +910,22 @@ body {
 
 ---
 
-## Summary
+## Резюме
 
-The Vue 3 frontend:
-- **Routes** 6 main pages via Vue Router
-- **Manages** state with Pinia stores (auth, CRUD entities, UI state)
-- **Communicates** with API via axios with JWT interceptor
-- **Renders** components using Vue 3 Composition API + TypeScript
-- **Styles** with Tailwind CSS v4 utility classes
+Vue 3 фронтенд:
+- **Маршруты** 6 основных страниц через Vue Router
+- **Управляет** состоянием с хранилищами Pinia (auth, CRUD сущности, состояние UI)
+- **Взаимодействует** с API через axios с перехватчиком JWT
+- **Отрисовывает** компоненты используя Vue 3 Composition API + TypeScript
+- **Стилизирует** с утилит Tailwind CSS v4
 
-Key patterns:
-- **Composables:** Reusable logic (useSelection, useDropdown)
-- **Stores:** Centralized reactive state with actions
-- **Components:** Tree-based UI hierarchy
-- **Router Guards:** Protect routes requiring authentication
-- **API Client:** Typed HTTP requests with auto-refresh
+Ключевые паттерны:
+- **Composables:** Переиспользуемая логика (useSelection, useDropdown)
+- **Stores:** Централизованное реактивное состояние с действиями
+- **Components:** Иерархия UI на основе дерева
+- **Router Guards:** Защита маршрутов требующих аутентификацию
+- **API Client:** Типизированные HTTP запросы с автоматическим обновлением
 
 ---
 
-**Next:** See [testing.md](08-testing.md) for test strategies and fixtures.
+**Далее:** См. [testing.md](08-testing.md) для стратегий тестирования и фикстур.

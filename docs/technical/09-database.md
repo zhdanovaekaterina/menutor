@@ -1,12 +1,12 @@
-# Database Schema and Alembic Migrations
+# Схема базы данных и миграции Alembic
 
 ---
 
-## Schema Overview
+## Обзор схемы
 
-Menu Planner uses SQLAlchemy ORM with Alembic for schema versioning. The schema supports multi-tenancy (user scoping) and complex relationships (recipes → ingredients → products).
+Menu Planner использует SQLAlchemy ORM с Alembic для управления версиями схемы. Схема поддерживает мульти-тенантность (scoping по пользователю) и сложные отношения (рецепты → ингредиенты → продукты).
 
-### Table Relationships
+### Отношения таблиц
 
 ```
 ┌─────────────┐
@@ -32,9 +32,9 @@ Menu Planner uses SQLAlchemy ORM with Alembic for schema versioning. The schema 
 
 ---
 
-## Complete Table Definitions
+## Полные определения таблиц
 
-### Users Table
+### Таблица Users
 
 ```sql
 CREATE TABLE users (
@@ -48,16 +48,16 @@ CREATE TABLE users (
 CREATE INDEX ix_users_email ON users(email);
 ```
 
-**Columns:**
+**Колонки:**
 - `id` — Primary key
-- `email` — Unique email address
-- `nickname` — Display name
-- `password_hash` — bcrypt hash (never plaintext)
-- `created_at` — Account creation timestamp
+- `email` — Уникальный email адрес
+- `nickname` — Отображаемое имя
+- `password_hash` — bcrypt хеш (никогда открытый текст)
+- `created_at` — Временная метка создания аккаунта
 
 ---
 
-### Refresh Tokens Table
+### Таблица Refresh Tokens
 
 ```sql
 CREATE TABLE refresh_tokens (
@@ -75,11 +75,11 @@ CREATE INDEX ix_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX ix_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 ```
 
-**Purpose:** Store refresh token hashes for token rotation and revocation.
+**Назначение:** Хранить хеши refresh токенов для ротации и отзыва токенов.
 
 ---
 
-### Recipe Categories Table
+### Таблица Recipe Categories
 
 ```sql
 CREATE TABLE recipe_categories (
@@ -91,12 +91,12 @@ CREATE TABLE recipe_categories (
 CREATE INDEX ix_recipe_categories_name ON recipe_categories(name);
 ```
 
-**Columns:**
+**Колонки:**
 - `id` — Primary key
-- `name` — Category name (e.g., "Завтраки", "Обеды")
-- `active` — Soft delete flag
+- `name` — Имя категории (например, "Завтраки", "Обеды")
+- `active` — Флаг мягкого удаления
 
-**Seed data:**
+**Seed данные:**
 ```python
 INSERT INTO recipe_categories (name, active) VALUES
   ('Завтраки', 1),
@@ -107,7 +107,7 @@ INSERT INTO recipe_categories (name, active) VALUES
 
 ---
 
-### Recipes Table
+### Таблица Recipes
 
 ```sql
 CREATE TABLE recipes (
@@ -131,24 +131,24 @@ CREATE INDEX ix_recipes_name ON recipes(name);
 CREATE INDEX ix_recipes_category_id ON recipes(category_id);
 ```
 
-**Columns:**
+**Колонки:**
 - `id` — Primary key
-- `user_id` — Owner (multi-tenancy scoping)
-- `name` — Recipe name
-- `servings` — Base portion size
-- `category_id` — Recipe category FK
-- `weight` — Finished dish weight in grams (optional)
-- `total_pieces` — Total pieces if pieces-based (e.g., 12 cookies)
-- `pieces_per_portion` — Pieces per serving if pieces-based (e.g., 3)
-- `created_at`, `updated_at` — Timestamps
+- `user_id` — Владелец (scoping мульти-тенантности)
+- `name` — Название рецепта
+- `servings` — Базовый размер порции
+- `category_id` — FK категории рецепта
+- `weight` — Вес готового блюда в граммах (опционально)
+- `total_pieces` — Общее количество штук если штучный режим (например, 12 печенье)
+- `pieces_per_portion` — Штук на одну порцию если штучный режим (например, 3)
+- `created_at`, `updated_at` — Временные метки
 
-**Constraints:**
-- User scoping: all queries filter by `user_id`
-- If `total_pieces` is set, `pieces_per_portion` must also be set
+**Ограничения:**
+- Scoping пользователя: все запросы фильтруют по `user_id`
+- Если `total_pieces` установлено, `pieces_per_portion` также должно быть установлено
 
 ---
 
-### Recipe Ingredients Table
+### Таблица Recipe Ingredients
 
 ```sql
 CREATE TABLE recipe_ingredients (
@@ -169,22 +169,22 @@ CREATE INDEX ix_recipe_ingredients_recipe_id ON recipe_ingredients(recipe_id);
 CREATE INDEX ix_recipe_ingredients_product_id ON recipe_ingredients(product_id);
 ```
 
-**Columns:**
+**Колонки:**
 - `id` — Primary key
-- `recipe_id` — Parent recipe FK
-- `product_id` — Product (if ingredient is a product)
-- `sub_recipe_id` — Sub-recipe (if ingredient is a recipe)
-- `quantity_amount` — Amount needed
-- `quantity_unit` — Unit of measurement ("g", "kg", "ml", "l", "pcs", "tsp", "tbsp")
-- `order` — Position in ingredient list
+- `recipe_id` — FK родительского рецепта
+- `product_id` — Продукт (если ингредиент это продукт)
+- `sub_recipe_id` — Под-рецепт (если ингредиент это рецепт)
+- `quantity_amount` — Необходимое количество
+- `quantity_unit` — Единица измерения ("g", "kg", "ml", "l", "pcs", "tsp", "tbsp")
+- `order` — Позиция в списке ингредиентов
 
-**Constraints:**
-- Exactly one of `product_id` or `sub_recipe_id` is set (XOR)
-- Detects circular dependencies at application layer
+**Ограничения:**
+- Ровно один из `product_id` или `sub_recipe_id` установлен (XOR)
+- Обнаружение циклических зависимостей на уровне приложения
 
 ---
 
-### Cooking Steps Table
+### Таблица Cooking Steps
 
 ```sql
 CREATE TABLE cooking_steps (
@@ -201,7 +201,7 @@ CREATE INDEX ix_cooking_steps_recipe_id ON cooking_steps(recipe_id);
 
 ---
 
-### Product Categories Table
+### Таблица Product Categories
 
 ```sql
 CREATE TABLE product_categories (
@@ -213,7 +213,7 @@ CREATE TABLE product_categories (
 CREATE INDEX ix_product_categories_name ON product_categories(name);
 ```
 
-**Seed data:**
+**Seed данные:**
 ```python
 INSERT INTO product_categories (name, active) VALUES
   ('Сыпучие', 1),
@@ -226,7 +226,7 @@ INSERT INTO product_categories (name, active) VALUES
 
 ---
 
-### Products Table
+### Таблица Products
 
 ```sql
 CREATE TABLE products (
@@ -252,31 +252,31 @@ CREATE INDEX ix_products_name ON products(name);
 CREATE INDEX ix_products_category_id ON products(category_id);
 ```
 
-**Columns:**
+**Колонки:**
 - `id` — Primary key
-- `user_id` — Owner (multi-tenancy)
-- `name` — Product name (e.g., "Мука пшеничная")
-- `category_id` — Category FK
-- `recipe_unit` — Unit used in recipes (e.g., "g", "ml")
-- `purchase_unit` — Unit for buying (e.g., "kg", "l")
-- `price_per_purchase_unit` — Price per purchase unit (RUB)
-- `conversion_factor` — Multiplier to convert recipe_unit → purchase_unit (e.g., 1000 for g→kg)
-- `brand` — Optional brand name
-- `supplier` — Optional typical retailer
+- `user_id` — Владелец (мульти-тенантность)
+- `name` — Название продукта (например, "Мука пшеничная")
+- `category_id` — FK категории
+- `recipe_unit` — Единица используемая в рецептах (например, "g", "ml")
+- `purchase_unit` — Единица для покупки (например, "kg", "l")
+- `price_per_purchase_unit` — Цена за единицу покупки (RUB)
+- `conversion_factor` — Множитель для преобразования recipe_unit → purchase_unit (например, 1000 для g→kg)
+- `brand` — Опциональное имя бренда
+- `supplier` — Опциональный обычный розничный торговец
 
-**Example:**
+**Пример:**
 ```
 name: "Мука пшеничная"
 recipe_unit: "g"
 purchase_unit: "kg"
 price_per_purchase_unit: 80.00
 conversion_factor: 1000
-# Cost for 200g = (200 / 1000) * 80.00 = 16.00 RUB
+# Стоимость для 200g = (200 / 1000) * 80.00 = 16.00 RUB
 ```
 
 ---
 
-### Menus Table
+### Таблица Menus
 
 ```sql
 CREATE TABLE menus (
@@ -294,7 +294,7 @@ CREATE INDEX ix_menus_user_id ON menus(user_id);
 
 ---
 
-### Menu Slots Table
+### Таблица Menu Slots
 
 ```sql
 CREATE TABLE menu_slots (
@@ -318,20 +318,20 @@ CREATE INDEX ix_menu_slots_menu_id ON menu_slots(menu_id);
 CREATE INDEX ix_menu_slots_recipe_id ON menu_slots(recipe_id);
 ```
 
-**Columns:**
+**Колонки:**
 - `id` — Primary key
-- `menu_id` — Parent menu FK
-- `recipe_id` — Recipe (if slot contains recipe)
-- `product_id` — Product (if slot contains product)
-- `quantity_amount`, `quantity_unit` — Quantity for products
-- `servings` — Number of servings for recipes
+- `menu_id` — FK родительского меню
+- `recipe_id` — Рецепт (если слот содержит рецепт)
+- `product_id` — Продукт (если слот содержит продукт)
+- `quantity_amount`, `quantity_unit` — Количество для продуктов
+- `servings` — Количество порций для рецептов
 - `meal_type` — "завтрак", "обед", "ужин"
-- `day_of_week` — 0=Monday, ..., 6=Sunday
-- `position` — Ordering within same (day, meal_type)
+- `day_of_week` — 0=Понедельник, ..., 6=Воскресенье
+- `position` — Упорядочение в одном дне и типе приема пищи
 
 ---
 
-### Family Members Table
+### Таблица Family Members
 
 ```sql
 CREATE TABLE family_members (
@@ -348,37 +348,37 @@ CREATE TABLE family_members (
 CREATE INDEX ix_family_members_user_id ON family_members(user_id);
 ```
 
-**Columns:**
+**Колонки:**
 - `id` — Primary key
-- `user_id` — Owner (multi-tenancy)
-- `name` — Family member name
-- `portion_multiplier` — 1.0 = adult, 0.5 = child, 1.5 = large adult
-- `dietary_restrictions` — Free-form text (e.g., "vegetarian, nut allergy")
-- `comment` — Additional notes
+- `user_id` — Владелец (мульти-тенантность)
+- `name` — Имя члена семьи
+- `portion_multiplier` — 1.0 = взрослый, 0.5 = ребенок, 1.5 = крупный взрослый
+- `dietary_restrictions` — Свободный текст (например, "вегетарианец, аллергия на орехи")
+- `comment` — Дополнительные заметки
 
 ---
 
-## Alembic Migrations
+## Миграции Alembic
 
-### Setup
+### Настройка
 
 ```bash
-# Initialize Alembic
+# Инициализировать Alembic
 alembic init alembic
 
-# Edit alembic/env.py:
-# - Add sys.path to include project root
-# - Set target_metadata = Base.metadata
+# Отредактировать alembic/env.py:
+# - Добавить sys.path для включения корня проекта
+# - Установить target_metadata = Base.metadata
 ```
 
-### Creating Migrations
+### Создание миграций
 
-**Auto-generate:**
+**Автоматическая генерация:**
 ```bash
 alembic revision --autogenerate -m "Add weight to recipes"
 ```
 
-This creates a timestamped file like `alembic/versions/001_add_weight_to_recipes.py`:
+Это создает файл с временной меткой как `alembic/versions/001_add_weight_to_recipes.py`:
 
 ```python
 def upgrade() -> None:
@@ -388,7 +388,7 @@ def downgrade() -> None:
     op.drop_column('recipes', 'weight')
 ```
 
-**Manual migration:**
+**Ручная миграция:**
 ```python
 def upgrade() -> None:
     op.create_table(
@@ -410,51 +410,51 @@ def downgrade() -> None:
     op.drop_table('recipes')
 ```
 
-### Applying Migrations
+### Применение миграций
 
 ```bash
-# Show current version
+# Показать текущую версию
 alembic current
 
-# Show all revisions
+# Показать все ревизии
 alembic history
 
-# Apply all pending migrations
+# Применить все отложенные миграции
 alembic upgrade head
 
-# Apply N migrations
+# Применить N миграций
 alembic upgrade +2
 
-# Downgrade one migration
+# Откатить одну миграцию
 alembic downgrade -1
 
-# Jump to specific version
+# Перейти к конкретной версии
 alembic upgrade 1feb6df
 ```
 
 ---
 
-## Seed Data
+## Seed данные
 
-**File:** `backend/infrastructure/database/seed_defaults.py`
+**Файл:** `backend/infrastructure/database/seed_defaults.py`
 
 ```python
 from backend.infrastructure.database.models import Base, RecipeCategoryRow, ProductCategoryRow
 from sqlalchemy import insert
 
 def seed_defaults():
-    """Insert default categories on first run."""
+    """Вставить категории по умолчанию при первом запуске."""
     from backend.infrastructure.database import get_engine, get_session
 
     engine = get_engine()
     session = get_session(engine)
 
     try:
-        # Check if already seeded
+        # Проверить если уже seeded
         if session.query(RecipeCategoryRow).count() > 0:
             return
 
-        # Insert recipe categories
+        # Вставить категории рецептов
         session.execute(insert(RecipeCategoryRow).values([
             {"name": "Завтраки", "active": True},
             {"name": "Обеды", "active": True},
@@ -462,7 +462,7 @@ def seed_defaults():
             {"name": "Закуски", "active": True},
         ]))
 
-        # Insert product categories
+        # Вставить категории продуктов
         session.execute(insert(ProductCategoryRow).values([
             {"name": "Сыпучие", "active": True},
             {"name": "Молочные", "active": True},
@@ -477,7 +477,7 @@ def seed_defaults():
         session.close()
 ```
 
-Call on startup:
+Вызвать при запуске:
 ```python
 # backend/composition/_infrastructure.py
 from backend.infrastructure.database.seed_defaults import seed_defaults
@@ -485,7 +485,7 @@ from backend.infrastructure.database.seed_defaults import seed_defaults
 def _create_infrastructure(db_url: str | None = None) -> Infrastructure:
     engine = get_engine(db_url)
     session = get_session(engine)
-    seed_defaults()  # ← Idempotent, runs once
+    seed_defaults()  # ← Идемпотентный, запускается один раз
     return Infrastructure(engine=engine, session=session, ...)
 ```
 
@@ -493,29 +493,29 @@ def _create_infrastructure(db_url: str | None = None) -> Infrastructure:
 
 ## SQLite vs PostgreSQL
 
-### Development (SQLite)
+### Разработка (SQLite)
 
 ```
 DATABASE_URL=sqlite:///./menutor.db
 ```
 
-**Advantages:**
-- No server setup
-- Single file
-- Good for solo dev
-- Fast enough for MVP
+**Преимущества:**
+- Без настройки сервера
+- Один файл
+- Хорошо для одиночной разработки
+- Достаточно быстро для MVP
 
-**Limitations:**
-- Single writer (no concurrency)
-- Limited to one machine
+**Ограничения:**
+- Один писатель (нет параллелизма)
+- Ограничено одной машиной
 
-**Setup:**
+**Настройка:**
 ```python
 from sqlalchemy import event, create_engine
 
 engine = create_engine("sqlite:///./menutor.db")
 
-# Enable foreign keys
+# Включить внешние ключи
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_conn, connection_record):
     cursor = dbapi_conn.cursor()
@@ -523,150 +523,150 @@ def set_sqlite_pragma(dbapi_conn, connection_record):
     cursor.close()
 ```
 
-### Production (PostgreSQL)
+### Производство (PostgreSQL)
 
 ```
 DATABASE_URL=postgresql://user:password@host:5432/menutor_db
 ```
 
-**Advantages:**
-- Multi-user, concurrent access
-- ACID guarantees
-- Replication, backups
+**Преимущества:**
+- Многопользовательский доступ с параллелизмом
+- Гарантии ACID
+- Репликация, резервные копии
 - Enterprise ready
 
-**Setup:**
+**Настройка:**
 ```bash
-# Create database
+# Создать базу данных
 createdb menutor_db
 
-# Run migrations
+# Запустить миграции
 PGPASSWORD=password psql -h localhost -U user menutor_db < schema.sql
 
-# Or with Alembic
+# Или с Alembic
 alembic upgrade head
 ```
 
-**Connection string:**
+**Строка подключения:**
 ```python
 DATABASE_URL = "postgresql://user:password@localhost:5432/menutor_db"
 ```
 
-**No code changes needed** — SQLAlchemy handles both seamlessly.
+**Изменения кода не требуются** — SQLAlchemy обрабатывает обе базы без изменений.
 
 ---
 
-## Indexes
+## Индексы
 
-Strategic indexes for common queries:
+Стратегические индексы для обычных запросов:
 
-| Table | Column(s) | Purpose |
+| Таблица | Колонка(и) | Назначение |
 |-------|-----------|---------|
-| `users` | `email` | Login lookup |
-| `recipes` | `user_id` | List user's recipes |
-| `recipes` | `name` | Search recipes |
-| `products` | `user_id` | List user's products |
-| `products` | `name` | Search products |
-| `recipe_ingredients` | `recipe_id` | Fetch ingredients |
-| `menu_slots` | `menu_id` | Fetch slots |
-| `family_members` | `user_id` | List family members |
-| `refresh_tokens` | `user_id` | Find user's tokens |
+| `users` | `email` | Поиск при логине |
+| `recipes` | `user_id` | Список рецептов пользователя |
+| `recipes` | `name` | Поиск рецептов |
+| `products` | `user_id` | Список продуктов пользователя |
+| `products` | `name` | Поиск продуктов |
+| `recipe_ingredients` | `recipe_id` | Получить ингредиенты |
+| `menu_slots` | `menu_id` | Получить слоты |
+| `family_members` | `user_id` | Список членов семьи |
+| `refresh_tokens` | `user_id` | Найти токены пользователя |
 
 ```sql
--- Query optimization example
+-- Пример оптимизации запроса
 EXPLAIN QUERY PLAN
 SELECT * FROM recipes WHERE user_id = 1 AND name LIKE '%блины%';
 
--- Should show: SEARCH recipes USING INDEX ix_recipes_user_id
+-- Должно показать: SEARCH recipes USING INDEX ix_recipes_user_id
 ```
 
 ---
 
-## Constraints & Integrity
+## Ограничения и целостность
 
-### Foreign Key Constraints
+### Ограничения внешних ключей
 
 ```sql
--- Cascade delete: removing user deletes all their recipes
+-- Cascade delete: удаление пользователя удаляет все их рецепты
 FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 
--- Set null: removing category doesn't delete recipes
+-- Set null: удаление категории не удаляет рецепты
 FOREIGN KEY(category_id) REFERENCES recipe_categories(id) ON DELETE RESTRICT
 ```
 
-### Unique Constraints
+### Уникальные ограничения
 
 ```sql
--- Email must be unique
+-- Email должен быть уникальным
 CREATE UNIQUE INDEX ix_users_email ON users(email);
 
--- Token hashes must be unique
+-- Хеши токенов должны быть уникальными
 CREATE UNIQUE INDEX ix_refresh_tokens_token_hash ON refresh_tokens(token_hash);
 ```
 
-### Check Constraints
+### Check ограничения
 
 ```sql
--- Enforced at application layer (SQLAlchemy validation)
--- Example: servings >= 1
--- Example: total_pieces >= pieces_per_portion
+-- Проверяется на уровне приложения (валидация SQLAlchemy)
+-- Пример: servings >= 1
+-- Пример: total_pieces >= pieces_per_portion
 ```
 
 ---
 
-## Backup & Recovery
+## Резервная копия и восстановление
 
-### SQLite Backup
+### Резервная копия SQLite
 
 ```bash
-# Simple file copy
+# Простое копирование файла
 cp menutor.db menutor.db.backup
 
-# Or use sqlite3 CLI
+# Или используя sqlite3 CLI
 sqlite3 menutor.db ".backup '/path/to/menutor.db.backup'"
 
-# Restore
+# Восстановление
 sqlite3 menutor.db ".restore '/path/to/menutor.db.backup'"
 ```
 
-### PostgreSQL Backup
+### Резервная копия PostgreSQL
 
 ```bash
-# Full backup
+# Полная резервная копия
 pg_dump -U user -h localhost menutor_db > menutor_backup.sql
 
-# Restore
+# Восстановление
 psql -U user -h localhost menutor_db < menutor_backup.sql
 
-# Binary backup (faster)
+# Бинарная резервная копия (быстрее)
 pg_dump -U user -h localhost -Fc menutor_db > menutor_backup.dump
 pg_restore -U user -h localhost menutor_db < menutor_backup.dump
 ```
 
 ---
 
-## Summary
+## Резюме
 
-**Database architecture:**
-- **Multi-tenancy:** All data scoped by `user_id`
-- **Relationships:** Recipes → Ingredients → Products, Menus → Slots
-- **Nested recipes:** Sub-recipe IDs in ingredient table
-- **Type safety:** Quantity amounts + units stored separately
-- **Soft deletes:** Categories have `active` flag
+**Архитектура базы данных:**
+- **Мульти-тенантность:** Все данные scoped по `user_id`
+- **Отношения:** Рецепты → Ингредиенты → Продукты, Меню → Слоты
+- **Вложенные рецепты:** Sub-recipe IDs в таблице ингредиентов
+- **Type safety:** Количество и единицы хранятся отдельно
+- **Мягкие удаления:** Категории имеют флаг `active`
 
-**Migrations:**
-- **Alembic:** Version-controlled schema changes
-- **Auto-generate:** `alembic revision --autogenerate`
-- **Idempotent:** Safe to run multiple times
-- **Reversible:** Downgrade with `alembic downgrade`
+**Миграции:**
+- **Alembic:** Версионированные изменения схемы
+- **Автоматическая генерация:** `alembic revision --autogenerate`
+- **Идемпотентные:** Безопасно запускать несколько раз
+- **Reversible:** Откатить с `alembic downgrade`
 
-**Data integrity:**
-- **Foreign keys:** Enforced cascade delete
-- **Indexes:** Strategic on `user_id`, names, FKs
-- **Constraints:** Unique emails, XOR ingredient types
+**Целостность данных:**
+- **Внешние ключи:** Enforced cascade delete
+- **Индексы:** Стратегические по `user_id`, именам, FKs
+- **Ограничения:** Уникальные emails, XOR типы ингредиентов
 
 ---
 
-**Complete technical documentation is now ready.**
+**Полная техническая документация теперь готова.**
 
-All 9 documents provide comprehensive coverage of the Menu Planner architecture, from high-level overview to low-level database schema.
+Все 9 документов обеспечивают всестороннее покрытие архитектуры Menu Planner, от высокоуровневого обзора до низкоуровневой схемы базы данных.

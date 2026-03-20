@@ -1,81 +1,81 @@
-# Architecture — Clean Architecture + API Adapter
+# Архитектура — Чистая архитектура + API адаптер
 
-## Overview
+## Обзор
 
-Menu Planner uses **Clean Architecture** with a 4-layer design plus API and frontend adapters. The core principle is **dependency inversion**: business logic is completely decoupled from frameworks, databases, and UI technologies.
+Menu Planner использует **Чистую архитектуру** с 4-слойным дизайном плюс API и фронтенд адаптеры. Основной принцип — **инверсия зависимостей**: бизнес-логика полностью развязана от фреймворков, БД и UI технологий.
 
 ```
 ┌───────────────────────────────────────────────────────┐
-│                    Frontend (Vue 3 SPA)                │
+│                    Фронтенд (Vue 3 SPA)                │
 └───────────────────────────────────────────────────────┘
                           ↓ (HTTP)
 ┌───────────────────────────────────────────────────────┐
-│              API Adapter Layer (FastAPI)               │
-│  Routers, Pydantic Schemas, Converters, Auth Middleware │
+│              API адаптер слой (FastAPI)                │
+│  Маршрутизаторы, Pydantic схемы, Конвертеры, Auth    │
 └───────────────────────────────────────────────────────┘
                           ↓ (Use Case)
 ┌───────────────────────────────────────────────────────┐
-│            Application Layer (Use Cases)              │
-│      Orchestration, DTOs, Transaction Boundaries      │
+│            Слой приложения (Use Cases)                │
+│      Оркестрация, DTO, границы транзакции            │
 └───────────────────────────────────────────────────────┘
-                          ↓ (Domain Objects)
+                          ↓ (Доменные объекты)
 ┌───────────────────────────────────────────────────────┐
-│      Domain Layer (Entities, Value Objects, Ports)    │
-│          Business Rules, No Framework Code            │
+│      Доменный слой (Сущности, Объекты-значения)      │
+│          Бизнес-правила, Ноль кода фреймворка        │
 └───────────────────────────────────────────────────────┘
-                          ↓ (Ports)
+                          ↓ (Порты)
 ┌───────────────────────────────────────────────────────┐
-│         Infrastructure Layer (Repositories, Auth)      │
-│     Database, File I/O, External Services             │
+│         Инфраструктурный слой (Репозитории, Auth)     │
+│     База данных, File I/O, Внешние сервисы           │
 └───────────────────────────────────────────────────────┘
 ```
 
-## Dependency Rule
+## Правило зависимостей
 
-Dependencies always point **inward** toward Domain:
+Зависимости всегда указывают **внутрь** в сторону домена:
 
 ```
-Frontend → API → Application → Domain ← Infrastructure
+Фронтенд → API → Приложение → Доменный слой ← Инфраструктура
                                 ↑
-                                │ (implements)
+                                │ (реализует)
                                 │
-                          Infrastructure
+                          Инфраструктура
 ```
 
-- **Domain** depends on nothing
-- **Application** depends only on Domain
-- **Infrastructure** depends on Domain ports (interfaces)
-- **API** depends on Application and Domain
-- **Frontend** depends on API via HTTP calls
+- **Доменный слой** не зависит от чего-либо
+- **Приложение** зависит только от домена
+- **Инфраструктура** зависит от портов доменного слоя (интерфейсов)
+- **API** зависит от приложения и домена
+- **Фронтенд** зависит от API через HTTP вызовы
 
-This allows:
-- Domain logic can be tested without mocks
-- Frameworks can be swapped without business logic changes
-- Easy to understand data flow
+Это позволяет:
+- Тестировать логику доменного слоя без мокирования
+- Менять фреймворки без изменения бизнес-логики
+- Легко понять поток данных
 
-## Layer Responsibilities
+## Ответственность слоев
 
-| Layer | Knows About | Ignorant Of | Responsibility |
+| Слой | Знает о | Невежественна о | Ответственность |
 |-------|------------|------------|-----------------|
-| **Domain** | Entities, Value Objects, Ports | FastAPI, SQLAlchemy, Vue | Business rules, validations, calculations |
-| **Application** | Domain, Use Case patterns | Databases, HTTP, UI | Orchestrate domain logic, manage transactions |
-| **Infrastructure** | Domain ports, SQLAlchemy, bcrypt | Use cases, routers | Implement repositories, persistence, auth |
-| **API** | Routes, Pydantic, Domain entities | Business logic | Accept HTTP requests, convert to/from domain |
-| **Frontend** | Vue 3, Pinia, axios | Database, domain logic | User interface, state management, events |
+| **Доменный** | Сущности, Объекты-значения, Порты | FastAPI, SQLAlchemy, Vue | Бизнес-правила, валидации, вычисления |
+| **Приложение** | Доменный слой, Use case паттерны | БД, HTTP, UI | Оркестрировать логику домена, управлять транзакции |
+| **Инфраструктура** | Порты домена, SQLAlchemy, bcrypt | Use cases, маршрутизаторы | Реализовать репозитории, персистентность, аутентификация |
+| **API** | Маршруты, Pydantic, Доменные сущности | Бизнес-логика | Принять HTTP запросы, конвертировать в/из домена |
+| **Фронтенд** | Vue 3, Pinia, axios | База данных, логика домена | Пользовательский интерфейс, управление состояния, события |
 
 ---
 
-## 1. Domain Layer (`backend/domain/`)
+## 1. Доменный слой (`backend/domain/`)
 
-**No external dependencies. Pure Python business logic.**
+**Ноль внешних зависимостей. Чистая Python бизнес-логика.**
 
-### Entities
+### Сущности
 
-Entities have identity (ID) and mutable state. They contain business rules about valid states.
+Сущности имеют идентичность (ID) и изменяемое состояние. Они содержат бизнес-правила о допустимых состояниях.
 
 #### Recipe
 
-File: `backend/domain/entities/recipe.py`
+Файл: `backend/domain/entities/recipe.py`
 
 ```python
 @dataclass
@@ -83,26 +83,26 @@ class Recipe:
     id: RecipeId
     name: str
     servings: int
-    ingredients: list[RecipeIngredient]     # Value objects
-    steps: list[CookingStep]                 # Value objects
+    ingredients: list[RecipeIngredient]     # Объекты-значения
+    steps: list[CookingStep]                 # Объекты-значения
     category_id: RecipeCategoryId
-    weight: int                              # grams, optional
-    user_id: UserId                          # Multi-tenancy scoping
-    total_pieces: int | None = None          # For pieces-based recipes
+    weight: int                              # граммы, опционально
+    user_id: UserId                          # Многопользовательское ограничение области
+    total_pieces: int | None = None          # Для рецептов на основе штук
     pieces_per_portion: int | None = None
 ```
 
-**Key method:** `scale_to(target_servings: float) → Recipe`
+**Ключевой метод:** `scale_to(target_servings: float) → Recipe`
 
-Scales ingredient quantities while preserving immutability (returns new Recipe).
+Масштабирует количества ингредиентов при сохранении неизменяемости (возвращает новый рецепт).
 
-**Invariants:**
-- `total_pieces` and `pieces_per_portion` must both be set or both None
-- If set: `pieces_per_portion ≤ total_pieces` and both ≥ 1
+**Инварианты:**
+- `total_pieces` и `pieces_per_portion` должны оба быть установлены или оба None
+- Если установлены: `pieces_per_portion ≤ total_pieces` и оба ≥ 1
 
 #### Product
 
-File: `backend/domain/entities/product.py`
+Файл: `backend/domain/entities/product.py`
 
 ```python
 @dataclass
@@ -110,16 +110,16 @@ class Product:
     id: ProductId
     name: str
     category_id: ProductCategoryId
-    recipe_unit: str                        # "g", "kg", "ml", "l", "pcs", etc.
-    purchase_unit: str                      # Unit in which product is typically bought
-    price_per_purchase_unit: Money          # Value object
-    conversion_factor: float                 # e.g., 1000 to convert g → kg
+    recipe_unit: str                        # "g", "kg", "ml", "l", "pcs", и т.д.
+    purchase_unit: str                      # Единица, в которой обычно покупается
+    price_per_purchase_unit: Money          # Объект-значение
+    conversion_factor: float                 # например, 1000 для преобразования g → kg
     user_id: UserId
 ```
 
 #### Menu & MenuSlot
 
-Menu = a named collection of slots. Slot = recipe/product + quantity + meal type + day.
+Меню = именованная коллекция слотов. Слот = рецепт/продукт + количество + тип приема пищи + день.
 
 ```python
 @dataclass
@@ -133,18 +133,18 @@ class Menu:
 @dataclass
 class MenuSlot:
     id: MenuSlotId
-    recipe_id: RecipeId | None              # Either recipe XOR product
+    recipe_id: RecipeId | None              # Либо рецепт XOR продукт
     product_id: ProductId | None
-    quantity: Quantity | None                # For products
-    servings: int | None                     # For recipes
+    quantity: Quantity | None                # Для продуктов
+    servings: int | None                     # Для рецептов
     meal_type: str                          # "завтрак", "обед", "ужин"
-    day_of_week: int                        # 0=Mon, 6=Sun
-    position: int                           # Ordering within same (day, meal_type)
+    day_of_week: int                        # 0=Пн, 6=Вс
+    position: int                           # Упорядочение внутри одинакового (день, meal_type)
 ```
 
 #### ShoppingList & ShoppingListItem
 
-Result of aggregating recipes by user's menu + family members.
+Результат агрегирования рецептов по меню пользователя + члены семьи.
 
 ```python
 @dataclass
@@ -160,12 +160,12 @@ class ShoppingListItem:
     price_per_unit: Money
     total_cost: Money
     category_id: ProductCategoryId
-    purchased: bool = False                 # Track check-off state
+    purchased: bool = False                 # Отслеживание состояния check-off
 ```
 
 #### User & RefreshToken
 
-Auth entities:
+Сущности аутентификации:
 
 ```python
 @dataclass
@@ -180,7 +180,7 @@ class User:
 class RefreshToken:
     id: RefreshTokenId
     user_id: UserId
-    token_hash: str                         # Hash of JWT (not stored plaintext)
+    token_hash: str                         # Хеш JWT (не хранится открытым текстом)
     expires_at: datetime
     created_at: datetime
     revoked: bool = False
@@ -193,65 +193,65 @@ class RefreshToken:
 class FamilyMember:
     id: FamilyMemberId
     name: str
-    portion_multiplier: float               # e.g., 0.5 for child, 1.0 for adult
-    dietary_restrictions: str | None        # e.g., "vegetarian, nut allergy"
+    portion_multiplier: float               # например, 0.5 для ребенка, 1.0 для взрослого
+    dietary_restrictions: str | None        # например, "vegetarian, nut allergy"
     user_id: UserId
 ```
 
-### Value Objects
+### Объекты-значения
 
-Value objects are immutable, have no identity, and are identified by their attributes. Central to domain logic.
+Объекты-значения неизменяемы, не имеют идентичности и идентифицируются их атрибутами. Центральны к логике домена.
 
 #### Quantity
 
-File: `backend/domain/value_objects/quantity.py`
+Файл: `backend/domain/value_objects/quantity.py`
 
-**Most complex value object.** Handles unit conversion and arithmetic.
+**Наиболее сложный объект-значение.** Обрабатывает преобразование единиц и арифметику.
 
 ```python
 @dataclass(frozen=True)
 class Quantity:
     amount: float
-    unit: str                               # "g", "kg", "ml", "l", "pcs", etc.
+    unit: str                               # "g", "kg", "ml", "l", "pcs", и т.д.
 
     def __add__(self, other: "Quantity") -> "Quantity":
-        """Add quantities with auto-conversion (e.g., 200g + 1kg = 1200g)."""
+        """Добавить количества с автоматическим преобразованием (например, 200g + 1kg = 1200g)."""
         if same_group(self.unit, other.unit):
-            # Convert to common unit, add, return
+            # Преобразовать в общую единицу, добавить, вернуть
             ...
         raise IncompatibleUnitsError(...)
 
     def to_unit(self, target_unit: str) -> "Quantity":
-        """Convert to different unit within same group."""
+        """Преобразовать в другую единицу в той же группе."""
         ...
 ```
 
-**Unit groups:**
-- **Weight:** g ↔ kg (1000)
-- **Volume:** ml ↔ l (1000)
-- **Count:** pcs (no conversion)
-- **Dry:** tsp ↔ tbsp (3)
+**Группы единиц:**
+- **Вес:** g ↔ kg (1000)
+- **Объем:** ml ↔ l (1000)
+- **Подсчет:** pcs (без преобразования)
+- **Сухое:** tsp ↔ tbsp (3)
 
 #### Money
 
 ```python
 @dataclass(frozen=True)
 class Money:
-    amount: Decimal                         # Precise currency arithmetic
+    amount: Decimal                         # Точная валютная арифметика
     currency: str = "RUB"
 ```
 
 #### RecipeIngredient
 
-Links a product to a recipe with a quantity.
+Связывает продукт с рецептом количеством.
 
 ```python
 @dataclass(frozen=True)
 class RecipeIngredient:
     product_id: ProductId
-    sub_recipe_id: RecipeId | None          # For nested recipes
+    sub_recipe_id: RecipeId | None          # Для вложенных рецептов
     quantity: Quantity
-    order: int                              # Ordering within ingredient list
+    order: int                              # Упорядочение внутри списка ингредиентов
 ```
 
 #### CookingStep
@@ -270,13 +270,13 @@ class CookingStep:
 class Category:
     id: int
     name: str
-    type: str                               # "product" or "recipe"
+    type: str                               # "product" или "recipe"
     active: bool = True
 ```
 
-### Typed IDs
+### Типизированные ID
 
-File: `backend/domain/value_objects/types.py`
+Файл: `backend/domain/value_objects/types.py`
 
 ```python
 RecipeId = NewType("RecipeId", int)
@@ -289,32 +289,34 @@ UserId = NewType("UserId", int)
 RefreshTokenId = NewType("RefreshTokenId", int)
 ```
 
-**Why?** Prevents passing wrong ID types. Caught by mypy at static analysis time:
+**Почему?** mypy применяет корректные типы ID во время статического анализа:
 
 ```python
 def get_recipe(recipe_id: RecipeId, user_id: UserId) -> Recipe:
     ...
 
-get_recipe(ProductId(5), UserId(1))   # ✓ mypy error: incompatible types
+get_recipe(ProductId(5), UserId(1))   # ✓ ошибка mypy: несовместимые типы
 get_recipe(RecipeId(5), UserId(1))    # ✓ OK
 ```
 
-### Domain Services
+Во время выполнения `RecipeId` — это просто `int`, поэтому нет затрат на производительность.
 
-Stateless logic that doesn't fit a single entity.
+### Доменные сервисы
+
+Логика без состояния, которая не подходит отдельной сущности.
 
 #### ShoppingListBuilder
 
-File: `backend/domain/services/shopping_list_builder.py`
+Файл: `backend/domain/services/shopping_list_builder.py`
 
-Most complex domain service. Orchestrates:
+Наиболее сложный доменный сервис. Оркестрирует:
 
-1. Get all recipes from menu slots (filtered by day + meal type)
-2. For each recipe, scale ingredients by family members' portion multipliers
-3. Aggregate quantities (sum all flour needed, accounting for unit conversion)
-4. Convert to purchase units (e.g., g → kg)
-5. Look up prices from products
-6. Calculate total cost
+1. Получить все рецепты из слотов меню (отфильтровано по дню + тип приема пищи)
+2. Для каждого рецепта, масштабировать ингредиенты по множителям порции членов семьи
+3. Агрегировать количества (сумма всей муки нужной, учитывая преобразование единиц)
+4. Преобразовать в единицы покупки (например, g → kg)
+5. Найти цены из продуктов
+6. Рассчитать полную стоимость
 
 ```python
 class ShoppingListBuilder:
@@ -325,34 +327,34 @@ class ShoppingListBuilder:
         products: dict[ProductId, Product],
         recipes: dict[RecipeId, Recipe],
     ) -> ShoppingList:
-        """Build shopping list from menu + family profiles."""
+        """Построить список покупок из меню + семейные профили."""
 ```
 
 #### PortionCalculator
 
-Calculates total servings needed based on family members.
+Рассчитывает полное количество порций на основе членов семьи.
 
 ```python
 def calculate_total_servings(family_members: list[FamilyMember]) -> float:
-    """1.0 + 1.0 + 0.5 = 2.5 for a 3-person family (2 adults, 1 child)."""
+    """1.0 + 1.0 + 0.5 = 2.5 для 3-человечной семьи (2 взрослых, 1 ребенок)."""
     return sum(fm.portion_multiplier for fm in family_members)
 ```
 
 #### UnitConverter
 
-Converts between compatible units (g ↔ kg, ml ↔ l, tsp ↔ tbsp).
+Преобразует между совместимыми единицами (g ↔ kg, ml ↔ l, tsp ↔ tbsp).
 
 ```python
 def convert(quantity: Quantity, target_unit: str) -> Quantity:
     """200g to kg → 0.2 kg"""
 ```
 
-### Ports (Interfaces)
+### Порты (интерфейсы)
 
-Abstract interfaces implemented by Infrastructure layer. Defined in `backend/domain/ports/`.
+Абстрактные интерфейсы, реализованные слоем инфраструктуры. Определены в `backend/domain/ports/`.
 
 ```python
-# RecipeRepository port (ABC)
+# Порт RecipeRepository (ABC)
 class RecipeRepository(ABC):
     @abstractmethod
     def get_by_id(self, recipe_id: RecipeId, user_id: UserId) -> Recipe | None:
@@ -371,7 +373,7 @@ class RecipeRepository(ABC):
         ...
 ```
 
-Other ports:
+Другие порты:
 - `ProductRepository`
 - `MenuRepository`
 - `FamilyMemberRepository`
@@ -380,34 +382,34 @@ Other ports:
 - `RecipeCategoryRepository`
 - `ProductCategoryRepository`
 
-### Exceptions
+### Исключения
 
-File: `backend/domain/exceptions.py`
+Файл: `backend/domain/exceptions.py`
 
-Domain-specific exceptions (base: `DomainError`):
+Доменные исключения (база: `DomainError`):
 
-- `InvalidEntityError` — Entity invariant violated
-- `EntityNotFoundError` — Requested entity not found
-- `AuthenticationError` — Invalid credentials
-- `CircularDependencyError` — Sub-recipe forms a cycle
-- `NestingDepthExceededError` — Sub-recipe nesting too deep
-- `SubRecipeWeightError` — Sub-recipe missing weight for flattening
+- `InvalidEntityError` — Нарушение инварианта сущности
+- `EntityNotFoundError` — Запрошенная сущность не найдена
+- `AuthenticationError` — Неверные учетные данные
+- `CircularDependencyError` — Sub-recipe образует цикл
+- `NestingDepthExceededError` — Глубина вложения sub-recipe слишком велика
+- `SubRecipeWeightError` — Sub-recipe без веса для выравнивания
 
 ---
 
-## 2. Application Layer (`backend/application/use_cases/`)
+## 2. Слой приложения (`backend/application/use_cases/`)
 
-**Orchestrates domain logic. One class = one user operation.**
+**Оркестрирует логику домена. Один класс = одна пользовательская операция.**
 
-### Pattern: Use Case (Interactor)
+### Паттерн: Use case (Interactor)
 
-Each use case is a class with an `execute()` method. Handles:
-- Input validation (via DTOs)
-- Transaction boundaries
-- Error handling
-- Repository calls (dependency injection)
+Каждый use case — это класс с методом `execute()`. Обрабатывает:
+- Валидацию входных данных (через DTO)
+- Границы транзакции
+- Обработку ошибок
+- Вызовы репозитория (внедрение зависимостей)
 
-### Example: CreateRecipe
+### Пример: CreateRecipe
 
 ```python
 class CreateRecipe:
@@ -418,13 +420,13 @@ class CreateRecipe:
         self, user_id: UserId, name: str, servings: int,
         category_id: RecipeCategoryId, ingredients: list[...], steps: list[...]
     ) -> RecipeId:
-        # Validate input
+        # Валидировать входные данные
         if not name.strip():
-            raise DomainError("Recipe name is required")
+            raise DomainError("Требуется имя рецепта")
 
-        # Create domain entity
+        # Создать доменную сущность
         recipe = Recipe(
-            id=RecipeId(0),  # Placeholder; DB assigns real ID
+            id=RecipeId(0),  # БД присвоит реальный ID
             name=name,
             servings=servings,
             category_id=category_id,
@@ -433,38 +435,38 @@ class CreateRecipe:
             user_id=user_id,
         )
 
-        # Persist
+        # Персистировать
         return self.recipe_repo.save(recipe)
 ```
 
-### Use Case Inventory
+### Инвентарь use case
 
-| File | Use Cases |
+| Файл | Use cases |
 |------|-----------|
 | `auth.py` | `RegisterUser`, `LoginUser`, `RefreshAccessToken`, `GetCurrentUser` |
 | `manage_recipe.py` | `GetRecipe`, `ListRecipes`, `CreateRecipe`, `UpdateRecipe`, `DeleteRecipe` |
 | `manage_product.py` | `GetProduct`, `ListProducts`, `CreateProduct`, `UpdateProduct`, `DeleteProduct` |
 | `manage_family.py` | `CreateFamilyMember`, `UpdateFamilyMember`, `DeleteFamilyMember`, `ListFamilyMembers` |
 | `plan_menu.py` | `CreateMenu`, `LoadMenu`, `AddMenuSlot`, `UpdateMenuSlot`, `DeleteMenuSlot`, `ClearMenu` |
-| `generate_shopping_list.py` | `GenerateShoppingList` (calls ShoppingListBuilder) |
-| `flatten_recipe_products.py` | `FlattenRecipeProducts` (expands sub-recipes) |
-| `preview_flattened_products.py` | `PreviewFlattenedProducts` (dry-run flattening) |
-| `validate_sub_recipe.py` | `ValidateSubRecipe` (detects cycles, nesting depth) |
-| `export_shopping_list.py` | `ExportShoppingList` (CSV/JSON/text) |
-| `export_entities.py` | `ExportEntities` (recipes, products as JSON) |
-| `import_entities.py` | `ImportEntities` (recipes, products from JSON) |
+| `generate_shopping_list.py` | `GenerateShoppingList` (вызывает ShoppingListBuilder) |
+| `flatten_recipe_products.py` | `FlattenRecipeProducts` (разворачивает sub-recipes) |
+| `preview_flattened_products.py` | `PreviewFlattenedProducts` (dry-run выравнивания) |
+| `validate_sub_recipe.py` | `ValidateSubRecipe` (обнаруживает циклы, глубину вложения) |
+| `export_shopping_list.py` | `ExportShoppingList` (CSV/JSON/текст) |
+| `export_entities.py` | `ExportEntities` (рецепты, продукты как JSON) |
+| `import_entities.py` | `ImportEntities` (рецепты, продукты из JSON) |
 
 ---
 
-## 3. Infrastructure Layer (`backend/infrastructure/`)
+## 3. Инфраструктурный слой (`backend/infrastructure/`)
 
-**Implements domain ports. Database, auth, file I/O.**
+**Реализует порты домена. БД, аутентификация, file I/O.**
 
-### Repository Implementations
+### Реализация репозиториев
 
-File: `backend/infrastructure/repositories/sqlalchemy_*.py`
+Файл: `backend/infrastructure/repositories/sqlalchemy_*.py`
 
-Uses SQLAlchemy ORM to map domain entities to database rows.
+Использует SQLAlchemy ORM для маппинга доменных сущностей в строки БД.
 
 ```python
 class SqlalchemyRecipeRepository(RecipeRepository):
@@ -485,13 +487,13 @@ class SqlalchemyRecipeRepository(RecipeRepository):
         return RecipeId(row.id)
 ```
 
-### Auth Services
+### Сервисы аутентификации
 
 #### BcryptPasswordHasher
 
-File: `backend/infrastructure/auth/bcrypt_password_hasher.py`
+Файл: `backend/infrastructure/auth/bcrypt_password_hasher.py`
 
-Implements `PasswordHasher` port:
+Реализует порт `PasswordHasher`:
 
 ```python
 class BcryptPasswordHasher(PasswordHasher):
@@ -504,9 +506,9 @@ class BcryptPasswordHasher(PasswordHasher):
 
 #### JwtTokenService
 
-File: `backend/infrastructure/auth/jwt_token_service.py`
+Файл: `backend/infrastructure/auth/jwt_token_service.py`
 
-Implements `TokenService` port:
+Реализует порт `TokenService`:
 
 ```python
 class JwtTokenService(TokenService):
@@ -531,18 +533,18 @@ class JwtTokenService(TokenService):
             payload = jwt.decode(token, self.secret, algorithms=["HS256"])
             return payload
         except jwt.ExpiredSignatureError:
-            raise AuthenticationError("Token expired")
+            raise AuthenticationError("Токен истек")
         except jwt.InvalidTokenError:
-            raise AuthenticationError("Invalid token")
+            raise AuthenticationError("Неверный токен")
 ```
 
-### Database Setup
+### Настройка БД
 
-#### SQLAlchemy Models
+#### ORM модели SQLAlchemy
 
-File: `backend/infrastructure/database/models.py`
+Файл: `backend/infrastructure/database/models.py`
 
-ORM models mapping to database tables:
+ORM модели маппинга в таблицы БД:
 
 ```python
 class RecipeRow(Base):
@@ -563,14 +565,14 @@ class RecipeRow(Base):
     user: Mapped["UserRow"] = relationship(back_populates="recipes")
 ```
 
-#### Alembic Migrations
+#### Миграции Alembic
 
-File: `backend/infrastructure/database/migrations/versions/`
+Файл: `backend/infrastructure/database/migrations/versions/`
 
-Each migration is a timestamped Python file:
+Каждая миграция — это timestamped Python файл:
 
 ```python
-# Example: add_ingredient_order.py
+# Пример: add_ingredient_order.py
 def upgrade() -> None:
     op.add_column('recipe_ingredients',
                   sa.Column('order', sa.Integer(), nullable=False, server_default='0'))
@@ -579,11 +581,11 @@ def downgrade() -> None:
     op.drop_column('recipe_ingredients', 'order')
 ```
 
-Run: `alembic upgrade head`
+Запустить: `alembic upgrade head`
 
 #### Engine & Session
 
-File: `backend/infrastructure/database/__init__.py`
+Файл: `backend/infrastructure/database/__init__.py`
 
 ```python
 def get_engine(db_url: str | None = None) -> Engine:
@@ -595,9 +597,9 @@ def get_session(engine: Engine) -> Session:
     return SessionLocal()
 ```
 
-### Exporters
+### Экспортеры
 
-Strategy pattern for format-agnostic export.
+Паттерн Strategy для экспорта без привязки к формату.
 
 ```python
 class ShoppingListExporter(ABC):
@@ -607,49 +609,49 @@ class ShoppingListExporter(ABC):
 
 class CsvExporter(ShoppingListExporter):
     def export(self, shopping_list: ShoppingList) -> str:
-        # Generate CSV with headers, category grouping, costs
+        # Генерировать CSV с заголовками, группировкой категорий, затратами
         ...
 
 class JsonExporter(ShoppingListExporter):
     def export(self, shopping_list: ShoppingList) -> str:
-        # Generate JSON structure
+        # Генерировать JSON структуру
         ...
 ```
 
 ---
 
-## 4. API Layer (`backend/api/`)
+## 4. API слой (`backend/api/`)
 
-**HTTP adapter. Routers, schemas, converters, auth middleware.**
+**HTTP адаптер. Маршрутизаторы, схемы, конвертеры, auth middleware.**
 
-### FastAPI App Setup
+### Настройка FastAPI приложения
 
-File: `backend/api/main.py`
+Файл: `backend/api/main.py`
 
 ```python
 app = FastAPI(
     title="Menutor API",
-    lifespan=lifespan,  # Creates ApplicationContainer at startup
+    lifespan=lifespan,  # Создает ApplicationContainer при запуске
 )
 
 # Middleware
 app.add_middleware(CORSMiddleware, allow_origins=["*"], ...)
 
-# Exception handlers (map domain errors to HTTP responses)
+# Обработчики исключений (маппируют доменные ошибки HTTP ответам)
 @app.exception_handler(EntityNotFoundError)
 async def entity_not_found_handler(request, exc):
     return JSONResponse(status_code=404, content={"detail": str(exc)})
 
-# Routers
+# Маршрутизаторы
 app.include_router(auth.router, prefix="/api")
 app.include_router(recipes.router, prefix="/api")
 app.include_router(products.router, prefix="/api")
-# ... etc
+# ... и т.д
 ```
 
-### Authentication Middleware
+### Аутентификационное middleware
 
-File: `backend/api/auth.py`
+Файл: `backend/api/auth.py`
 
 ```python
 def get_current_user(
@@ -667,21 +669,21 @@ def get_current_user(
         raise HTTPException(status_code=401, detail=str(exc))
 ```
 
-All protected endpoints:
+Все защищенные эндпоинты:
 
 ```python
 @router.get("/recipes")
 def list_recipes(
-    user: User = Depends(get_current_user),  # Extracts + validates JWT
+    user: User = Depends(get_current_user),  # Извлекает + валидирует JWT
     container: ApplicationContainer = Depends(get_container),
 ) -> list[RecipeResponse]:
     recipes = container.list_recipes.execute(user.id)
     return [recipe_to_response(r) for r in recipes]
 ```
 
-### Pydantic Schemas
+### Pydantic схемы
 
-File: `backend/api/schemas/recipe.py`
+Файл: `backend/api/schemas/recipe.py`
 
 ```python
 class RecipeCreate(BaseModel):
@@ -703,11 +705,11 @@ class RecipeResponse(BaseModel):
     pieces_per_portion: int | None
 ```
 
-### Converters
+### Конвертеры
 
-File: `backend/api/converters.py`
+Файл: `backend/api/converters.py`
 
-Converts between Pydantic schemas and domain entities:
+Преобразует между Pydantic схемами и доменными сущностями:
 
 ```python
 def recipe_to_response(recipe: Recipe, name_lookup) -> RecipeResponse:
@@ -733,11 +735,11 @@ def recipe_to_response(recipe: Recipe, name_lookup) -> RecipeResponse:
     )
 ```
 
-### Router Endpoints
+### Эндпоинты маршрутизатора
 
-File: `backend/api/routers/recipes.py`
+Файл: `backend/api/routers/recipes.py`
 
-Each router handles CRUD for one domain entity:
+Каждый маршрутизатор обрабатывает CRUD для одной доменной сущности:
 
 ```python
 @router.get("", response_model=list[RecipeResponse])
@@ -773,72 +775,74 @@ def delete_recipe(recipe_id: int, ...):
     ...
 ```
 
-**Routers (7 total):**
-- `auth.py` — login, register, refresh, me, logout
-- `recipes.py` — CRUD recipes, list by category
-- `products.py` — CRUD products
-- `menus.py` — CRUD menus, manage slots
-- `family.py` — CRUD family members
-- `categories.py` — CRUD categories (product + recipe)
-- `shopping_list.py` — generate, export (CSV/JSON/text)
-- `import_export.py` — import/export recipes and products
-- `system.py` — health check, version
+**Маршрутизаторы (7 всего):**
+- `auth.py` — вход, регистрация, обновление, меня, выход
+- `recipes.py` — CRUD рецептов, список по категориям
+- `products.py` — CRUD продуктов
+- `menus.py` — CRUD меню, управление слотами
+- `family.py` — CRUD членов семьи
+- `categories.py` — CRUD категорий (продукта + рецепта)
+- `shopping_list.py` — генерировать, экспортировать (CSV/JSON/текст)
+- `import_export.py` — импорт/экспорт рецептов и продуктов
+- `system.py` — проверка здоровья, версия
 
 ---
 
-## 5. Frontend Layer (`frontend/src/`)
+## 5. Фронтенд слой (`frontend/src/`)
 
-**Vue 3 SPA with Pinia state management and Tailwind CSS.**
+**Vue 3 SPA с управлением состояния Pinia и стилем Tailwind CSS.**
 
-### Project Structure
+### Структура проекта
 
 ```
 frontend/src/
-├── main.ts                       # Vue app init + plugin setup
-├── App.vue                       # Root layout (AppSidebar + router-view)
-├── router/index.ts              # Vue Router config (6 routes + nested /settings)
-├── stores/                       # Pinia stores (7 core + 1 toast)
-│   ├── auth.ts                  # User, access/refresh tokens
-│   ├── recipes.ts               # Recipe list, CRUD operations
-│   ├── products.ts              # Product list, CRUD operations
-│   ├── menus.ts                 # Menu state, slot management
-│   ├── family.ts                # Family members
-│   ├── categories.ts            # Product/recipe categories
-│   ├── shoppingList.ts          # Shopping list, item state
-│   ├── toast.ts                 # Toast notifications queue
-│   └── crud-factory.ts          # Generic CRUD store generator
+├── main.ts                       # Инициализация Vue приложения
+├── App.vue                       # Root layout компонент (AppSidebar + router-view)
+├── router/index.ts              # Конфигурация Vue Router (6 маршрутов + вложенные /settings)
+├── stores/                       # Хранилища Pinia (реактивное состояние)
+│   ├── auth.ts                  # Пользователь, токены доступа/обновления
+│   ├── recipes.ts               # Список рецептов, CRUD операции
+│   ├── products.ts              # Список продуктов, CRUD операции
+│   ├── menus.ts                 # Состояние меню, управление слотом
+│   ├── family.ts                # Члены семьи
+│   ├── categories.ts            # Категории продукта/рецепта
+│   ├── shoppingList.ts          # Состояние списка покупок, отслеживание затрат
+│   ├── toast.ts                 # Очередь push-уведомлений
+│   └── crud-factory.ts          # Генератор универсального CRUD хранилища
 ├── api/
-│   ├── client.ts                # axios instance with JWT interceptor
-│   ├── auth.ts                  # API calls: register, login, refresh
-│   └── types.ts                 # TypeScript interfaces (match Pydantic)
-├── views/
-│   ├── AuthView.vue             # Login/register page
-│   ├── MenuPlannerView.vue      # 7-day meal planner
-│   ├── ShoppingListView.vue     # Aggregated shopping list
-│   ├── RecipeListView.vue       # Recipe table + form
-│   ├── ProductListView.vue      # Product table + form
-│   └── SettingsView.vue         # Settings container (family, categories, about)
-├── components/
+│   ├── client.ts                # axios экземпляр с JWT перехватчиком
+│   ├── auth.ts                  # Вызовы Auth API (register, login, refresh)
+│   └── types.ts                 # TypeScript интерфейсы (совпадают с Pydantic)
+├── views/                        # Компоненты уровня страницы
+│   ├── AuthView.vue             # Страница входа/регистрации
+│   ├── MenuPlannerView.vue      # Планировщик меню 7-дневный × 3-приема пищи
+│   ├── ShoppingListView.vue     # Агрегированный список покупок
+│   ├── RecipeListView.vue       # CRUD таблица рецептов + форма
+│   ├── ProductListView.vue      # CRUD таблица продуктов + форма
+│   └── SettingsView.vue         # Контейнер настроек (семья, категории, о программе)
+├── components/                   # Переиспользуемые компоненты
 │   ├── layout/                  # AppSidebar, MobileBottomNav
 │   ├── planner/                 # PlannerGrid, GridCell, SourcePanel
 │   ├── shopping/                # ShoppingTable, ShoppingSummary
 │   ├── recipes/                 # RecipeTable, RecipeForm
 │   ├── products/                # ProductTable, ProductForm
 │   ├── settings/                # FamilyPanel, CategoryPanel, AboutPanel
-│   └── ui/                      # ConfirmDialog, ToastNotification, etc.
-├── composables/                 # useSelection, useDropdown, etc.
-├── utils/                       # Unit conversion, formatting
-└── assets/                      # Tailwind CSS, global styles
+│   └── ui/                      # ConfirmDialog, ToastNotification, и т.д.
+├── composables/                  # Переиспользуемые функции компоновки
+│   ├── useSelection.ts          # Логика многострочного выбора
+│   ├── useDropdown.ts           # Состояние открытия/закрытия выпадающего списка
+│   ├── useCategoryFilter.ts     # Логика фильтрации категорий
+│   ├── useContextMenu.ts        # Контекстное меню правого клика
+│   └── useFileDownload.ts       # Утилита загрузки blob/CSV экспорта
+└── utils/                        # Функции утилиты
+    └── units.ts                 # Преобразование единиц, форматирование
 ```
 
-### Pinia Stores
+### Хранилища Pinia
 
-**Pattern:** Each store manages one domain concept. Actions call API client. State is reactive.
+**Паттерн:** Каждое хранилище управляет одним доменным понятием. Действия вызывают API-клиента. Состояние реактивно.
 
 ```typescript
-// stores/recipes.ts
-import { defineStore } from 'pinia'
-
 export const useRecipeStore = defineStore('recipes', {
   state: () => ({
     recipes: [] as Recipe[],
@@ -886,19 +890,16 @@ export const useRecipeStore = defineStore('recipes', {
 })
 ```
 
-### API Client with JWT
+### API клиент с JWT
 
-File: `frontend/src/api/client.ts`
+Файл: `frontend/src/api/client.ts`
 
 ```typescript
-import axios, { AxiosInstance } from 'axios'
-import { useAuthStore } from '@/stores/auth'
-
 const client: AxiosInstance = axios.create({
   baseURL: '/api',
 })
 
-// Request interceptor: add JWT token
+// Перехватчик запроса: добавить JWT токен
 client.interceptors.request.use((config) => {
   const auth = useAuthStore()
   if (auth.accessToken) {
@@ -907,7 +908,7 @@ client.interceptors.request.use((config) => {
   return config
 })
 
-// Response interceptor: auto-refresh on 401
+// Перехватчик ответа: auto-refresh на 401
 client.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -916,7 +917,7 @@ client.interceptors.response.use(
       try {
         const { access_token } = await refresh()
         auth.setAccessToken(access_token)
-        // Retry original request
+        // Повторить исходный запрос
         return client(error.config)
       } catch {
         auth.logout()
@@ -927,9 +928,9 @@ client.interceptors.response.use(
 )
 ```
 
-### Vue Router
+### Vue router
 
-File: `frontend/src/router/index.ts`
+Файл: `frontend/src/router/index.ts`
 
 ```typescript
 const routes: RouteRecordRaw[] = [
@@ -986,19 +987,19 @@ router.beforeEach((to, from, next) => {
 })
 ```
 
-### Component Example: RecipeForm
+### Пример компонента: RecipeForm
 
 ```vue
 <template>
   <form @submit.prevent="submit">
-    <input v-model="form.name" placeholder="Recipe name" required />
+    <input v-model="form.name" placeholder="Имя рецепта" required />
     <select v-model="form.category_id" required>
       <option v-for="cat in categories" :value="cat.id">{{ cat.name }}</option>
     </select>
     <input v-model.number="form.servings" type="number" min="1" />
 
     <fieldset>
-      <legend>Ingredients</legend>
+      <legend>Ингредиенты</legend>
       <div v-for="(ing, i) in form.ingredients" :key="i">
         <select v-model="ing.product_id">
           <option v-for="p in products" :value="p.id">{{ p.name }}</option>
@@ -1006,11 +1007,11 @@ router.beforeEach((to, from, next) => {
         <input v-model.number="ing.quantity_amount" type="number" step="0.01" />
         <span>{{ unitFor(ing.product_id) }}</span>
       </div>
-      <button @click="addIngredient" type="button">+ Add</button>
+      <button @click="addIngredient" type="button">+ Добавить</button>
     </fieldset>
 
-    <button type="submit">Save</button>
-    <button @click="reset" type="button">Clear</button>
+    <button type="submit">Сохранить</button>
+    <button @click="reset" type="button">Очистить</button>
   </form>
 </template>
 
@@ -1038,42 +1039,41 @@ const submit = async () => {
 const reset = () => {
   form.name = ''
   form.ingredients = []
-  // ...
 }
 </script>
 ```
 
 ---
 
-## 6. Composition Root (`backend/composition/`)
+## 6. Composition root (`backend/composition/`)
 
-**Dependency injection orchestration. Creates the object graph.**
+**Оркестрация внедрения зависимостей. Создает граф объектов.**
 
-File: `backend/composition/container.py`
+Файл: `backend/composition/container.py`
 
 ```python
 class ApplicationContainer:
-    """Created once at startup. Holds all use cases and repositories."""
+    """Создается один раз при запуске. Держит все use cases и репозитории."""
 
     def __init__(self, db_url: str | None = None) -> None:
-        # 1. Create infrastructure (DB, auth services)
+        # 1. Создать инфраструктуру (БД, сервисы аутентификации)
         infra = _create_infrastructure(db_url)
 
-        # 2. Wire each domain module (auth, recipes, products, etc.)
+        # 2. Подключить каждый доменный модуль (auth, рецепты, продукты, и т.д.)
         for name, obj in _wire_auth(infra).items():
             setattr(self, name, obj)
         for name, obj in _wire_recipes(infra).items():
             setattr(self, name, obj)
         for name, obj in _wire_products(infra).items():
             setattr(self, name, obj)
-        # ... etc
+        # ... и т.д
 
-        # 3. Store DB connection
+        # 3. Сохранить подключение БД
         self._engine = infra.engine
         self._session = infra.session
 ```
 
-Example wiring (one module):
+Пример подключение (один модуль):
 
 ```python
 # backend/composition/_recipes.py
@@ -1102,50 +1102,50 @@ def _wire_recipes(infra: Infrastructure) -> dict[str, Any]:
 
 ---
 
-## Design Patterns Used
+## Используемые паттерны проектирования
 
-| Pattern | Applied To | Purpose |
+| Паттерн | Применено к | Назначение |
 |---------|-----------|---------|
-| **Clean Architecture** | Entire codebase | Layers, dependency inversion, testability |
-| **Repository** | All entities | Abstract persistence; swappable backends |
-| **Use Case (Interactor)** | Application layer | One class = one operation, isolated, testable |
-| **Value Object** | Quantity, Money, Category | Immutable, no identity, safe arithmetic |
-| **Domain Service** | ShoppingListBuilder, UnitConverter | Logic that doesn't fit a single entity |
-| **Dependency Injection** | Composition Root | Explicit wiring, no Service Locator anti-pattern |
-| **Strategy** | Exporters (CSV, JSON, Text) | Interchangeable algorithms |
-| **Adapter** | API layer | Translate HTTP ↔ domain entities |
-| **Facade** | Pinia stores | Simplified API client interface |
-| **Observer** | Vue reactivity | State changes trigger component re-renders |
+| **Чистая архитектура** | Вся кодовая база | Слои, инверсия зависимостей, тестируемость |
+| **Repository** | Все сущности | Абстрактный доступ к персистентности; заменяемые бэкенды |
+| **Use case (Interactor)** | Слой приложения | Один класс = одна операция, изолированная, тестируемая |
+| **Value object** | Quantity, Money, Category | Неизменяемо, нет идентичности, безопасная арифметика |
+| **Domain service** | ShoppingListBuilder, UnitConverter | Логика, не подходящая отдельной сущности |
+| **Dependency injection** | Composition root | Явное подключение, нет Service locator анти-паттерна |
+| **Strategy** | Экспортеры (CSV, JSON, Text) | Взаимозаменяемые алгоритмы |
+| **Adapter** | API слой | Преобразование HTTP ↔ доменные сущности |
+| **Facade** | Хранилища Pinia | Упрощенный интерфейс API-клиента |
+| **Observer** | Vue реактивность | Изменения состояния запускают переотрисовку компонента |
 | **Interceptor** | axios + FastAPI middleware | Cross-cutting concerns (JWT, CORS) |
 
 ---
 
-## Testing Strategy
+## Стратегия тестирования
 
 ```
-                  Testing Pyramid
+                  Пирамида тестирования
 
                        /\
-                      /  \        E2E / Smoke tests (minimal)
-                     /────\       App launches, core workflows
+                      /  \        E2E / Smoke тесты (минимально)
+                     /────\       Приложение запускается, основные рабочие процессы
                     /      \
-                   /Integration\  Repository tests vs real DB
-                  /──────────────\  Export/import tests
+                   /Integration\ Репозиторий тесты против реальной БД
+                  /──────────────\  Экспорт/импорт тесты
                  /                \
-                /    Unit Tests    \  Domain: zero mocks
-               /                    \ App: mock repos only
+                /    Unit тесты    \  Доменный слой: ноль мокирования
+               /                    \ Приложение: моки только репо
               /──────────────────────\
 ```
 
-| Test Type | Location | Mocking | Coverage |
+| Тип теста | Расположение | Мокирование | Охват |
 |-----------|----------|---------|----------|
-| **Domain unit** | `tests/unit/domain/` | None (pure functions) | 95%+ |
-| **App unit** | `tests/unit/application/` | Mock repositories | 80%+ |
-| **API unit** | `tests/unit/api/` | Mock container, TestClient | 70%+ |
-| **Integration** | `tests/integration/repositories/` | Real SQLite `:memory:` | 60%+ |
+| **Доменный unit** | `tests/unit/domain/` | Нет (чистые функции) | 95%+ |
+| **Приложение unit** | `tests/unit/application/` | Моки репозиториев | 80%+ |
+| **API unit** | `tests/unit/api/` | Моки контейнера, TestClient | 70%+ |
+| **Интеграция** | `tests/integration/repositories/` | Реальный SQLite `:memory:` | 60%+ |
 
-**Total coverage:** 490+ tests passing
+**Полный охват:** 490+ тестов проходят
 
 ---
 
-**Next:** See [backend-domain.md](03-backend-domain.md) for detailed entity specifications.
+**Далее:** См. [backend-domain.md](03-backend-domain.md) для подробных спецификаций сущности.
