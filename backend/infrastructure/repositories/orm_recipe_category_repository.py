@@ -9,7 +9,7 @@ from backend.infrastructure.database.models import (
 from backend.infrastructure.repositories.base_category import BaseOrmCategoryRepository
 
 
-class SqlAlchemyRecipeCategoryRepository(
+class OrmRecipeCategoryRepository(
     BaseOrmCategoryRepository,
     RecipeCategoryRepository,
 ):

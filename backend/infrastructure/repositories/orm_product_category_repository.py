@@ -8,7 +8,7 @@ from backend.infrastructure.database.models import (
 from backend.infrastructure.repositories.base_category import BaseOrmCategoryRepository
 
 
-class SqlAlchemyProductCategoryRepository(
+class OrmProductCategoryRepository(
     BaseOrmCategoryRepository,
     ProductCategoryRepository,
 ):

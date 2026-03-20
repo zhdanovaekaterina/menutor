@@ -21,7 +21,7 @@ from backend.infrastructure.database.models import (
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
 
-class SqlAlchemyRecipeRepository(
+class OrmRecipeRepository(
     BaseOrmRepository[Recipe, RecipeId],
     RecipeRepository,
 ):

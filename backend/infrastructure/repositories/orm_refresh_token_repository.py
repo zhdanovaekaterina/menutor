@@ -8,7 +8,7 @@ from backend.domain.value_objects.types import RefreshTokenId, UserId
 from backend.infrastructure.database.models import RefreshTokenRow
 
 
-class SqlAlchemyRefreshTokenRepository(RefreshTokenRepository):
+class OrmRefreshTokenRepository(RefreshTokenRepository):
     def __init__(self, session: Session) -> None:
         self._session = session
 

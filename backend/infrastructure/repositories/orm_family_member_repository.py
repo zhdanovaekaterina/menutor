@@ -9,7 +9,7 @@ from backend.infrastructure.database.models import FamilyMemberRow
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
 
-class SqlAlchemyFamilyMemberRepository(
+class OrmFamilyMemberRepository(
     BaseOrmRepository[FamilyMember, FamilyMemberId],
     FamilyMemberRepository,
 ):
