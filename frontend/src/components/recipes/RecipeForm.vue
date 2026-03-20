@@ -39,6 +39,15 @@ const name = ref('')
 const categoryId = ref<number | null>(null)
 const servings = ref(4)
 const weight = ref(0)
+const isPiecesMode = ref(false)
+const totalPieces = ref<number | null>(null)
+const piecesPerPortion = ref<number | null>(null)
+
+const autoServings = computed(() => {
+  if (!isPiecesMode.value || !totalPieces.value || !piecesPerPortion.value) return null
+  return Math.floor(totalPieces.value / piecesPerPortion.value)
+})
+
 const ingredients = ref<IngredientRow[]>([])
 const steps = ref<{ order: number; description: string }[]>([])
 
@@ -76,6 +85,9 @@ watch(
       categoryId.value = r.category_id
       servings.value = r.servings
       weight.value = r.weight
+      isPiecesMode.value = r.total_pieces != null && r.pieces_per_portion != null
+      totalPieces.value = r.total_pieces ?? null
+      piecesPerPortion.value = r.pieces_per_portion ?? null
       ingredients.value = [...r.ingredients].sort((a, b) => a.order - b.order).map((i) => ({
         product_id: i.product_id,
         sub_recipe_id: i.sub_recipe_id,
@@ -107,6 +119,9 @@ function clearForm() {
   categoryId.value = null
   servings.value = 4
   weight.value = 0
+  isPiecesMode.value = false
+  totalPieces.value = null
+  piecesPerPortion.value = null
   ingredients.value = []
   steps.value = []
   emit('clear')
@@ -115,11 +130,26 @@ function clearForm() {
 function onSave() {
   if (!name.value.trim()) { toast.show('Введите название рецепта', 'error'); return }
   if (categoryId.value == null) { toast.show('Выберите категорию', 'error'); return }
+
+  if (isPiecesMode.value) {
+    if (!totalPieces.value || totalPieces.value < 1) {
+      toast.show('Укажите количество штук (мин. 1)', 'error'); return
+    }
+    if (!piecesPerPortion.value || piecesPerPortion.value < 1) {
+      toast.show('Укажите штук на порцию (мин. 1)', 'error'); return
+    }
+    if (piecesPerPortion.value > totalPieces.value) {
+      toast.show('Штук на порцию не может быть больше общего количества', 'error'); return
+    }
+  }
+
   const data: RecipeCreate = {
     name: name.value.trim(),
     category_id: categoryId.value,
-    servings: servings.value,
+    servings: isPiecesMode.value ? (autoServings.value ?? 1) : servings.value,
     weight: weight.value,
+    total_pieces: isPiecesMode.value ? totalPieces.value : null,
+    pieces_per_portion: isPiecesMode.value ? piecesPerPortion.value : null,
     ingredients: ingredients.value
       .filter((i) => i.product_id != null || i.sub_recipe_id != null)
       .map((i, idx) => ({
@@ -173,7 +203,27 @@ function onSave() {
       </select>
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
+    <!-- Toggle: Считать в штуках -->
+    <div class="flex items-center gap-3 py-2">
+      <button
+        type="button"
+        role="switch"
+        :aria-checked="isPiecesMode"
+        aria-label="Считать в штуках"
+        class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200"
+        :class="isPiecesMode ? 'bg-blue-600' : 'bg-gray-300'"
+        @click="isPiecesMode = !isPiecesMode"
+      >
+        <span
+          class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200"
+          :class="isPiecesMode ? 'translate-x-4' : 'translate-x-0.5'"
+        />
+      </button>
+      <span class="text-sm text-gray-700">Считать в штуках</span>
+    </div>
+
+    <!-- Обычный режим: Порции + Вес -->
+    <div v-if="!isPiecesMode" class="grid grid-cols-2 gap-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Порций</label>
         <input v-model.number="servings" type="number" min="1" max="100"
@@ -184,6 +234,30 @@ function onSave() {
         <input v-model.number="weight" type="number" min="0"
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
       </div>
+    </div>
+
+    <!-- Штучный режим: Кол-во + Шт на порцию + Вес -->
+    <div v-else>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Кол-во (шт)</label>
+          <input v-model.number="totalPieces" type="number" min="1" max="9999"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Шт на порцию</label>
+          <input v-model.number="piecesPerPortion" type="number" min="1" :max="totalPieces ?? 9999"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Вес готового блюда (г)</label>
+          <input v-model.number="weight" type="number" min="0"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        </div>
+      </div>
+      <p v-if="autoServings != null" class="text-xs text-gray-500 mt-2 ml-0.5">
+        Порций: {{ autoServings }} (авто)
+      </p>
     </div>
 
     <IngredientListEditor

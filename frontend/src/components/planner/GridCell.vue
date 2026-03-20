@@ -5,6 +5,7 @@ import type { MenuSlot } from '@/api/types'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { usePlannerClipboard } from '@/composables/usePlannerClipboard'
 import { useMenuStore } from '@/stores/menus'
+import { useRecipeStore } from '@/stores/recipes'
 import ItemRow from './ItemRow.vue'
 
 const props = defineProps<{
@@ -27,6 +28,8 @@ const emit = defineEmits<{
 
 const dragOver = ref(false)
 const listRef = ref<HTMLElement>()
+
+const recipeStore = useRecipeStore()
 
 // Context menu
 const { open: openContextMenu, close: closeContextMenu } = useContextMenu()
@@ -104,15 +107,28 @@ function itemName(slot: MenuSlot) {
   return '?'
 }
 
+function formatNumber(n: number): string {
+  return n % 1 === 0 ? String(n) : n.toFixed(1)
+}
+
 function itemDetail(slot: MenuSlot) {
   if (slot.recipe_id != null) {
     const s = slot.servings_override ?? slot.quantity
-    return s != null ? `${Number(s).toFixed(1)} п.` : ''
+    const recipe = recipeStore.items.find(r => r.id === slot.recipe_id)
+
+    if (recipe?.total_pieces != null && recipe?.pieces_per_portion != null) {
+      const portions = s != null ? formatNumber(s) : '?'
+      const pcs = slot.pieces_override
+        ?? Math.max(1, Math.round((s ?? 1) * recipe.pieces_per_portion))
+      return { text: '', piecesDetail: { portions, pieces: pcs } }
+    }
+
+    return { text: s != null ? `${formatNumber(s)} п.` : '', piecesDetail: null }
   }
   if (slot.product_id != null && slot.quantity != null) {
-    return `${slot.quantity} ${slot.unit ?? ''}`
+    return { text: `${slot.quantity} ${slot.unit ?? ''}`, piecesDetail: null }
   }
-  return ''
+  return { text: '', piecesDetail: null }
 }
 
 /* Native drop from SourcePanel (not SortableJS) */
@@ -216,7 +232,8 @@ watch(
         v-for="(slot, i) in cellSlots"
         :key="`${slot.recipe_id ?? ''}-${slot.product_id ?? ''}`"
         :name="itemName(slot)"
-        :detail="itemDetail(slot)"
+        :detail="itemDetail(slot).text"
+        :pieces-detail="itemDetail(slot).piecesDetail"
         :variant="slot.recipe_id != null ? 'recipe' : 'product'"
         @remove="emit('removeItem', { recipe_id: slot.recipe_id, product_id: slot.product_id })"
         @click="emit('editItem', slot)"

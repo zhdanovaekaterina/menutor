@@ -29,7 +29,7 @@ def _parse_csv(data: bytes) -> list[list[str]]:
 
 def test_export_bytes_header() -> None:
     rows = _parse_csv(RecipeCsvExporter().export_bytes([]))
-    assert rows[0] == ["id", "name", "category_id", "servings", "weight", "ingredients_json", "steps_json"]
+    assert rows[0] == ["id", "name", "category_id", "servings", "weight", "total_pieces", "pieces_per_portion", "ingredients_json", "steps_json"]
 
 
 def test_export_bytes_single_recipe() -> None:
@@ -42,7 +42,8 @@ def test_export_bytes_single_recipe() -> None:
 
 def test_export_bytes_ingredients_json() -> None:
     rows = _parse_csv(RecipeCsvExporter().export_bytes([_recipe()]))
-    ingredients = json.loads(rows[1][5])
+    header = rows[0]
+    ingredients = json.loads(rows[1][header.index("ingredients_json")])
     assert len(ingredients) == 1
     assert ingredients[0]["product_id"] == 1
     assert ingredients[0]["quantity_amount"] == 200
@@ -52,7 +53,8 @@ def test_export_bytes_ingredients_json() -> None:
 
 def test_export_bytes_steps_json() -> None:
     rows = _parse_csv(RecipeCsvExporter().export_bytes([_recipe()]))
-    steps = json.loads(rows[1][6])
+    header = rows[0]
+    steps = json.loads(rows[1][header.index("steps_json")])
     assert steps[0]["order"] == 1
     assert steps[0]["description"] == "Смешать"
 
@@ -66,8 +68,9 @@ def test_example_bytes_is_parseable() -> None:
     rows = _parse_csv(RecipeCsvExporter().example_bytes())
     assert len(rows) == 2
     assert rows[1][1] == "Блины"
-    json.loads(rows[1][5])  # ingredients_json must be valid JSON
-    json.loads(rows[1][6])  # steps_json must be valid JSON
+    header = rows[0]
+    json.loads(rows[1][header.index("ingredients_json")])  # ingredients_json must be valid JSON
+    json.loads(rows[1][header.index("steps_json")])  # steps_json must be valid JSON
 
 
 def test_content_type() -> None:
@@ -93,7 +96,8 @@ def _recipe_with_sub_recipe() -> Recipe:
 
 def test_export_recipe_with_sub_recipe_ingredient_in_csv() -> None:
     rows = _parse_csv(RecipeCsvExporter().export_bytes([_recipe_with_sub_recipe()]))
-    ingredients = json.loads(rows[1][5])
+    header = rows[0]
+    ingredients = json.loads(rows[1][header.index("ingredients_json")])
     assert len(ingredients) == 1
     ing = ingredients[0]
     assert ing["sub_recipe_id"] == 10
@@ -102,7 +106,8 @@ def test_export_recipe_with_sub_recipe_ingredient_in_csv() -> None:
 
 def test_export_product_only_recipe_csv_unchanged() -> None:
     rows = _parse_csv(RecipeCsvExporter().export_bytes([_recipe()]))
-    ingredients = json.loads(rows[1][5])
+    header = rows[0]
+    ingredients = json.loads(rows[1][header.index("ingredients_json")])
     assert len(ingredients) == 1
     ing = ingredients[0]
     assert ing["product_id"] == 1

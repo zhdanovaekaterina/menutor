@@ -111,6 +111,8 @@ class RecipeJsonImporter:
                 category_id=RecipeCategoryId(int(row.get("category_id") or 0)),
                 weight=int(row.get("weight") or 0),
                 user_id=user_id,
+                total_pieces=int(row["total_pieces"]) if row.get("total_pieces") is not None else None,
+                pieces_per_portion=int(row["pieces_per_portion"]) if row.get("pieces_per_portion") is not None else None,
             )
             self._repo.save(recipe)
 

@@ -32,6 +32,8 @@ class RecipeCreate(BaseModel):
     ingredients: list[RecipeIngredientSchema] = []
     steps: list[CookingStepSchema] = []
     weight: int = 0
+    total_pieces: int | None = None
+    pieces_per_portion: int | None = None
 
 
 RecipeUpdate = RecipeCreate
@@ -45,6 +47,8 @@ class RecipeResponse(BaseModel):
     ingredients: list[RecipeIngredientSchema]
     steps: list[CookingStepSchema]
     weight: int
+    total_pieces: int | None = None
+    pieces_per_portion: int | None = None
 
 
 class ValidateSubRecipeRequest(BaseModel):

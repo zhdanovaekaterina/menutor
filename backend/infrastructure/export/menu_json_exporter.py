@@ -16,6 +16,7 @@ class MenuJsonExporter:
             "quantity": slot.quantity,
             "unit": slot.unit,
             "servings_override": slot.servings_override,
+            "pieces_override": slot.pieces_override,
             "position": slot.position,
         }
 
@@ -40,13 +41,13 @@ class MenuJsonExporter:
                         "day": 0, "meal_type": "завтрак",
                         "recipe_id": 1, "product_id": None,
                         "quantity": None, "unit": None,
-                        "servings_override": None, "position": 0,
+                        "servings_override": None, "pieces_override": None, "position": 0,
                     },
                     {
                         "day": 0, "meal_type": "обед",
                         "recipe_id": None, "product_id": 2,
                         "quantity": 250.0, "unit": "g",
-                        "servings_override": None, "position": 0,
+                        "servings_override": None, "pieces_override": None, "position": 0,
                     },
                 ],
             }

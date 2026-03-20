@@ -37,9 +37,26 @@ class ShoppingListBuilder:
                 if recipe is None:
                     continue
 
-                base = float(slot.servings_override if slot.servings_override is not None
-                             else recipe.servings)
-                scale_factor = base / recipe.servings
+                if recipe.is_pieces_mode:
+                    assert recipe.total_pieces is not None
+                    assert recipe.pieces_per_portion is not None
+                    if slot.pieces_override is not None:
+                        pcs = slot.pieces_override
+                    else:
+                        portions = float(
+                            slot.servings_override
+                            if slot.servings_override is not None
+                            else recipe.servings
+                        )
+                        pcs = max(1, round(portions * recipe.pieces_per_portion))
+                    scale_factor = pcs / recipe.total_pieces
+                else:
+                    base = float(
+                        slot.servings_override
+                        if slot.servings_override is not None
+                        else recipe.servings
+                    )
+                    scale_factor = base / recipe.servings
 
                 slot_products = self._resolve_recipe_products(recipe, scale_factor, set())
                 for pid, qty in slot_products.items():
@@ -133,7 +150,13 @@ class ShoppingListBuilder:
                         )
                     sub_scale = qty_in_g / sub_recipe.weight
                 else:
-                    sub_scale = scaled_amount / sub_recipe.servings
+                    if sub_recipe.is_pieces_mode:
+                        assert sub_recipe.total_pieces is not None
+                        assert sub_recipe.pieces_per_portion is not None
+                        pcs = max(1, round(scaled_amount * sub_recipe.pieces_per_portion))
+                        sub_scale = pcs / sub_recipe.total_pieces
+                    else:
+                        sub_scale = scaled_amount / sub_recipe.servings
                 sub_products = self._resolve_recipe_products(sub_recipe, sub_scale, visited)
                 for pid, qty in sub_products.items():
                     if pid in products:

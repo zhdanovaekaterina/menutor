@@ -40,6 +40,7 @@ class MenuJsonImporter:
                         quantity=float(s["quantity"]) if s.get("quantity") is not None else None,
                         unit=str(s["unit"]) if s.get("unit") is not None else None,
                         servings_override=float(s["servings_override"]) if s.get("servings_override") is not None else None,
+                        pieces_override=int(s["pieces_override"]) if s.get("pieces_override") is not None else None,
                         position=int(s.get("position") or 0),
                     )
                     for s in (row.get("slots") or [])

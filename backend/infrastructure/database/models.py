@@ -103,6 +103,8 @@ class RecipeRow(Base):
     dietary_tags = Column(String, nullable=False, default="[]", server_default="[]")
     servings = Column(Integer, nullable=False, default=1, server_default="1")
     weight = Column(Integer, nullable=False, default=0, server_default="0")
+    total_pieces = Column(Integer, nullable=True)
+    pieces_per_portion = Column(Integer, nullable=True)
 
     ingredients = relationship(
         "RecipeIngredientRow",
@@ -208,6 +210,7 @@ class MenuSlotRow(Base):
     quantity = Column(Float, nullable=True)
     unit = Column(String, nullable=True)
     servings_override = Column(Float, nullable=True)
+    pieces_override = Column(Integer, nullable=True)
     slot_position = Column(Integer, nullable=False, default=0, server_default="0")
 
     menu = relationship("MenuRow", back_populates="slots")
