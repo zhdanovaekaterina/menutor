@@ -110,12 +110,7 @@ class OrmRecipeRepository(
         )
 
     def find_all(self, user_id: UserId) -> list[Recipe]:
-        rows = (
-            self._session.query(RecipeRow)
-            .filter(RecipeRow.user_id == int(user_id))
-            .all()
-        )
-        return [self._row_to_entity(r) for r in rows]
+        return self.find_all_by_user(int(user_id))
 
     def find_by_category_id(
         self, category_id: RecipeCategoryId, user_id: UserId

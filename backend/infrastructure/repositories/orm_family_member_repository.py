@@ -50,9 +50,4 @@ class OrmFamilyMemberRepository(
         )
 
     def find_all(self, user_id: UserId) -> list[FamilyMember]:
-        rows = (
-            self._session.query(FamilyMemberRow)
-            .filter(FamilyMemberRow.user_id == int(user_id))
-            .all()
-        )
-        return [self._row_to_entity(r) for r in rows]
+        return self.find_all_by_user(int(user_id))

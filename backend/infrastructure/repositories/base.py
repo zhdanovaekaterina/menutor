@@ -93,3 +93,11 @@ class BaseOrmRepository(Generic[E, I]):
         self._session.refresh(row)
         return self._row_to_entity(row)
 
+    def find_all_by_user(self, user_id: int) -> list[E]:
+        rows = (
+            self._session.query(self._row_class)
+            .filter(self._row_class.user_id == user_id)
+            .all()
+        )
+        return [self._row_to_entity(r) for r in rows]
+
