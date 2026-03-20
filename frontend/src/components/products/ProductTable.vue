@@ -3,10 +3,8 @@ import { computed, ref } from 'vue'
 import type { ActiveCategory, Product } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
 import { useCategoryFilter } from '@/composables/useCategoryFilter'
-
-const UNIT_MAP: Record<string, string> = {
-  g: 'г', kg: 'кг', ml: 'мл', l: 'л', tsp: 'ч.л.', tbsp: 'ст.л.', pcs: 'шт', box: 'кор', pack: 'уп',
-}
+import { UNIT_MAP } from '@/utils/units'
+import { useSortableTable } from '@/composables/useSortableTable'
 
 const props = defineProps<{
   products: Product[]
@@ -24,8 +22,7 @@ const emit = defineEmits<{
 
 const search = ref('')
 const { categoryFilter, applyFilter } = useCategoryFilter<Product>()
-const sortKey = ref<'name' | 'category' | 'price'>('name')
-const sortAsc = ref(true)
+const { sortKey, sortAsc, toggleSort, sortIcon } = useSortableTable<'name' | 'category' | 'price'>('name')
 
 const catMap = computed(() => Object.fromEntries(props.categories.map((c) => [c.id, c.name])))
 
@@ -46,16 +43,6 @@ const filteredIds = computed(() => filtered.value.map((p) => p.id))
 const allChecked = computed(() =>
   filteredIds.value.length > 0 && filteredIds.value.every((id) => props.selectedIds?.has(id)),
 )
-
-function toggleSort(key: typeof sortKey.value) {
-  if (sortKey.value === key) sortAsc.value = !sortAsc.value
-  else { sortKey.value = key; sortAsc.value = true }
-}
-
-function sortIcon(key: typeof sortKey.value) {
-  if (sortKey.value !== key) return '\u2195'
-  return sortAsc.value ? '\u2191' : '\u2193'
-}
 
 function onRowClick(id: number) {
   if (props.selectMode) emit('toggleSelect', id)

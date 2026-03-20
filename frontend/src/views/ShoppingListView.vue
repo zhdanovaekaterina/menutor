@@ -11,6 +11,7 @@ import { useSelection } from '@/composables/useSelection'
 import { useProductStore } from '@/stores/products'
 import { useShoppingListStore } from '@/stores/shoppingList'
 import { useToastStore } from '@/stores/toast'
+import { formatUnit } from '@/utils/units'
 
 const store = useShoppingListStore()
 const productStore = useProductStore()
@@ -59,10 +60,6 @@ function onConfirmRemove() {
   }
 }
 
-const UNIT_MAP: Record<string, string> = {
-  g: 'г', kg: 'кг', ml: 'мл', l: 'л', pcs: 'шт', box: 'кор', pack: 'уп', tsp: 'ч.л.', tbsp: 'ст.л.',
-}
-function fmtUnit(u: string) { return UNIT_MAP[u] ?? u }
 function fmtRound2(n: number) { return String(Number(n.toFixed(2))) }
 function fmtBuyAmt(amount: number, unit: string) { return unit === 'kg' ? fmtRound2(amount) : String(amount) }
 
@@ -73,8 +70,8 @@ function buildTextExport(): string {
     for (const item of items) {
       const rq = item.recipe_quantity
       const bq = item.buy_quantity
-      const recipeStr = rq ? `${fmtRound2(rq.amount)} ${fmtUnit(rq.unit)}` : '-'
-      const buyStr = `${fmtBuyAmt(bq.amount, bq.unit)} ${fmtUnit(bq.unit)}`
+      const recipeStr = rq ? `${fmtRound2(rq.amount)} ${formatUnit(rq.unit)}` : '-'
+      const buyStr = `${fmtBuyAmt(bq.amount, bq.unit)} ${formatUnit(bq.unit)}`
       lines.push(`• ${item.product_name} — купить: ${buyStr} (рецепт: ${recipeStr}) — ${Number(item.cost.amount).toFixed(2)} руб`)
     }
     lines.push('')
@@ -334,22 +331,3 @@ function onConfirmDeleteAll() {
   </div>
 </template>
 
-<style scoped>
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: transform 0.3s ease;
-}
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(100%);
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>

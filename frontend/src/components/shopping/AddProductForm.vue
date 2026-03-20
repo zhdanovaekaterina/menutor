@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { Product } from '@/api/types'
+import { UNIT_MAP } from '@/utils/units'
 
 const props = defineProps<{
   products: Product[]
@@ -10,10 +11,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   add: [productId: number, quantity: number]
 }>()
-
-const UNIT_MAP: Record<string, string> = {
-  g: 'г', kg: 'кг', ml: 'мл', l: 'л', pcs: 'шт', box: 'кор', pack: 'уп', tsp: 'ч.л.', tbsp: 'ст.л.',
-}
 
 const selectedId = ref<number | null>(null)
 const quantity = ref(1)
