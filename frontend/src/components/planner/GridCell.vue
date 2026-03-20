@@ -6,6 +6,7 @@ import { useContextMenu } from '@/composables/useContextMenu'
 import { usePlannerClipboard } from '@/composables/usePlannerClipboard'
 import { useMenuStore } from '@/stores/menus'
 import { useRecipeStore } from '@/stores/recipes'
+import { formatUnit } from '@/utils/units'
 import ItemRow from './ItemRow.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 
@@ -127,7 +128,7 @@ function itemDetail(slot: MenuSlot) {
     return { text: s != null ? `${formatNumber(s)} п.` : '', piecesDetail: null }
   }
   if (slot.product_id != null && slot.quantity != null) {
-    return { text: `${slot.quantity} ${slot.unit ?? ''}`, piecesDetail: null }
+    return { text: `${slot.quantity} ${formatUnit(slot.unit ?? '')}`, piecesDetail: null }
   }
   return { text: '', piecesDetail: null }
 }
