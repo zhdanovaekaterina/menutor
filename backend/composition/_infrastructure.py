@@ -68,6 +68,22 @@ class _Infrastructure:
     builder: ShoppingListBuilder
 
 
+_TEST_JWT_SECRET = "test-only-secret-do-not-use-in-production"
+
+
+def _get_jwt_secret(db_url: str) -> str:
+    """Return JWT secret key, raising if not configured for non-SQLite databases."""
+    secret = os.environ.get("JWT_SECRET_KEY")
+    if secret:
+        return secret
+    if db_url.startswith("sqlite"):
+        return _TEST_JWT_SECRET
+    raise RuntimeError(
+        "JWT_SECRET_KEY environment variable is required for non-SQLite databases. "
+        "Set it in .config/.env or your environment."
+    )
+
+
 def _create_infrastructure(db_url: str | None) -> _Infrastructure:
     """Build all infrastructure-layer objects: DB, repos, services."""
     if db_url is None:
@@ -90,12 +106,7 @@ def _create_infrastructure(db_url: str | None) -> _Infrastructure:
         user_repo=OrmUserRepository(session),
         refresh_token_repo=OrmRefreshTokenRepository(session),
         password_hasher=BcryptPasswordHasher(),
-        token_service=JwtTokenService(
-            os.environ.get(
-                "JWT_SECRET_KEY",
-                "change-me-in-production-use-a-long-random-string!",
-            )
-        ),
+        token_service=JwtTokenService(_get_jwt_secret(db_url)),
         recipe_repo=recipe_repo,
         product_repo=product_repo,
         menu_repo=OrmMenuRepository(session),
