@@ -19,8 +19,6 @@ class ShoppingListItem:
 
     @property
     def buy_quantity(self) -> Quantity:
-        if self.quantity.unit == "kg":
-            return self.quantity
         return Quantity(amount=math.ceil(self.quantity.amount), unit=self.quantity.unit)
 
 

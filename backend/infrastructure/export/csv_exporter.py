@@ -5,7 +5,7 @@ from typing import Any
 
 from backend.domain.entities.shopping_list import ShoppingList
 
-_HEADERS = ["category", "name", "recipe_quantity", "recipe_unit", "buy_quantity", "buy_unit", "cost", "purchased"]
+_HEADERS = ["category", "name", "recipe_quantity", "unit", "buy_quantity", "cost", "purchased"]
 
 
 class ShoppingListCsvExporter:
@@ -22,7 +22,6 @@ class ShoppingListCsvExporter:
                 f"{rq.amount:g}",
                 rq.unit,
                 f"{bq.amount:g}",
-                bq.unit,
                 f"{item.cost.amount:.2f}",
                 item.purchased,
             ])
@@ -41,7 +40,7 @@ class ShoppingListCsvExporter:
         buf = io.StringIO()
         writer = csv.writer(buf)
         writer.writerow(_HEADERS)
-        writer.writerow(["Молочные", "Молоко", "1", "l", "1", "l", "80.00", False])
+        writer.writerow(["Молочные", "Молоко", "1", "l", "1", "80.00", False])
         return buf.getvalue().encode("utf-8")
 
     def content_type(self) -> str:

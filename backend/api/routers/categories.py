@@ -111,7 +111,7 @@ def move_and_delete_product_category(
     try:
         _bundle(container, "product").move_and_delete.execute(category_id, body.target_category_id)
     except AppError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
 
 
 # ── Recipe Categories ──────────────────────────────────────────────
@@ -197,4 +197,4 @@ def move_and_delete_recipe_category(
     try:
         _bundle(container, "recipe").move_and_delete.execute(category_id, body.target_category_id)
     except AppError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))

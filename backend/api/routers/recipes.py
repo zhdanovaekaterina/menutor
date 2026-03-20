@@ -95,7 +95,7 @@ def get_flattened_products(
     try:
         items = container.flatten_recipe_products.execute(RecipeId(recipe_id), user.id)
     except SubRecipeWeightError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
     return [
         FlattenedProductResponse(
             product_id=int(item.product_id),
@@ -131,7 +131,7 @@ def preview_flattened_products(
             RecipeId(recipe_id), user.id, ingredients_data
         )
     except SubRecipeWeightError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
     return [
         FlattenedProductResponse(
             product_id=int(item.product_id),
