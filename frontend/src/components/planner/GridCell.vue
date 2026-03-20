@@ -7,6 +7,7 @@ import { usePlannerClipboard } from '@/composables/usePlannerClipboard'
 import { useMenuStore } from '@/stores/menus'
 import { useRecipeStore } from '@/stores/recipes'
 import ItemRow from './ItemRow.vue'
+import IconPlus from '@/components/ui/icons/IconPlus.vue'
 
 const props = defineProps<{
   day: number
@@ -245,9 +246,7 @@ watch(
       aria-label="Добавить"
       @click.stop="emit('openPicker')"
     >
-      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-      </svg>
+      <IconPlus class="w-5 h-5" />
     </button>
   </div>
 </template>
