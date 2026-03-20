@@ -491,18 +491,3 @@ async function onGenerateShoppingList() {
   </div>
 </template>
 
-<style scoped>
-.slide-left-enter-active, .slide-left-leave-active {
-  transition: transform 0.25s ease;
-}
-.slide-left-enter-from, .slide-left-leave-to {
-  transform: translateX(-100%);
-}
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
-</style>

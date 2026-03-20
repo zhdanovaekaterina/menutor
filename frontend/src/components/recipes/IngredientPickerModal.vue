@@ -2,7 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import type { ActiveCategory, Product, Recipe } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
-import { useCategoryFilter } from '@/composables/useCategoryFilter'
+import { useTabbedFilter } from '@/composables/useTabbedFilter'
+import IconCheck from '@/components/ui/icons/IconCheck.vue'
 
 type IngredientRow = {
   product_id: number | null
@@ -35,29 +36,18 @@ const emit = defineEmits<{
 }>()
 
 // ------- tab state -------
-const tab = ref<'products' | 'recipes'>('products')
-const search = ref('')
-const productCF = useCategoryFilter<Product>()
-const recipeCF = useCategoryFilter<Recipe>()
-
-function switchTab(next: 'products' | 'recipes') {
-  tab.value = next
-  search.value = ''
-  productCF.reset()
-  recipeCF.reset()
-}
-
-// ------- filtered lists -------
-const filteredProducts = computed(() => productCF.applyFilter(props.products, search.value))
-const filteredRecipes = computed(() =>
-  recipeCF.applyFilter(
-    props.recipes.filter((r) => {
-      if (props.currentRecipeId != null && r.id === props.currentRecipeId) return false
-      if (props.ancestorIds?.has(r.id)) return false
-      return true
-    }),
-    search.value,
-  ),
+const {
+  tab, search, recipeCF, productCF, switchTab,
+  filteredRecipes,
+  filteredProducts,
+} = useTabbedFilter<Recipe, Product>(
+  () => props.recipes.filter((r) => {
+    if (props.currentRecipeId != null && r.id === props.currentRecipeId) return false
+    if (props.ancestorIds?.has(r.id)) return false
+    return true
+  }),
+  () => props.products,
+  { defaultTab: 'products' },
 )
 
 // ------- selection state (local, while modal is open) -------
@@ -89,10 +79,7 @@ watch(
   (v) => {
     if (v) {
       seedFromExisting()
-      search.value = ''
-      tab.value = 'products'
-      productCF.reset()
-      recipeCF.reset()
+      switchTab('products')
     }
   },
 )
@@ -282,14 +269,7 @@ function onKeydown(e: KeyboardEvent) {
                 <span class="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
                 <span class="flex-1 truncate">{{ p.name }}</span>
                 <!-- Checkmark when selected -->
-                <span
-                  v-if="selectedProductIds.has(p.id)"
-                  class="shrink-0"
-                >
-                  <svg class="w-4 h-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                  </svg>
-                </span>
+                <IconCheck v-if="selectedProductIds.has(p.id)" class="w-4 h-4 text-blue-600 shrink-0" />
               </button>
             </template>
 
@@ -315,14 +295,7 @@ function onKeydown(e: KeyboardEvent) {
                 <span class="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
                 <span class="flex-1 truncate">{{ r.name }}</span>
                 <!-- Checkmark when selected -->
-                <span
-                  v-if="selectedRecipeIds.has(r.id)"
-                  class="shrink-0"
-                >
-                  <svg class="w-4 h-4 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                  </svg>
-                </span>
+                <IconCheck v-if="selectedRecipeIds.has(r.id)" class="w-4 h-4 text-amber-600 shrink-0" />
               </button>
             </template>
           </div>
@@ -359,9 +332,6 @@ function onKeydown(e: KeyboardEvent) {
 </template>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity 0.18s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-
 @media (prefers-reduced-motion: reduce) {
   .fade-enter-active, .fade-leave-active { transition-duration: 0.01ms; }
 }
