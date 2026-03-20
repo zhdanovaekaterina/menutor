@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import type { ActiveCategory, Recipe } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
 import { useCategoryFilter } from '@/composables/useCategoryFilter'
+import { useSortableTable } from '@/composables/useSortableTable'
 
 const props = defineProps<{
   recipes: Recipe[]
@@ -20,8 +21,7 @@ const emit = defineEmits<{
 
 const search = ref('')
 const { categoryFilter, applyFilter } = useCategoryFilter<Recipe>()
-const sortKey = ref<'name' | 'category' | 'servings' | 'weight'>('name')
-const sortAsc = ref(true)
+const { sortKey, sortAsc, toggleSort, sortIcon } = useSortableTable<'name' | 'category' | 'servings' | 'weight'>('name')
 
 const catMap = computed(() => Object.fromEntries(props.categories.map((c) => [c.id, c.name])))
 
@@ -44,16 +44,6 @@ const filteredIds = computed(() => filtered.value.map((r) => r.id))
 const allChecked = computed(() =>
   filteredIds.value.length > 0 && filteredIds.value.every((id) => props.selectedIds?.has(id)),
 )
-
-function toggleSort(key: typeof sortKey.value) {
-  if (sortKey.value === key) sortAsc.value = !sortAsc.value
-  else { sortKey.value = key; sortAsc.value = true }
-}
-
-function sortIcon(key: typeof sortKey.value) {
-  if (sortKey.value !== key) return '\u2195'
-  return sortAsc.value ? '\u2191' : '\u2193'
-}
 
 function onRowClick(id: number) {
   if (props.selectMode) emit('toggleSelect', id)
