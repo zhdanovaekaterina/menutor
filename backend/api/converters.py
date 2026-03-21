@@ -15,16 +15,27 @@ from backend.api.schemas.recipe import (
 from backend.api.schemas.shopping_list import (
     MoneySchema,
     QuantitySchema,
+    SavedShoppingListItemInput,
+    SavedShoppingListItemSchema,
+    SavedShoppingListMetaResponse,
+    SavedShoppingListResponse,
     ShoppingListItemResponse,
     ShoppingListResponse,
 )
 from backend.application.use_cases.manage_family import FamilyMemberData
 from backend.application.use_cases.manage_product import ProductData
 from backend.application.use_cases.manage_recipe import RecipeData
+from backend.application.use_cases.manage_saved_shopping_list import (
+    SavedShoppingListItemData,
+)
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.entities.product import Product
 from backend.domain.entities.recipe import Recipe
+from backend.domain.entities.saved_shopping_list import (
+    SavedShoppingList,
+    SavedShoppingListItem,
+)
 from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
 from backend.domain.value_objects.category import ActiveCategory, Category
 from backend.domain.value_objects.cooking_step import CookingStep
@@ -168,6 +179,69 @@ def shopping_list_to_response(sl: ShoppingList) -> ShoppingListResponse:
     return ShoppingListResponse(
         items=[shopping_item_to_response(item) for item in sl.items],
         total_cost=money_to_schema(sl.total_cost()),
+    )
+
+
+def saved_shopping_item_to_schema(item: SavedShoppingListItem) -> SavedShoppingListItemSchema:
+    return SavedShoppingListItemSchema(
+        id=int(item.id),
+        product_id=int(item.product_id) if item.product_id is not None else None,
+        product_name=item.product_name,
+        category=item.category,
+        quantity=quantity_to_schema(item.quantity),
+        buy_quantity=quantity_to_schema(item.buy_quantity),
+        buy_quantity_overridden=item.buy_quantity_overridden,
+        cost=money_to_schema(item.cost),
+        purchased=item.purchased,
+        recipe_quantity=(
+            quantity_to_schema(item.recipe_quantity)
+            if item.recipe_quantity is not None
+            else None
+        ),
+        item_order=item.item_order,
+    )
+
+
+def saved_shopping_list_to_response(sl: SavedShoppingList) -> SavedShoppingListResponse:
+    return SavedShoppingListResponse(
+        id=int(sl.id),
+        name=sl.name,
+        items=[saved_shopping_item_to_schema(item) for item in sl.items],
+        total_cost=money_to_schema(sl.total_cost()),
+        source_menu_id=int(sl.source_menu_id) if sl.source_menu_id is not None else None,
+        created_at=sl.created_at.isoformat(),
+        updated_at=sl.updated_at.isoformat(),
+    )
+
+
+def saved_shopping_list_to_meta(sl: SavedShoppingList) -> SavedShoppingListMetaResponse:
+    return SavedShoppingListMetaResponse(
+        id=int(sl.id),
+        name=sl.name,
+        source_menu_id=int(sl.source_menu_id) if sl.source_menu_id is not None else None,
+        created_at=sl.created_at.isoformat(),
+        updated_at=sl.updated_at.isoformat(),
+    )
+
+
+def schema_to_saved_shopping_list_item_data(
+    item: SavedShoppingListItemInput,
+) -> SavedShoppingListItemData:
+    return SavedShoppingListItemData(
+        product_id=item.product_id,
+        product_name=item.product_name,
+        category=item.category,
+        quantity_amount=item.quantity_amount,
+        quantity_unit=item.quantity_unit,
+        buy_quantity_amount=item.buy_quantity_amount,
+        buy_quantity_unit=item.buy_quantity_unit,
+        buy_quantity_overridden=item.buy_quantity_overridden,
+        cost_amount=item.cost_amount,
+        cost_currency=item.cost_currency,
+        purchased=item.purchased,
+        recipe_quantity_amount=item.recipe_quantity_amount,
+        recipe_quantity_unit=item.recipe_quantity_unit,
+        item_order=item.item_order,
     )
 
 

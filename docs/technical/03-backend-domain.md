@@ -254,6 +254,54 @@ class FamilyMember:
         return base_servings * self.portion_multiplier
 ```
 
+### SavedShoppingList & SavedShoppingListItem
+
+**Файл:** `backend/domain/entities/saved_shopping_list.py`
+
+```python
+@dataclass
+class SavedShoppingListItem:
+    id: SavedShoppingListItemId
+    product_id: ProductId | None            # Опционально (может быть NULL для вручную добавленных товаров)
+    product_name: str                       # Копируется при добавлении для сохранения истории
+    category: str                           # Категория продукта для группировки
+    quantity: Quantity                      # Количество в единицах рецепта
+    buy_quantity: Quantity                  # Количество в единицах покупки
+    buy_quantity_overridden: bool           # Флаг ручного изменения закупочного количества
+    cost: Money                             # Расчётная стоимость товара
+    purchased: bool                         # Флаг отметки о покупке
+    recipe_quantity: Quantity | None        # Опциональное рецептурное количество (для списков из меню)
+    item_order: int                         # Порядок товаров в списке
+
+@dataclass
+class SavedShoppingList:
+    id: SavedShoppingListId
+    user_id: UserId                         # Владелец списка (мульти-тенантность)
+    name: str                               # Название списка (например, "Завтрак на неделю")
+    items: list[SavedShoppingListItem] = field(default_factory=list)
+    source_menu_id: MenuId | None = None    # ID исходного меню (опционально)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    def total_cost(self) -> Money:
+        """Вычисляет общую стоимость всех товаров в списке."""
+        if not self.items:
+            return Money(Decimal("0"))
+        total = self.items[0].cost
+        for item in self.items[1:]:
+            total = total + item.cost
+        return total
+
+    def items_by_category(self) -> dict[str, list[SavedShoppingListItem]]:
+        """Группирует товары по категориям для отображения."""
+        result: dict[str, list[SavedShoppingListItem]] = {}
+        for item in self.items:
+            result.setdefault(item.category, []).append(item)
+        return result
+```
+
+**Назначение:** Представляет сохранённый список покупок со всеми товарами, статусами и связью с исходным меню. Списки могут быть переименованы, скопированы, отредактированы и удалены.
+
 ---
 
 ## Объекты-значения
@@ -665,6 +713,39 @@ class MenuRepository(ABC):
 
     @abstractmethod
     def delete_slot(self, menu_id: MenuId, slot_id: MenuSlotId) -> None:
+        pass
+```
+
+### SavedShoppingListRepository
+
+```python
+class SavedShoppingListRepository(ABC):
+    @abstractmethod
+    def get_by_id(self, list_id: SavedShoppingListId, user_id: UserId) -> SavedShoppingList | None:
+        pass
+
+    @abstractmethod
+    def list_by_user(self, user_id: UserId) -> list[SavedShoppingList]:
+        pass
+
+    @abstractmethod
+    def save(self, shopping_list: SavedShoppingList) -> SavedShoppingListId:
+        pass
+
+    @abstractmethod
+    def delete(self, list_id: SavedShoppingListId, user_id: UserId) -> None:
+        pass
+
+    @abstractmethod
+    def add_item(self, list_id: SavedShoppingListId, item: SavedShoppingListItem) -> SavedShoppingListItemId:
+        pass
+
+    @abstractmethod
+    def update_item(self, item: SavedShoppingListItem) -> None:
+        pass
+
+    @abstractmethod
+    def delete_item(self, list_id: SavedShoppingListId, item_id: SavedShoppingListItemId) -> None:
         pass
 ```
 

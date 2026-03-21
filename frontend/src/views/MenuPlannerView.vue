@@ -287,7 +287,7 @@ async function onExportMenu() {
 async function onGenerateShoppingList() {
   if (!menuStore.current) { toast.show('Сначала выберите меню', 'error'); return }
   await shoppingStore.generate(menuStore.current.id)
-  router.push('/shopping-list')
+  router.push({ path: '/shopping-list', query: { from: 'planner' } })
 }
 </script>
 

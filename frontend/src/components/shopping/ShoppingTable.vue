@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ShoppingListItem } from '@/api/types'
+import type { SavedShoppingListItem } from '@/api/types'
 import { formatUnit } from '@/utils/units'
 
 const props = defineProps<{
-  itemsByCategory: Record<string, ShoppingListItem[]>
+  itemsByCategory: Record<string, SavedShoppingListItem[]>
   selectMode?: boolean
   selectedIds?: Set<number>
   selectedId?: number | null
@@ -18,12 +18,12 @@ const emit = defineEmits<{
   select: [productId: number]
 }>()
 
-function fmtQty(item: ShoppingListItem) {
+function fmtQty(item: SavedShoppingListItem) {
   if (!item.recipe_quantity) return '—'
   return `${Number(item.recipe_quantity.amount.toFixed(2))} ${formatUnit(item.recipe_quantity.unit)}`
 }
 
-function fmtBuyQty(item: ShoppingListItem) {
+function fmtBuyQty(item: SavedShoppingListItem) {
   const q = item.buy_quantity
   const amount = q.unit === 'kg' ? Number(q.amount.toFixed(2)) : q.amount
   return `${amount} ${formatUnit(q.unit)}`
@@ -32,7 +32,9 @@ function fmtBuyQty(item: ShoppingListItem) {
 const allProductIds = computed(() => {
   const ids: number[] = []
   for (const items of Object.values(props.itemsByCategory)) {
-    for (const item of items) ids.push(item.product_id)
+    for (const item of items) {
+      if (item.product_id !== null) ids.push(item.product_id)
+    }
   }
   return ids
 })
@@ -70,21 +72,22 @@ const allChecked = computed(() =>
         </tr>
         <tr
           v-for="item in items"
-          :key="item.product_id"
+          :key="item.product_id ?? item.id"
           :class="[
-            selectMode && selectedIds?.has(item.product_id) ? 'bg-blue-50' :
+            selectMode && item.product_id !== null && selectedIds?.has(item.product_id) ? 'bg-blue-50' :
             !selectMode && item.product_id === selectedId ? 'bg-blue-50' :
             item.purchased ? 'bg-green-50/50' : '',
           ]"
           class="hover:bg-gray-50 border-b cursor-pointer"
-          @click="selectMode ? emit('toggleSelect', item.product_id) : emit('select', item.product_id)"
+          @click="item.product_id !== null && (selectMode ? emit('toggleSelect', item.product_id) : emit('select', item.product_id))"
         >
           <td v-if="selectMode" class="text-center px-2" @click.stop>
             <input
+              v-if="item.product_id !== null"
               type="checkbox"
               :checked="selectedIds?.has(item.product_id)"
               class="rounded border-gray-300"
-              @change="emit('toggleSelect', item.product_id)"
+              @change="emit('toggleSelect', item.product_id!)"
             />
           </td>
           <td v-else class="text-center px-2" @click.stop>
@@ -93,7 +96,7 @@ const allChecked = computed(() =>
                 type="checkbox"
                 :checked="item.purchased"
                 class="rounded border-gray-300 w-5 h-5"
-                @change="emit('toggle', item.product_id)"
+                @change="item.product_id !== null && emit('toggle', item.product_id)"
               />
             </label>
           </td>
@@ -112,7 +115,7 @@ const allChecked = computed(() =>
           <td
             :class="!selectMode && item.purchased ? 'text-gray-400' : !selectMode ? 'cursor-pointer hover:text-blue-600' : ''"
             class="px-4 py-2 text-right tabular-nums font-medium"
-            @click="!selectMode && !item.purchased && emit('editQuantity', item.product_id)"
+            @click="!selectMode && !item.purchased && item.product_id !== null && emit('editQuantity', item.product_id)"
           >
             {{ fmtBuyQty(item) }}
             <span

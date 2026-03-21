@@ -514,13 +514,69 @@ def get_me(
     )
 ```
 
+### Маршрутизатор списков покупок
+
+**Файл:** `backend/api/routers/shopping_list.py`
+
+#### Генерация и экспорт
+
+```
+POST /api/menus/{menu_id}/shopping-list
+→ GenerateAndSaveShoppingList use case
+← SavedShoppingListResponse (с товарами и итоговой стоимостью)
+
+POST /api/menus/{menu_id}/shopping-list/export/text
+POST /api/menus/{menu_id}/shopping-list/export/csv
+POST /api/menus/{menu_id}/shopping-list/export/json
+POST /api/menus/{menu_id}/shopping-list/export/pdf
+→ ExportShoppingList use case
+← Response с файлом (Content-Disposition: attachment)
+```
+
+#### CRUD сохранённых списков
+
+```
+GET /api/shopping-lists
+→ ListSavedShoppingLists use case
+← list[SavedShoppingListMetaResponse] (без товаров, для боковой панели)
+
+POST /api/shopping-lists
+→ CreateSavedShoppingList use case
+← SavedShoppingListResponse (201 Created)
+
+GET /api/shopping-lists/{list_id}
+→ GetSavedShoppingList use case
+← SavedShoppingListResponse
+
+PUT /api/shopping-lists/{list_id}
+Body: { name: str, items: list[SavedShoppingListItemData] }
+→ UpdateSavedShoppingList use case
+← SavedShoppingListResponse
+
+PATCH /api/shopping-lists/{list_id}
+Body: { name: str }
+→ RenameSavedShoppingList use case
+← SavedShoppingListResponse
+
+DELETE /api/shopping-lists/{list_id}
+→ DeleteSavedShoppingList use case
+← 204 No Content
+
+POST /api/shopping-lists/{list_id}/copy
+→ CopySavedShoppingList use case
+← SavedShoppingListResponse (201 Created)
+
+POST /api/shopping-lists/{list_id}/items/{item_id}/toggle-purchased
+→ ToggleItemPurchased use case
+← SavedShoppingListResponse
+```
+
 ### Другие маршрутизаторы
 
 - `products.py` — CRUD продукты (аналогично рецептам)
 - `menus.py` — Создание, загрузка, управление слотами меню
 - `family.py` — CRUD члены семьи
 - `categories.py` — CRUD категории продукты и рецепты
-- `shopping_list.py` — Генерация и экспорт списков покупок
 - `import_export.py` — Импорт/экспорт рецептов и продуктов
 - `system.py` — Проверка здоровья, информация о версии
 

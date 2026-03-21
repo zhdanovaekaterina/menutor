@@ -25,6 +25,9 @@ Menu Planner использует SQLAlchemy ORM с Alembic для управл�
        ├──→ menus (user_id FK)
        │       └──→ menu_slots (menu_id FK, recipe_id FK, product_id FK)
        │
+       ├──→ saved_shopping_lists (user_id FK, source_menu_id FK)
+       │       └──→ saved_shopping_list_items (shopping_list_id FK, product_id FK)
+       │
        ├──→ family_members (user_id FK)
        │
        └──→ refresh_tokens (user_id FK)
@@ -355,6 +358,83 @@ CREATE INDEX ix_family_members_user_id ON family_members(user_id);
 - `portion_multiplier` — 1.0 = взрослый, 0.5 = ребенок, 1.5 = крупный взрослый
 - `dietary_restrictions` — Свободный текст (например, "вегетарианец, аллергия на орехи")
 - `comment` — Дополнительные заметки
+
+---
+
+### Таблица Saved Shopping Lists
+
+```sql
+CREATE TABLE saved_shopping_lists (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    source_menu_id INTEGER,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(source_menu_id) REFERENCES menus(id) ON DELETE SET NULL
+);
+
+CREATE INDEX ix_saved_shopping_lists_user_id ON saved_shopping_lists(user_id);
+```
+
+**Колонки:**
+- `id` — Primary key
+- `user_id` — Владелец списка (мульти-тенантность)
+- `name` — Название списка покупок
+- `source_menu_id` — ID исходного меню (опционально, может быть NULL если список создан вручную)
+- `created_at` — Время создания списка
+- `updated_at` — Время последнего обновления списка
+
+**Назначение:** Хранить сохранённые списки покупок пользователя. Каждый список можно переименовать, скопировать или удалить.
+
+---
+
+### Таблица Saved Shopping List Items
+
+```sql
+CREATE TABLE saved_shopping_list_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shopping_list_id INTEGER NOT NULL,
+    product_id INTEGER,
+    product_name VARCHAR(255) NOT NULL,
+    category VARCHAR(255) NOT NULL,
+    quantity_value NUMERIC NOT NULL,
+    quantity_unit VARCHAR(50) NOT NULL,
+    buy_quantity_value NUMERIC NOT NULL,
+    buy_quantity_unit VARCHAR(50) NOT NULL,
+    buy_quantity_overridden BOOLEAN NOT NULL DEFAULT 0,
+    cost_value NUMERIC NOT NULL DEFAULT 0,
+    cost_currency VARCHAR(3) NOT NULL DEFAULT 'RUB',
+    purchased BOOLEAN NOT NULL DEFAULT 0,
+    recipe_quantity_value NUMERIC,
+    recipe_quantity_unit VARCHAR(50),
+    item_order INTEGER NOT NULL DEFAULT 0,
+
+    FOREIGN KEY(shopping_list_id) REFERENCES saved_shopping_lists(id) ON DELETE CASCADE,
+    FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE SET NULL
+);
+
+CREATE INDEX ix_saved_shopping_list_items_shopping_list_id ON saved_shopping_list_items(shopping_list_id);
+CREATE INDEX ix_saved_shopping_list_items_product_id ON saved_shopping_list_items(product_id);
+```
+
+**Колонки:**
+- `id` — Primary key
+- `shopping_list_id` — Ссылка на сохранённый список (мульти-тенантность через owner)
+- `product_id` — Ссылка на продукт (опционально, может быть NULL для вручную добавленных товаров)
+- `product_name` — Название продукта (копируется при добавлении для сохранения истории)
+- `category` — Категория продукта для группировки в UI
+- `quantity_value` и `quantity_unit` — Количество в единицах рецепта (например, 500, 'г')
+- `buy_quantity_value` и `buy_quantity_unit` — Количество в единицах покупки (например, 1, 'кг')
+- `buy_quantity_overridden` — Флаг ручного изменения закупочного количества
+- `cost_value` и `cost_currency` — Расчётная стоимость товара
+- `purchased` — Флаг отметки о покупке
+- `recipe_quantity_value` и `recipe_quantity_unit` — Опциональное рецептурное количество (для списков из меню)
+- `item_order` — Порядок товаров в списке
+
+**Назначение:** Хранить товары в сохранённых списках с полной информацией о количествах, стоимости и статусе покупки.
 
 ---
 
