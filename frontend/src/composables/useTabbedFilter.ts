@@ -27,8 +27,12 @@ export function useTabbedFilter<R extends Filterable, P extends Filterable>(
   const getRecipes = typeof recipesRef === 'function' ? recipesRef : () => recipesRef.value
   const getProducts = typeof productsRef === 'function' ? productsRef : () => productsRef.value
 
-  const filteredRecipes = computed(() => recipeCF.applyFilter(getRecipes(), search.value))
-  const filteredProducts = computed(() => productCF.applyFilter(getProducts(), search.value))
+  const filteredRecipes = computed(() =>
+    recipeCF.applyFilter(getRecipes(), search.value).sort((a, b) => a.name.localeCompare(b.name)),
+  )
+  const filteredProducts = computed(() =>
+    productCF.applyFilter(getProducts(), search.value).sort((a, b) => a.name.localeCompare(b.name)),
+  )
 
   return {
     tab,
