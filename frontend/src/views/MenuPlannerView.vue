@@ -228,6 +228,11 @@ async function onClear() {
   await menuStore.clear()
 }
 
+async function onCopyMenu() {
+  if (!selectedId.value) return
+  await menuStore.copy(selectedId.value)
+}
+
 const exportFormat = ref<'pdf' | 'json'>('pdf')
 const paperSize = ref<'a4' | 'a3'>('a4')
 const exportLoading = ref(false)
@@ -308,6 +313,7 @@ async function onGenerateShoppingList() {
             :selected-id="selectedId"
             @select="onSelectMenu"
             @create="nameDialogOpen = true"
+            @copy="onCopyMenu"
             @remove="confirmDeleteOpen = true"
           />
         </div>
@@ -525,6 +531,7 @@ async function onGenerateShoppingList() {
             :selected-id="selectedId"
             @select="(id) => { onSelectMenu(id); mobileLeftOpen = false }"
             @create="nameDialogOpen = true; mobileLeftOpen = false"
+            @copy="onCopyMenu"
             @remove="confirmDeleteOpen = true; mobileLeftOpen = false"
           />
         </div>

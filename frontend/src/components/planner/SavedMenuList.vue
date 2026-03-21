@@ -8,7 +8,7 @@ const props = defineProps<{
   selectedId: number | null
 }>()
 
-const emit = defineEmits<{ select: [id: number]; create: []; remove: [] }>()
+const emit = defineEmits<{ select: [id: number]; create: []; copy: []; remove: [] }>()
 
 const search = ref('')
 
@@ -53,7 +53,14 @@ const filtered = computed(() => {
       </li>
     </ul>
 
-    <!-- Delete button at bottom (destructive, less frequent) -->
+    <!-- Copy and Delete buttons at bottom -->
+    <button
+      class="w-full px-3 py-2 rounded-lg border border-blue-300 text-blue-600 text-sm hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      :disabled="!selectedId"
+      @click="emit('copy')"
+    >
+      Копировать
+    </button>
     <button
       class="w-full px-3 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       :disabled="!selectedId"

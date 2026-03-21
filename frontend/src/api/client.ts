@@ -153,6 +153,8 @@ export const removeSlot = (menuId: number, data: RemoveItemRequest) =>
   api.delete<Menu>(`/menus/${menuId}/slots`, { data }).then((r) => r.data)
 export const clearMenu = (menuId: number) =>
   api.post<Menu>(`/menus/${menuId}/clear`).then((r) => r.data)
+export const copyMenu = (menuId: number) =>
+  api.post<Menu>(`/menus/${menuId}/copy`).then((r) => r.data)
 
 /* Family */
 export const fetchFamilyMembers = () =>

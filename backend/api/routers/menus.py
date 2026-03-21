@@ -128,6 +128,16 @@ def clear_menu(
     return menu_to_response(menu)
 
 
+@router.post("/{menu_id}/copy", response_model=MenuResponse, status_code=status.HTTP_201_CREATED)
+def copy_menu(
+    menu_id: int,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> MenuResponse:
+    menu = container.copy_menu.execute(MenuId(menu_id), user.id)
+    return menu_to_response(menu)
+
+
 @router.post("/{menu_id}/export/pdf")
 def export_menu_pdf(
     menu_id: int,
