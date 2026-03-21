@@ -48,6 +48,9 @@ from backend.infrastructure.repositories.orm_recipe_repository import (
 from backend.infrastructure.repositories.orm_refresh_token_repository import (
     OrmRefreshTokenRepository,
 )
+from backend.infrastructure.repositories.orm_saved_shopping_list_repository import (
+    OrmSavedShoppingListRepository,
+)
 from backend.infrastructure.repositories.orm_user_repository import (
     OrmUserRepository,
 )
@@ -74,6 +77,7 @@ class _Infrastructure:
     json_exporter: ShoppingListJsonExporter
     pdf_exporter: ShoppingListPdfExporter
     builder: ShoppingListBuilder
+    saved_shopping_list_repo: OrmSavedShoppingListRepository
 
 
 _TEST_JWT_SECRET = "test-only-secret-do-not-use-in-production"
@@ -132,4 +136,5 @@ def _create_infrastructure(db_url: str | None) -> _Infrastructure:
             portion_calc=PortionCalculator(),
             unit_converter=UnitConverter(),
         ),
+        saved_shopping_list_repo=OrmSavedShoppingListRepository(session),
     )
