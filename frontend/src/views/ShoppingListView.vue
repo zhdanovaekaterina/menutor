@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { ShoppingListItem } from '@/api/types'
+import type { SavedShoppingListItem } from '@/api/types'
 import AddProductForm from '@/components/shopping/AddProductForm.vue'
 import ShoppingSummary from '@/components/shopping/ShoppingSummary.vue'
 import ShoppingTable from '@/components/shopping/ShoppingTable.vue'
@@ -25,10 +25,13 @@ const editProductId = ref<number | null>(null)
 const editQtyValue = ref('')
 const mobileSidebarOpen = ref(false)
 
-const existingIds = computed(() => store.items.map((i) => i.product_id))
+const existingIds = computed(() =>
+  store.items.map((i) => i.product_id).filter((id): id is number => id !== null),
+)
 
 function onToggle(productId: number) {
-  store.togglePurchased(productId)
+  const item = store.items.find((i) => i.product_id === productId)
+  if (item) store.togglePurchased(item.id)
 }
 
 function onEditQuantity(productId: number) {
@@ -133,9 +136,10 @@ function onExportJson() {
 
 async function onExportPdf() {
   if (!store.data) { toast.show('Список покупок пуст', 'info'); return }
-  if (!store.menuId) { toast.show('Не удалось определить меню для экспорта', 'error'); return }
+  const sourceMenuId = store.data.source_menu_id
+  if (!sourceMenuId) { toast.show('Не удалось определить меню для экспорта', 'error'); return }
   try {
-    const blob = await downloadShoppingListPdf(store.menuId)
+    const blob = await downloadShoppingListPdf(sourceMenuId)
     downloadBlob(blob, 'shopping_list.pdf')
   } catch {
     toast.show('Ошибка экспорта в PDF', 'error')
@@ -149,10 +153,11 @@ async function onExport(format: string) {
   if (format === 'txt') { onExportText(); return }
   if (format === 'csv') { onExportCsv(); return }
   if (format === 'json') {
-    if (store.menuId) {
+    const sourceMenuId = store.data?.source_menu_id
+    if (sourceMenuId) {
       exportLoading.value = true
       try {
-        const blob = await downloadShoppingListJson(store.menuId)
+        const blob = await downloadShoppingListJson(sourceMenuId)
         downloadBlob(blob, 'shopping_list.json')
       } catch {
         toast.show('Ошибка экспорта в JSON', 'error')
@@ -170,15 +175,19 @@ async function onExport(format: string) {
 function onAddProduct(productId: number, quantity: number) {
   const product = productStore.items.find((p) => p.id === productId)
   if (!product) return
-  const item: ShoppingListItem = {
+  const nextOrder = store.items.length
+  const item: SavedShoppingListItem = {
+    id: 0,
     product_id: product.id,
     product_name: product.name,
     category: '',
     quantity: { amount: quantity, unit: product.purchase_unit },
     buy_quantity: { amount: product.purchase_unit === 'kg' ? quantity : Math.ceil(quantity), unit: product.purchase_unit },
+    buy_quantity_overridden: false,
     cost: { amount: '0', currency: 'RUB' },
     purchased: false,
     recipe_quantity: null,
+    item_order: nextOrder,
   }
   store.addItem(item)
   toast.show('Продукт добавлен', 'success')
@@ -201,7 +210,7 @@ function onConfirmBatchDelete() {
 
 function onConfirmDeleteAll() {
   confirmDeleteAllOpen.value = false
-  store.removeMany(store.items.map((i) => i.product_id))
+  store.removeMany(store.items.map((i) => i.product_id).filter((id): id is number => id !== null))
   selection.exit()
   toast.show('Список покупок очищен', 'success')
 }

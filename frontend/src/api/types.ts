@@ -179,6 +179,64 @@ export interface ShoppingList {
   total_cost: Money
 }
 
+export interface SavedShoppingListItem {
+  id: number
+  product_id: number | null
+  product_name: string
+  category: string
+  quantity: Quantity
+  buy_quantity: Quantity
+  buy_quantity_overridden: boolean
+  cost: Money
+  purchased: boolean
+  recipe_quantity: Quantity | null
+  item_order: number
+}
+
+export interface SavedShoppingList {
+  id: number
+  name: string
+  items: SavedShoppingListItem[]
+  total_cost: Money
+  source_menu_id: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SavedShoppingListMeta {
+  id: number
+  name: string
+  source_menu_id: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SavedShoppingListItemInput {
+  product_id: number | null
+  product_name: string
+  category: string
+  quantity_amount: number
+  quantity_unit: string
+  buy_quantity_amount: number
+  buy_quantity_unit: string
+  buy_quantity_overridden: boolean
+  cost_amount: number
+  cost_currency: string
+  purchased: boolean
+  recipe_quantity_amount: number | null
+  recipe_quantity_unit: string | null
+  item_order: number
+}
+
+export interface UpdateSavedShoppingListRequest {
+  name: string
+  items: SavedShoppingListItemInput[]
+}
+
+export interface RenameSavedShoppingListRequest {
+  name: string
+}
+
 /* Auth */
 export interface RegisterRequest {
   email: string

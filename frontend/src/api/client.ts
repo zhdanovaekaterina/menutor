@@ -16,7 +16,10 @@ import type {
   RecipeCreate,
   RecipeDependent,
   RemoveItemRequest,
-  ShoppingList,
+  RenameSavedShoppingListRequest,
+  SavedShoppingList,
+  SavedShoppingListMeta,
+  UpdateSavedShoppingListRequest,
   ValidateSubRecipeRequest,
   ValidateSubRecipeResponse,
 } from './types'
@@ -186,7 +189,34 @@ export const moveCategoryAndDelete = (
 
 /* Shopping List */
 export const generateShoppingList = (menuId: number) =>
-  api.post<ShoppingList>(`/menus/${menuId}/shopping-list`).then((r) => r.data)
+  api.post<SavedShoppingList>(`/menus/${menuId}/shopping-list`).then((r) => r.data)
+
+/* Saved Shopping Lists */
+export const fetchSavedShoppingLists = () =>
+  api.get<SavedShoppingListMeta[]>('/shopping-lists').then((r) => r.data)
+
+export const createSavedShoppingList = () =>
+  api.post<SavedShoppingList>('/shopping-lists').then((r) => r.data)
+
+export const fetchSavedShoppingList = (id: number) =>
+  api.get<SavedShoppingList>(`/shopping-lists/${id}`).then((r) => r.data)
+
+export const updateSavedShoppingList = (id: number, data: UpdateSavedShoppingListRequest) =>
+  api.put<SavedShoppingList>(`/shopping-lists/${id}`, data).then((r) => r.data)
+
+export const renameSavedShoppingList = (id: number, data: RenameSavedShoppingListRequest) =>
+  api.patch<SavedShoppingList>(`/shopping-lists/${id}`, data).then((r) => r.data)
+
+export const deleteSavedShoppingList = (id: number) =>
+  api.delete(`/shopping-lists/${id}`)
+
+export const copySavedShoppingList = (id: number) =>
+  api.post<SavedShoppingList>(`/shopping-lists/${id}/copy`).then((r) => r.data)
+
+export const toggleItemPurchasedApi = (listId: number, itemId: number) =>
+  api
+    .post<SavedShoppingList>(`/shopping-lists/${listId}/items/${itemId}/toggle-purchased`)
+    .then((r) => r.data)
 export const downloadShoppingListText = (menuId: number) =>
   api
     .post(`/menus/${menuId}/shopping-list/export/text`, null, { responseType: 'blob' })
