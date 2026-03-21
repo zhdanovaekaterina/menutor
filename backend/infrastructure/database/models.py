@@ -214,3 +214,55 @@ class MenuSlotRow(Base):
     slot_position = Column(Integer, nullable=False, default=0, server_default="0")
 
     menu = relationship("MenuRow", back_populates="slots")
+
+
+class ShoppingListRow(Base):
+    __tablename__ = "shopping_lists"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    name = Column(String, nullable=False)
+    source_menu_id = Column(
+        Integer, ForeignKey("menus.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+
+    items = relationship(
+        "ShoppingListItemRow",
+        back_populates="shopping_list",
+        cascade="all, delete-orphan",
+    )
+
+
+class ShoppingListItemRow(Base):
+    __tablename__ = "shopping_list_items"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    shopping_list_id = Column(
+        Integer, ForeignKey("shopping_lists.id", ondelete="CASCADE"), nullable=False
+    )
+    product_id = Column(
+        Integer, ForeignKey("products.id", ondelete="SET NULL"), nullable=True
+    )
+    product_name = Column(String, nullable=False)
+    category = Column(String, nullable=False)
+    quantity_amount = Column(Float, nullable=False)
+    quantity_unit = Column(String, nullable=False)
+    buy_quantity_amount = Column(Float, nullable=False)
+    buy_quantity_unit = Column(String, nullable=False)
+    buy_quantity_overridden = Column(
+        Boolean, nullable=False, default=False, server_default="0"
+    )
+    recipe_quantity_amount = Column(Float, nullable=True)
+    recipe_quantity_unit = Column(String, nullable=True)
+    cost_amount = Column(Float, nullable=False)
+    cost_currency = Column(
+        String, nullable=False, default="RUB", server_default="RUB"
+    )
+    purchased = Column(Boolean, nullable=False, default=False, server_default="0")
+    item_order = Column(Integer, nullable=False, default=0, server_default="0")
+
+    shopping_list = relationship("ShoppingListRow", back_populates="items")
