@@ -6,7 +6,7 @@ import ShoppingSummary from '@/components/shopping/ShoppingSummary.vue'
 import ShoppingTable from '@/components/shopping/ShoppingTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
-import { downloadShoppingListPdf } from '@/api/client'
+import { downloadShoppingListPdf, downloadShoppingListJson } from '@/api/client'
 import { downloadBlob } from '@/composables/useFileDownload'
 import { useSelection } from '@/composables/useSelection'
 import { useProductStore } from '@/stores/products'
@@ -142,6 +142,31 @@ async function onExportPdf() {
   }
 }
 
+const exportLoading = ref(false)
+
+async function onExport(format: string) {
+  if (!store.data) { toast.show('Список покупок пуст', 'info'); return }
+  if (format === 'txt') { onExportText(); return }
+  if (format === 'csv') { onExportCsv(); return }
+  if (format === 'json') {
+    if (store.menuId) {
+      exportLoading.value = true
+      try {
+        const blob = await downloadShoppingListJson(store.menuId)
+        downloadBlob(blob, 'shopping_list.json')
+      } catch {
+        toast.show('Ошибка экспорта в JSON', 'error')
+      } finally {
+        exportLoading.value = false
+      }
+    } else {
+      onExportJson()
+    }
+    return
+  }
+  if (format === 'pdf') { await onExportPdf(); return }
+}
+
 function onAddProduct(productId: number, quantity: number) {
   const product = productStore.items.find((p) => p.id === productId)
   if (!product) return
@@ -255,10 +280,8 @@ function onConfirmDeleteAll() {
           :item-count="store.items.length"
           :purchased-count="store.purchasedCount"
           :progress-percent="store.progressPercent"
-          @export-text="onExportText"
-          @export-csv="onExportCsv"
-          @export-json="onExportJson"
-          @export-pdf="onExportPdf"
+          :export-loading="exportLoading"
+          @export="onExport"
         />
         <AddProductForm
           :products="productStore.items"
@@ -350,8 +373,8 @@ function onConfirmDeleteAll() {
                 :item-count="store.items.length"
                 :purchased-count="store.purchasedCount"
                 :progress-percent="store.progressPercent"
-                @export-text="onExportText"
-                @export-csv="onExportCsv"
+                :export-loading="exportLoading"
+                @export="onExport"
               />
               <AddProductForm
                 :products="productStore.items"

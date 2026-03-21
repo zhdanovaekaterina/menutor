@@ -1,14 +1,27 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { Money } from '@/api/types'
+import SplitDropdownButton from '@/components/ui/SplitDropdownButton.vue'
+import type { FormatOption } from '@/components/ui/SplitDropdownButton.vue'
 
 defineProps<{
   totalCost: Money
   itemCount: number
   purchasedCount: number
   progressPercent: number
+  exportLoading?: boolean
 }>()
 
-const emit = defineEmits<{ exportText: []; exportCsv: []; exportPdf: []; exportJson: [] }>()
+const emit = defineEmits<{ export: [format: string] }>()
+
+const EXPORT_FORMATS: FormatOption[] = [
+  { label: 'TXT', value: 'txt' },
+  { label: 'CSV', value: 'csv' },
+  { label: 'JSON', value: 'json' },
+  { label: 'PDF', value: 'pdf' },
+]
+
+const selectedFormat = ref('txt')
 </script>
 
 <template>
@@ -32,32 +45,12 @@ const emit = defineEmits<{ exportText: []; exportCsv: []; exportPdf: []; exportJ
     <!-- Export section -->
     <div class="border rounded-lg p-3">
       <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Экспорт</h4>
-      <div class="grid grid-cols-2 gap-2">
-        <button
-          class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
-          @click="emit('exportText')"
-        >
-          Текст
-        </button>
-        <button
-          class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
-          @click="emit('exportCsv')"
-        >
-          CSV
-        </button>
-        <button
-          class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
-          @click="emit('exportJson')"
-        >
-          JSON
-        </button>
-        <button
-          class="px-3 py-2 rounded-lg border border-red-200 text-red-700 text-sm hover:bg-red-50 transition-colors"
-          @click="emit('exportPdf')"
-        >
-          PDF
-        </button>
-      </div>
+      <SplitDropdownButton
+        v-model="selectedFormat"
+        :formats="EXPORT_FORMATS"
+        :loading="exportLoading"
+        @export="emit('export', selectedFormat)"
+      />
     </div>
   </div>
 </template>
