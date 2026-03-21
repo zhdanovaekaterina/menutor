@@ -137,3 +137,14 @@ class OrmRecipeRepository(
             .all()
         )
         return [self._row_to_entity(r) for r in rows]
+
+    def find_by_name(self, name: str, user_id: UserId) -> Recipe | None:
+        row = (
+            self._session.query(RecipeRow)
+            .filter(
+                RecipeRow.name == name,
+                RecipeRow.user_id == int(user_id),
+            )
+            .first()
+        )
+        return self._row_to_entity(row) if row is not None else None

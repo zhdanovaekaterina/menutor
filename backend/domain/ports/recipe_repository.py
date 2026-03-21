@@ -26,3 +26,6 @@ class RecipeRepository(ABC):
     def find_parents_of(
         self, sub_recipe_id: RecipeId, user_id: UserId
     ) -> list[Recipe]: ...
+
+    @abstractmethod
+    def find_by_name(self, name: str, user_id: UserId) -> Recipe | None: ...

@@ -51,6 +51,7 @@ def _saved_product(id: int = 1) -> Product:
 
 def test_create_product_calls_save() -> None:
     repo = MagicMock()
+    repo.find_by_name.return_value = None
     repo.save.return_value = _saved_product()
 
     result = CreateProduct(repo).execute(_data(), UID)
@@ -61,6 +62,7 @@ def test_create_product_calls_save() -> None:
 
 def test_create_product_builds_entity_correctly() -> None:
     repo = MagicMock()
+    repo.find_by_name.return_value = None
     repo.save.side_effect = lambda p: p
 
     result = CreateProduct(repo).execute(_data(name="Сахар", conversion_factor=1000), UID)

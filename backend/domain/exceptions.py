@@ -50,6 +50,13 @@ class ImportValidationError(AppError):
     """Uploaded file has invalid format or data."""
 
 
+class DuplicateNameError(DomainError):
+    """Entity with this name already exists for the current user."""
+
+    def __init__(self, entity_type: str) -> None:
+        super().__init__(f"{entity_type.capitalize()} с таким названием уже существует")
+
+
 class CircularDependencyError(DomainError):
     """Adding this sub-recipe would create a circular dependency."""
 

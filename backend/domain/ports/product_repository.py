@@ -24,3 +24,6 @@ class ProductRepository(ABC):
 
     @abstractmethod
     def find_linked_ids(self, ids: list[ProductId]) -> list[ProductId]: ...
+
+    @abstractmethod
+    def find_by_name(self, name: str, user_id: UserId) -> Product | None: ...

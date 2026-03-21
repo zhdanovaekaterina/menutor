@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from backend.api.auth import get_current_user
 from backend.api.converters import (
@@ -16,6 +16,7 @@ from backend.api.schemas.product import (
 )
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
+from backend.domain.exceptions import DuplicateNameError
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.types import ProductCategoryId, ProductId
 
@@ -50,7 +51,10 @@ def create_product(
     user: User = Depends(get_current_user),
 ) -> ProductResponse:
     data = schema_to_product_data(body)
-    product = container.create_product.execute(data, user.id)
+    try:
+        product = container.create_product.execute(data, user.id)
+    except DuplicateNameError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     return product_to_response(product)
 
 
