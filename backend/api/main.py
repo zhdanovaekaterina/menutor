@@ -50,6 +50,20 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def rollback_on_error(request: Request, call_next):  # type: ignore[no-untyped-def]
+    try:
+        response = await call_next(request)
+        return response
+    except Exception:
+        container = getattr(request.app.state, "container", None)
+        if container is not None:
+            session = getattr(container, "_session", None)
+            if session is not None:
+                session.rollback()
+        raise
+
+
 # ── Exception handlers ────────────────────────────────────────────
 
 
