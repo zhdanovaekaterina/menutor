@@ -41,7 +41,15 @@ const toast = useToastStore()
 
 const isXl = ref(typeof window !== 'undefined' && window.innerWidth >= 1280)
 const leftPanelOpen = ref(true)
-const rightPanelOpen = ref(isXl.value)
+const rightPanelOpen = ref(false)
+const autoSwitchDone = ref(false)
+
+function doAutoSwitch() {
+  if (autoSwitchDone.value) return
+  autoSwitchDone.value = true
+  leftPanelOpen.value = false
+  rightPanelOpen.value = true
+}
 
 const mobileLeftOpen = ref(false)
 
@@ -100,12 +108,14 @@ const pickerExistingSlots = computed(() =>
 
 async function onSelectMenu(id: number) {
   await menuStore.select(id)
+  doAutoSwitch()
 }
 
 async function onCreateMenu(name: string) {
   nameDialogOpen.value = false
   if (!name.trim()) return
   await menuStore.create(name.trim())
+  doAutoSwitch()
 }
 
 async function onDeleteMenu() {
