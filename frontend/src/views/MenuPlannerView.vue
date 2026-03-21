@@ -12,6 +12,7 @@ import ExportModal from '@/components/ui/ExportModal.vue'
 import ImportModal from '@/components/ui/ImportModal.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
 import SlotEditDialog from '@/components/ui/SlotEditDialog.vue'
+import SplitDropdownButton from '@/components/ui/SplitDropdownButton.vue'
 import IconCart from '@/components/ui/icons/IconCart.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
@@ -19,7 +20,7 @@ import IconClose from '@/components/ui/icons/IconClose.vue'
 import IconDownload from '@/components/ui/icons/IconDownload.vue'
 import IconHamburger from '@/components/ui/icons/IconHamburger.vue'
 import IconUpload from '@/components/ui/icons/IconUpload.vue'
-import { exportEntities } from '@/api/client'
+import { exportEntities, exportMenuPdf } from '@/api/client'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { downloadBlob } from '@/composables/useFileDownload'
 import { useFamilyStore } from '@/stores/family'
@@ -227,13 +228,43 @@ async function onClear() {
   await menuStore.clear()
 }
 
-async function onExportCurrentMenu() {
+const exportFormat = ref<'pdf' | 'json'>('pdf')
+const paperSize = ref<'a4' | 'a3'>('a4')
+const exportLoading = ref(false)
+
+const exportFormats = [
+  { value: 'pdf', label: 'PDF' },
+  { value: 'json', label: 'JSON' },
+]
+
+async function onExportMenu() {
   if (!menuStore.current) return
+  exportLoading.value = true
   try {
-    const blob = await exportEntities('menus', 'json', [menuStore.current.id])
-    downloadBlob(blob, `menu_${menuStore.current.name}.json`)
+    if (exportFormat.value === 'pdf') {
+      const blob = await exportMenuPdf(menuStore.current.id, paperSize.value)
+      downloadBlob(blob, `menu_${menuStore.current.name}.pdf`)
+    } else {
+      const blob = await exportEntities('menus', 'json', [menuStore.current.id])
+      downloadBlob(blob, `menu_${menuStore.current.name}.json`)
+    }
   } catch (e: any) {
-    toast.show(e?.response?.data?.detail ?? 'Ошибка экспорта меню', 'error')
+    let message = 'Ошибка экспорта меню'
+    const data = e?.response?.data
+    if (data instanceof Blob) {
+      try {
+        const text = await data.text()
+        const parsed = JSON.parse(text)
+        if (parsed?.detail) message = parsed.detail
+      } catch {
+        // keep default message
+      }
+    } else if (data?.detail) {
+      message = data.detail
+    }
+    toast.show(message, 'error')
+  } finally {
+    exportLoading.value = false
   }
 }
 
@@ -330,15 +361,36 @@ async function onGenerateShoppingList() {
             >
               <IconDownload class="w-4 h-4" />
             </button>
-            <button
-              class="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-blue-300 text-blue-700 bg-blue-50 text-sm hover:bg-blue-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              :disabled="!menuStore.current"
-              @click="onExportCurrentMenu"
-              title="Скачать текущее меню как JSON"
-            >
-              <IconDownload class="w-4 h-4" />
-              <span class="hidden sm:inline">Скачать меню</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <SplitDropdownButton
+                :formats="exportFormats"
+                v-model="exportFormat"
+                :loading="exportLoading"
+                :disabled="!menuStore.current"
+                @export="onExportMenu"
+              />
+              <div
+                v-if="exportFormat === 'pdf'"
+                class="flex items-center rounded-lg border border-gray-300 text-sm"
+              >
+                <button
+                  type="button"
+                  class="px-2.5 py-2 transition-colors rounded-l-lg"
+                  :class="paperSize === 'a4' ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-700'"
+                  @click="paperSize = 'a4'"
+                >
+                  A4
+                </button>
+                <button
+                  type="button"
+                  class="px-2.5 py-2 transition-colors border-l border-gray-300 rounded-r-lg"
+                  :class="paperSize === 'a3' ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-700'"
+                  @click="paperSize = 'a3'"
+                >
+                  A3
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="flex-1" />

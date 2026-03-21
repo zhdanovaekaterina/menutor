@@ -202,6 +202,15 @@ export const downloadShoppingListJson = (menuId: number) =>
     .post(`/menus/${menuId}/shopping-list/export/json`, null, { responseType: 'blob' })
     .then((r) => r.data as Blob)
 
+/* Menu PDF export */
+export const exportMenuPdf = (menuId: number, paper: 'a4' | 'a3'): Promise<Blob> =>
+  api
+    .post(`/menus/${menuId}/export/pdf`, null, {
+      params: { paper },
+      responseType: 'blob',
+    })
+    .then((r) => r.data as Blob)
+
 /* Import / Export */
 export const exportEntities = (entityType: string, format: string, ids?: number[]) =>
   api

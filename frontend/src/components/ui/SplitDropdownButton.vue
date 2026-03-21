@@ -10,6 +10,7 @@ const props = defineProps<{
   formats: FormatOption[]
   modelValue: string
   loading?: boolean
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -42,12 +43,12 @@ function selectFormat(value: string) {
     <!-- Left: trigger export with current format -->
     <button
       type="button"
-      :disabled="loading"
+      :disabled="loading || disabled"
       class="flex-1 flex items-center justify-center gap-1.5 rounded-l-lg border border-r-0 border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       @click="emit('export')"
     >
       <svg
-        v-if="loading"
+        v-if="loading && !disabled"
         class="w-3.5 h-3.5 animate-spin text-gray-400 shrink-0"
         fill="none"
         viewBox="0 0 24 24"
@@ -67,7 +68,7 @@ function selectFormat(value: string) {
     <!-- Right: open format picker -->
     <button
       type="button"
-      :disabled="loading"
+      :disabled="loading || disabled"
       class="shrink-0 rounded-r-lg border border-gray-300 px-2 py-2 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       aria-label="Выбрать формат"
       @click="toggleOpen"
@@ -75,7 +76,7 @@ function selectFormat(value: string) {
     >
       <svg
         class="w-4 h-4 text-gray-500 transition-transform"
-        :class="{ 'rotate-180': open }"
+        :class="{ 'rotate-180': !open }"
         fill="none"
         viewBox="0 0 24 24"
         stroke-width="2"
@@ -88,7 +89,7 @@ function selectFormat(value: string) {
     <!-- Dropdown menu -->
     <div
       v-if="open"
-      class="absolute left-0 top-full z-50 mt-1 w-full min-w-[8rem] rounded-lg border border-gray-200 bg-white shadow-lg"
+      class="absolute left-0 bottom-full z-50 mb-1 w-full min-w-[8rem] rounded-lg border border-gray-200 bg-white shadow-lg"
       role="menu"
     >
       <button
