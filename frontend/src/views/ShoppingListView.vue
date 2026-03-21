@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import type { SavedShoppingListItem } from '@/api/types'
 import AddProductForm from '@/components/shopping/AddProductForm.vue'
+import SavedShoppingLists from '@/components/shopping/SavedShoppingLists.vue'
 import ShoppingSummary from '@/components/shopping/ShoppingSummary.vue'
 import ShoppingTable from '@/components/shopping/ShoppingTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
+import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
+import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
+import IconClose from '@/components/ui/icons/IconClose.vue'
+import IconHamburger from '@/components/ui/icons/IconHamburger.vue'
 import { downloadShoppingListPdf, downloadShoppingListJson } from '@/api/client'
 import { downloadBlob } from '@/composables/useFileDownload'
 import { useSelection } from '@/composables/useSelection'
@@ -14,26 +20,66 @@ import { useShoppingListStore } from '@/stores/shoppingList'
 import { useToastStore } from '@/stores/toast'
 import { formatUnit } from '@/utils/units'
 
+const route = useRoute()
 const store = useShoppingListStore()
 const productStore = useProductStore()
 const toast = useToastStore()
 const selection = useSelection()
 
+// ---- Sidebar state ----
+const sidebarOpen = ref(true)
+const mobileSavedListsOpen = ref(false)
+// Bottom sheet (export/add product panel) on mobile
+const mobileSidebarOpen = ref(false)
+
 const selectedProductId = ref<number | null>(null)
 const confirmRemoveOpen = ref(false)
 const editProductId = ref<number | null>(null)
 const editQtyValue = ref('')
-const mobileSidebarOpen = ref(false)
 
 const existingIds = computed(() =>
   store.items.map((i) => i.product_id).filter((id): id is number => id !== null),
 )
 
+onMounted(async () => {
+  // Determine sidebar visibility based on navigation source
+  const fromPlanner = route.query.from === 'planner'
+  sidebarOpen.value = !fromPlanner
+  store.setSidebarOpen(!fromPlanner)
+
+  await store.loadLists()
+})
+
+// ---- Sidebar actions ----
+async function onSelectList(id: number) {
+  await store.loadList(id)
+  mobileSavedListsOpen.value = false
+}
+
+async function onCreateList() {
+  await store.createEmpty()
+  mobileSavedListsOpen.value = false
+}
+
+// ---- Save ----
+const saving = ref(false)
+
+async function onSave() {
+  saving.value = true
+  try {
+    await store.saveChanges()
+  } finally {
+    saving.value = false
+  }
+}
+
+// ---- Toggle purchased ----
 function onToggle(productId: number) {
   const item = store.items.find((i) => i.product_id === productId)
   if (item) store.togglePurchased(item.id)
 }
 
+// ---- Edit quantity ----
 function onEditQuantity(productId: number) {
   const item = store.items.find((i) => i.product_id === productId)
   if (!item) return
@@ -48,6 +94,7 @@ function onEditConfirm(val: string) {
   editProductId.value = null
 }
 
+// ---- Remove ----
 function onRemove() {
   if (!selectedProductId.value) {
     toast.show('Выберите продукт для удаления', 'info')
@@ -64,6 +111,7 @@ function onConfirmRemove() {
   }
 }
 
+// ---- Export helpers ----
 function fmtRound2(n: number) { return String(Number(n.toFixed(2))) }
 function fmtBuyAmt(amount: number, unit: string) { return unit === 'kg' ? fmtRound2(amount) : String(amount) }
 
@@ -172,6 +220,7 @@ async function onExport(format: string) {
   if (format === 'pdf') { await onExportPdf(); return }
 }
 
+// ---- Add product ----
 function onAddProduct(productId: number, quantity: number) {
   const product = productStore.items.find((p) => p.id === productId)
   if (!product) return
@@ -193,6 +242,7 @@ function onAddProduct(productId: number, quantity: number) {
   toast.show('Продукт добавлен', 'success')
 }
 
+// ---- Batch select / delete ----
 const confirmBatchDeleteOpen = ref(false)
 const confirmDeleteAllOpen = ref(false)
 
@@ -218,88 +268,179 @@ function onConfirmDeleteAll() {
 
 <template>
   <div class="h-full flex flex-col p-3 sm:p-4 lg:p-6 pb-28 sm:pb-4 lg:pb-6 gap-3 sm:gap-4">
+
+    <!-- Page header -->
     <div class="flex items-center justify-between">
-      <h1 class="text-lg sm:text-xl font-bold">Список покупок</h1>
-      <div v-if="store.data" class="flex items-center gap-2">
-        <template v-if="selection.active.value">
-          <span class="text-sm text-gray-500">Выбрано: {{ selection.count.value }}</span>
+      <div class="flex items-center gap-2">
+        <!-- Mobile: hamburger to open saved lists drawer -->
+        <button
+          class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100"
+          @click="mobileSavedListsOpen = true"
+        >
+          <IconHamburger class="w-5 h-5" />
+        </button>
+        <h1 class="text-lg sm:text-xl font-bold">Список покупок</h1>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Save button (shown when there are unsaved changes) -->
+        <Transition name="fade">
           <button
-            v-if="selection.count.value > 0"
-            class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
-            @click="confirmBatchDeleteOpen = true"
+            v-if="store.isDirty"
+            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+            :class="saving ? 'opacity-75 cursor-wait' : ''"
+            :disabled="saving"
+            @click="onSave"
           >
-            Удалить выбранные
+            <span v-if="saving" class="flex items-center gap-1.5">
+              <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Сохранение...
+            </span>
+            <span v-else>Сохранить</span>
           </button>
-          <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
-            @click="toggleSelectMode"
-          >
-            Отменить
-          </button>
+        </Transition>
+
+        <!-- Selection / delete actions -->
+        <template v-if="store.data">
+          <template v-if="selection.active.value">
+            <span class="text-sm text-gray-500">Выбрано: {{ selection.count.value }}</span>
+            <button
+              v-if="selection.count.value > 0"
+              class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
+              @click="confirmBatchDeleteOpen = true"
+            >
+              Удалить выбранные
+            </button>
+            <button
+              class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+              @click="toggleSelectMode"
+            >
+              Отменить
+            </button>
+          </template>
+          <template v-else>
+            <button
+              class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+              @click="toggleSelectMode"
+            >
+              Выбрать
+            </button>
+            <button
+              v-if="selectedProductId !== null"
+              class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 transition-colors"
+              @click="confirmRemoveOpen = true"
+            >
+              Удалить выбранный
+            </button>
+            <button
+              v-if="store.items.length > 0"
+              class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
+              @click="confirmDeleteAllOpen = true"
+            >
+              Удалить все
+            </button>
+          </template>
         </template>
-        <template v-else>
-          <button
-            class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
-            @click="toggleSelectMode"
-          >
-            Выбрать
-          </button>
-          <button
-            v-if="selectedProductId !== null"
-            class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 transition-colors"
-            @click="confirmRemoveOpen = true"
-          >
-            Удалить выбранный
-          </button>
-          <button
-            v-if="store.items.length > 0"
-            class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
-            @click="confirmDeleteAllOpen = true"
-          >
-            Удалить все
-          </button>
-        </template>
       </div>
     </div>
 
-    <div v-if="!store.data" class="flex-1 flex items-center justify-center text-gray-400">
-      Список покупок пуст. Сформируйте его в планировщике меню.
-    </div>
+    <!-- Main layout: sidebar + content -->
+    <div class="flex-1 flex gap-4 min-h-0">
 
-    <div v-else class="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
-      <!-- Table (full width on mobile) -->
-      <div class="flex-1 overflow-y-auto border rounded-lg">
-        <ShoppingTable
-          :items-by-category="store.itemsByCategory"
-          :select-mode="selection.active.value"
-          :selected-ids="selection.selected.value"
-          :selected-id="selectedProductId"
-          @toggle="onToggle"
-          @edit-quantity="onEditQuantity"
-          @toggle-select="selection.toggle"
-          @toggle-select-all="selection.toggleAll"
-          @select="(id) => { selectedProductId = selectedProductId === id ? null : id }"
-        />
+      <!-- Left sidebar (desktop only, collapsible) -->
+      <div
+        :class="sidebarOpen ? 'w-64' : 'w-10'"
+        class="shrink-0 transition-all duration-200 flex flex-col bg-white overflow-hidden hidden lg:flex border-r"
+      >
+        <!-- Toggle button -->
+        <button
+          class="p-2 text-gray-400 hover:text-gray-600 self-end shrink-0"
+          :title="sidebarOpen ? 'Свернуть' : 'Развернуть'"
+          @click="sidebarOpen = !sidebarOpen"
+        >
+          <IconChevronLeft v-if="sidebarOpen" class="w-4 h-4" />
+          <IconChevronRight v-else class="w-4 h-4" />
+        </button>
+
+        <div v-show="sidebarOpen" class="flex-1 min-h-0 overflow-hidden">
+          <SavedShoppingLists
+            :lists="store.savedLists"
+            :selected-id="store.currentListId"
+            @select="onSelectList"
+            @create="onCreateList"
+          />
+        </div>
       </div>
 
-      <!-- Sidebar: hidden on mobile, shown on desktop -->
-      <div class="w-64 xl:w-72 shrink-0 hidden lg:flex flex-col gap-4">
-        <ShoppingSummary
-          :total-cost="store.totalCost"
-          :item-count="store.items.length"
-          :purchased-count="store.purchasedCount"
-          :progress-percent="store.progressPercent"
-          :export-loading="exportLoading"
-          @export="onExport"
-        />
-        <AddProductForm
-          :products="productStore.items"
-          :existing-ids="existingIds"
-          @add="onAddProduct"
-        />
+      <!-- Center: main content area -->
+      <div class="flex-1 flex flex-col gap-4 min-w-0">
+
+        <!-- Empty state: no list selected -->
+        <div
+          v-if="!store.data && !store.loading"
+          class="flex-1 flex items-center justify-center text-gray-400"
+        >
+          <div class="text-center">
+            <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+            </svg>
+            <p class="text-sm">Выберите список из панели слева</p>
+            <p class="text-xs text-gray-400 mt-1">или создайте новый</p>
+          </div>
+        </div>
+
+        <!-- Loading state -->
+        <div
+          v-else-if="store.loading && !store.data"
+          class="flex-1 flex items-center justify-center text-gray-400"
+        >
+          <svg class="w-6 h-6 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        </div>
+
+        <!-- Shopping content -->
+        <div v-else-if="store.data" class="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
+          <!-- Table (full width on mobile) -->
+          <div class="flex-1 overflow-y-auto border rounded-lg">
+            <ShoppingTable
+              :items-by-category="store.itemsByCategory"
+              :select-mode="selection.active.value"
+              :selected-ids="selection.selected.value"
+              :selected-id="selectedProductId"
+              @toggle="onToggle"
+              @edit-quantity="onEditQuantity"
+              @toggle-select="selection.toggle"
+              @toggle-select-all="selection.toggleAll"
+              @select="(id) => { selectedProductId = selectedProductId === id ? null : id }"
+            />
+          </div>
+
+          <!-- Right sidebar: hidden on mobile, shown on desktop -->
+          <div class="w-64 xl:w-72 shrink-0 hidden lg:flex flex-col gap-4">
+            <ShoppingSummary
+              :total-cost="store.totalCost"
+              :item-count="store.items.length"
+              :purchased-count="store.purchasedCount"
+              :progress-percent="store.progressPercent"
+              :export-loading="exportLoading"
+              @export="onExport"
+            />
+            <AddProductForm
+              :products="productStore.items"
+              :existing-ids="existingIds"
+              @add="onAddProduct"
+            />
+          </div>
+        </div>
       </div>
     </div>
 
+    <!-- Dialogs -->
     <ConfirmDialog
       :open="confirmRemoveOpen"
       message="Удалить продукт из списка?"
@@ -334,9 +475,8 @@ function onConfirmDeleteAll() {
       @cancel="editProductId = null"
     />
 
-    <!-- Mobile: Floating summary bar + bottom sheet -->
+    <!-- Mobile: Compact summary bar (above bottom nav) -->
     <template v-if="store.data">
-      <!-- Compact summary bar (sits above the bottom nav) -->
       <div
         class="lg:hidden fixed bottom-[56px] inset-x-0 bg-white border-t shadow-lg z-30 px-4 py-3 flex items-center justify-between"
         style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px))"
@@ -348,17 +488,28 @@ function onConfirmDeleteAll() {
             <div class="bg-green-500 h-2.5 rounded-full" :style="{ width: store.progressPercent + '%' }" />
           </div>
         </div>
-        <button
-          class="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-          @click="mobileSidebarOpen = true"
-        >
-          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
-          </svg>
-        </button>
+        <div class="flex items-center gap-2">
+          <!-- Save button in mobile bar -->
+          <button
+            v-if="store.isDirty"
+            class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+            :disabled="saving"
+            @click="onSave"
+          >
+            Сохранить
+          </button>
+          <button
+            class="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+            @click="mobileSidebarOpen = true"
+          >
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      <!-- Bottom sheet (Teleport to body) -->
+      <!-- Mobile bottom sheet (export/add product) -->
       <Teleport to="body">
         <Transition name="fade">
           <div
@@ -372,7 +523,6 @@ function onConfirmDeleteAll() {
             v-if="mobileSidebarOpen"
             class="fixed bottom-0 inset-x-0 bg-white z-50 rounded-t-2xl shadow-xl max-h-[75vh] flex flex-col lg:hidden"
           >
-            <!-- Handle bar -->
             <div class="flex justify-center pt-3 pb-1">
               <div class="w-10 h-1 bg-gray-300 rounded-full" />
             </div>
@@ -395,6 +545,55 @@ function onConfirmDeleteAll() {
         </Transition>
       </Teleport>
     </template>
+
+    <!-- Mobile: saved lists drawer -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="mobileSavedListsOpen"
+          class="lg:hidden fixed inset-0 bg-black/40 z-40"
+          @click="mobileSavedListsOpen = false"
+        />
+      </Transition>
+      <Transition name="slide-left">
+        <div
+          v-if="mobileSavedListsOpen"
+          class="lg:hidden fixed inset-y-0 left-0 w-72 bg-white z-50 shadow-xl flex flex-col"
+        >
+          <!-- Drawer header -->
+          <div class="flex items-center justify-between px-4 py-3 border-b shrink-0">
+            <h2 class="font-semibold">Списки покупок</h2>
+            <div class="flex items-center gap-2">
+              <button
+                class="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                title="Новый список"
+                @click="onCreateList"
+              >
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              </button>
+              <button
+                class="p-1 rounded hover:bg-gray-100"
+                @click="mobileSavedListsOpen = false"
+              >
+                <IconClose class="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <!-- List content -->
+          <div class="flex-1 overflow-y-auto">
+            <SavedShoppingLists
+              :lists="store.savedLists"
+              :selected-id="store.currentListId"
+              @select="onSelectList"
+              @create="onCreateList"
+            />
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
   </div>
 </template>
-
