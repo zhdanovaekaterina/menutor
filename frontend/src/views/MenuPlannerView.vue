@@ -22,6 +22,7 @@ import IconHamburger from '@/components/ui/icons/IconHamburger.vue'
 import IconUpload from '@/components/ui/icons/IconUpload.vue'
 import { exportEntities, exportMenuPdf } from '@/api/client'
 import { useContextMenu } from '@/composables/useContextMenu'
+import { formatUnit } from '@/utils/units'
 import { downloadBlob } from '@/composables/useFileDownload'
 import { useFamilyStore } from '@/stores/family'
 import { useMenuStore } from '@/stores/menus'
@@ -471,7 +472,7 @@ async function onGenerateShoppingList() {
     <InputDialog
       :open="!!editSlot && !editPiecesMode"
       :title="editSlot?.recipe_id != null ? 'Порции' : 'Количество'"
-      :label="editSlot?.recipe_id != null ? 'Количество порций' : 'Количество'"
+      :label="editSlot?.recipe_id != null ? 'Количество порций' : (editSlot?.unit ? `Количество, ${formatUnit(editSlot.unit)}` : 'Количество')"
       :initial-value="editValue"
       input-type="number"
       :show-delete="true"
