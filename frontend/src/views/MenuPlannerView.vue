@@ -331,7 +331,7 @@ async function onGenerateShoppingList() {
 
       <!-- Center: always visible -->
       <div class="flex-1 flex flex-col gap-4 min-w-0">
-        <div class="flex-1 overflow-hidden lg:overflow-auto">
+        <div class="flex-1 overflow-hidden lg:overflow-x-auto">
           <PlannerGrid
             :slots="slots"
             :recipe-names="recipeNames"
