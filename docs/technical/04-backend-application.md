@@ -402,6 +402,189 @@ class GenerateShoppingList:
         return self.shopping_list_builder.build(menu, family, products, recipes)
 ```
 
+### Управление сохранёнными списками покупок
+
+**Файлы:** `backend/application/use_cases/generate_and_save_shopping_list.py`, `backend/application/use_cases/manage_saved_shopping_list.py`
+
+#### GenerateAndSaveShoppingList
+
+Генерирует список покупок из меню и сохраняет его в БД.
+
+```python
+class GenerateAndSaveShoppingList:
+    """
+    Сформировать список покупок из меню и сохранить его.
+
+    Процесс:
+    1. Получить меню и его слоты
+    2. Собрать все ингредиенты с количествами
+    3. Построить список покупок (агрегация по продуктам)
+    4. Сохранить в таблицу saved_shopping_lists с ссылкой на исходное меню
+    5. Вернуть SavedShoppingList
+    """
+
+    def execute(self, menu_id: MenuId, user_id: UserId) -> SavedShoppingList:
+        menu = self.menu_repo.get_by_id(menu_id, user_id)
+        if not menu:
+            raise EntityNotFoundError(f"Меню {menu_id} не найдено")
+
+        # Построить список покупок
+        generated = self.shopping_list_builder.build(...)
+
+        # Создать сохранённый список
+        saved_list = SavedShoppingList(
+            id=SavedShoppingListId(0),  # БД генерирует ID
+            user_id=user_id,
+            name=f"Список из {menu.name}",
+            source_menu_id=menu_id,
+            items=[...],  # Преобразовать generated в SavedShoppingListItem
+        )
+
+        return self.saved_shopping_list_repo.save(saved_list)
+```
+
+#### ListSavedShoppingLists
+
+Список всех сохранённых списков пользователя.
+
+```python
+class ListSavedShoppingLists:
+    def execute(self, user_id: UserId) -> list[SavedShoppingList]:
+        return self.repo.list_by_user(user_id)
+```
+
+#### GetSavedShoppingList
+
+Получить один список по ID.
+
+```python
+class GetSavedShoppingList:
+    def execute(self, list_id: SavedShoppingListId, user_id: UserId) -> SavedShoppingList:
+        saved = self.repo.get_by_id(list_id, user_id)
+        if not saved:
+            raise EntityNotFoundError(f"Список покупок {list_id} не найден")
+        return saved
+```
+
+#### CreateSavedShoppingList
+
+Создать пустой сохранённый список.
+
+```python
+class CreateSavedShoppingList:
+    def execute(self, user_id: UserId) -> SavedShoppingList:
+        saved = SavedShoppingList(
+            id=SavedShoppingListId(0),
+            user_id=user_id,
+            name="Новый список",
+            items=[],
+            source_menu_id=None,
+        )
+        return self.repo.save(saved)
+```
+
+#### RenameSavedShoppingList
+
+Переименовать список.
+
+```python
+class RenameSavedShoppingList:
+    def execute(self, list_id: SavedShoppingListId, new_name: str, user_id: UserId) -> SavedShoppingList:
+        saved = self.repo.get_by_id(list_id, user_id)
+        if not saved:
+            raise EntityNotFoundError(...)
+        saved.name = new_name
+        saved.updated_at = datetime.now(UTC)
+        self.repo.save(saved)
+        return saved
+```
+
+#### UpdateSavedShoppingList
+
+Обновить список (изменить название и/или товары).
+
+```python
+class UpdateSavedShoppingList:
+    def execute(
+        self,
+        list_id: SavedShoppingListId,
+        new_name: str,
+        items_data: list[SavedShoppingListItemData],
+        user_id: UserId,
+    ) -> SavedShoppingList:
+        # Получить список
+        saved = self.repo.get_by_id(list_id, user_id)
+        if not saved:
+            raise EntityNotFoundError(...)
+
+        # Обновить название и товары
+        saved.name = new_name
+        saved.items = [SavedShoppingListItem.from_data(data) for data in items_data]
+        saved.updated_at = datetime.now(UTC)
+
+        self.repo.save(saved)
+        return saved
+```
+
+#### DeleteSavedShoppingList
+
+Удалить список.
+
+```python
+class DeleteSavedShoppingList:
+    def execute(self, list_id: SavedShoppingListId, user_id: UserId) -> None:
+        self.repo.delete(list_id, user_id)
+```
+
+#### CopySavedShoppingList
+
+Создать копию списка со всеми товарами и статусами.
+
+```python
+class CopySavedShoppingList:
+    def execute(self, list_id: SavedShoppingListId, user_id: UserId) -> SavedShoppingList:
+        original = self.repo.get_by_id(list_id, user_id)
+        if not original:
+            raise EntityNotFoundError(...)
+
+        # Создать копию
+        copy = SavedShoppingList(
+            id=SavedShoppingListId(0),
+            user_id=user_id,
+            name=f"{original.name} (копия)",
+            items=[copy_item(item) for item in original.items],
+            source_menu_id=original.source_menu_id,
+        )
+        return self.repo.save(copy)
+```
+
+#### ToggleItemPurchased
+
+Отметить товар как купленный или не купленный.
+
+```python
+class ToggleItemPurchased:
+    def execute(
+        self,
+        list_id: SavedShoppingListId,
+        item_id: SavedShoppingListItemId,
+        user_id: UserId,
+    ) -> SavedShoppingList:
+        saved = self.repo.get_by_id(list_id, user_id)
+        if not saved:
+            raise EntityNotFoundError(...)
+
+        # Найти товар и переключить флаг
+        for item in saved.items:
+            if item.id == item_id:
+                item.purchased = not item.purchased
+                break
+
+        saved.updated_at = datetime.now(UTC)
+        self.repo.save(saved)
+        return saved
+```
+
 ### Вложенные рецепты (выравнивание)
 
 **Файл:** `backend/application/use_cases/flatten_recipe_products.py`
