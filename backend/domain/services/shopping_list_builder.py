@@ -95,12 +95,16 @@ class ShoppingListBuilder:
                 recipe_qty = qty.convert_to(product.recipe_unit)
             except UnitConversionError:
                 continue  # skip product with incompatible units
-            purchase_qty, _ = product.compute_purchase(recipe_qty.amount)
-            buy_amount = (
-                purchase_qty.amount
-                if purchase_qty.unit == "kg"
-                else math.ceil(purchase_qty.amount)
-            )
+            # Round up pcs quantities to integer before purchase calculation
+            recipe_amount = recipe_qty.amount
+            if recipe_qty.unit == "pcs":
+                recipe_amount = math.ceil(recipe_amount)
+                recipe_qty = Quantity(recipe_amount, recipe_qty.unit)
+            purchase_qty, _ = product.compute_purchase(recipe_amount)
+            if purchase_qty.unit == "kg":
+                buy_amount = round(purchase_qty.amount, 2)
+            else:
+                buy_amount = math.ceil(purchase_qty.amount)
             cost = product.purchase_cost(buy_amount)
 
             items.append(ShoppingListItem(
