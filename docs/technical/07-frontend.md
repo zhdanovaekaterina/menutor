@@ -48,10 +48,15 @@ frontend/src/
 │   ├── useDropdown.ts             # Состояние открытия/закрытия выпадающего меню
 │   ├── useCategoryFilter.ts       # Логика фильтрации по категориям
 │   ├── useContextMenu.ts          # Контекстное меню по клику правой кнопки
+│   ├── useCrudView.ts             # Управление состоянием CRUD форм (создание, редактирование, удаление)
+│   ├── useSortableTable.ts        # Сортировка таблиц и алфавитное упорядочивание
+│   ├── useTabbedFilter.ts         # Фильтрация с несколькими вкладками
 │   └── useFileDownload.ts         # Утилита скачивания файлов/blob
 ├── utils/
 │   ├── units.ts                   # Преобразование единиц, вспомогательные функции форматирования
-│   └── api.ts                     # Обработка ошибок ответов API
+│   ├── api.ts                     # Обработка ошибок ответов API
+│   ├── exporters.ts               # Экспортеры (PDF, JSON, CSV, TXT) для списка покупок и меню
+│   └── fileDownload.ts            # Скачивание файлов на клиентской стороне
 ├── assets/
 │   └── index.css                  # Tailwind CSS, глобальные стили
 └── vite.config.ts                 # Конфигурация Vite + плагин Tailwind
@@ -789,7 +794,11 @@ function reset() {
 
 ## Composables
 
+### useSelection
+
 **Файл:** `frontend/src/composables/useSelection.ts`
+
+Управляет выбором нескольких строк в таблицах:
 
 ```typescript
 import { ref, computed } from 'vue'
@@ -827,6 +836,58 @@ export function useSelection<T extends { id: number }>(items: Ref<T[]>) {
 
   return { selected, selectedIds, select, deselect, toggle, selectAll, clear }
 }
+```
+
+### useSortableTable
+
+**Файл:** `frontend/src/composables/useSortableTable.ts`
+
+Управляет сортировкой таблиц по колонкам с автоматическим алфавитным упорядочиванием по названиям. Поддерживает возрастающий и убывающий порядок.
+
+### useCrudView
+
+**Файл:** `frontend/src/composables/useCrudView.ts`
+
+Управляет состоянием CRUD форм: открытие/закрытие формы редактирования, сохранение, удаление с подтверждением. Переиспользуется в представлениях рецептов, продуктов и других сущностей.
+
+### useTabbedFilter
+
+**Файл:** `frontend/src/composables/useTabbedFilter.ts`
+
+Фильтрация со множественными вкладками (например, вкладки "Продукты" и "Рецепты" в окне выбора ингредиентов) с поддержкой поиска и категорий.
+
+---
+
+## Утилиты экспорта
+
+### Экспортеры данных
+
+**Файл:** `frontend/src/utils/exporters.ts`
+
+Экспортеры для списка покупок и меню поддерживают несколько форматов:
+
+- **TXT экспортер** — текстовый файл с простым форматированием
+- **CSV экспортер** — табличный формат для электронных таблиц
+- **JSON экспортер** — структурированный формат с полной информацией (для списка покупок: закупочное и рецептурное количество, стоимость)
+- **PDF экспортер** — переносимый формат для печати (использует reportlab для генерации на клиентской стороне для меню и списка покупок)
+
+Все экспортеры работают на клиентской стороне (без обращения к серверу) и автоматически скачивают файлы через функцию `downloadFile()`.
+
+**Пример использования:**
+
+```typescript
+import { exportShoppingListToPDF, exportShoppingListToJSON } from '@/utils/exporters'
+import { useFileDownload } from '@/composables/useFileDownload'
+
+const { downloadFile } = useFileDownload()
+
+// Экспорт в PDF
+const pdfBlob = exportShoppingListToPDF(shoppingListItems)
+downloadFile(pdfBlob, 'shopping_list.pdf')
+
+// Экспорт в JSON
+const jsonBlob = exportShoppingListToJSON(shoppingListItems)
+downloadFile(jsonBlob, 'shopping_list.json')
 ```
 
 ---
@@ -920,7 +981,8 @@ Vue 3 фронтенд:
 - **Стилизирует** с утилит Tailwind CSS v4
 
 Ключевые паттерны:
-- **Composables:** Переиспользуемая логика (useSelection, useDropdown)
+- **Composables:** Переиспользуемая логика (useSelection, useSortableTable, useCrudView, useTabbedFilter, useDropdown)
+- **Exporters:** Экспорт данных на клиентской стороне (PDF, JSON, CSV, TXT)
 - **Stores:** Централизованное реактивное состояние с действиями
 - **Components:** Иерархия UI на основе дерева
 - **Router Guards:** Защита маршрутов требующих аутентификацию

@@ -525,7 +525,7 @@ def downgrade() -> None:
 
 **Файл:** `backend/infrastructure/export/`
 
-Взаимозаменяемые алгоритмы экспорта.
+Взаимозаменяемые алгоритмы экспорта для списка покупок и меню.
 
 ```python
 from abc import ABC, abstractmethod
@@ -535,6 +535,24 @@ class ShoppingListExporter(ABC):
     @abstractmethod
     def export(self, shopping_list: ShoppingList) -> str:
         pass
+
+class TextExporter(ShoppingListExporter):
+    """Экспортировать список покупок как простой текст."""
+
+    def export(self, shopping_list: ShoppingList) -> str:
+        lines = ["=== Список покупок ===\n"]
+
+        current_category = None
+        for item in shopping_list.items:
+            if item.category_id != current_category:
+                lines.append(f"\n{item.category_name}:")
+                current_category = item.category_id
+
+            quantity_str = f"{item.quantity.amount} {item.quantity.unit}"
+            lines.append(f"  ☐ {item.name}: {quantity_str}")
+
+        lines.append(f"\nИтого: {shopping_list.total_cost.amount} руб.")
+        return "\n".join(lines)
 
 class CsvExporter(ShoppingListExporter):
     """Экспортировать список покупок как CSV."""
@@ -565,10 +583,11 @@ class JsonExporter(ShoppingListExporter):
                 {
                     "product_id": int(item.product_id),
                     "name": item.name,
-                    "quantity": {
-                        "amount": item.quantity.amount,
-                        "unit": item.quantity.unit,
-                    },
+                    "category_name": item.category_name,
+                    "quantity_amount": item.quantity.amount,
+                    "quantity_unit": item.quantity.unit,
+                    "recipe_quantity_amount": item.recipe_quantity.amount if item.recipe_quantity else None,
+                    "recipe_quantity_unit": item.recipe_quantity.unit if item.recipe_quantity else None,
                     "price_per_unit": float(item.price_per_unit.amount),
                     "total_cost": float(item.total_cost.amount),
                 }
@@ -577,6 +596,48 @@ class JsonExporter(ShoppingListExporter):
             "total_cost": float(shopping_list.total_cost.amount),
         }
         return json.dumps(data, indent=2, ensure_ascii=False)
+
+class PdfExporter(ShoppingListExporter):
+    """Экспортировать список покупок как PDF (используя reportlab)."""
+
+    def export(self, shopping_list: ShoppingList) -> bytes:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        from io import BytesIO
+
+        # Создать PDF в памяти
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = []
+
+        # Заголовок
+        styles = getSampleStyleSheet()
+        title = Paragraph("Список покупок", styles['Title'])
+        elements.append(title)
+        elements.append(Spacer(1, 12))
+
+        # Таблица элементов
+        data = [["Продукт", "Категория", "Количество", "Сумма"]]
+        for item in shopping_list.items:
+            data.append([
+                item.name,
+                item.category_name,
+                f"{item.quantity.amount} {item.quantity.unit}",
+                f"{item.total_cost.amount} руб."
+            ])
+
+        table = Table(data)
+        elements.append(table)
+        elements.append(Spacer(1, 12))
+
+        # Итого
+        total = Paragraph(f"Итого: {shopping_list.total_cost.amount} руб.", styles['Normal'])
+        elements.append(total)
+
+        # Построить PDF
+        doc.build(elements)
+        return buffer.getvalue()
 ```
 
 ### Реестр экспортёров
@@ -596,12 +657,23 @@ class ExporterRegistry:
 
 # Использование
 registry = ExporterRegistry()
+registry.register("text", TextExporter())
 registry.register("csv", CsvExporter())
 registry.register("json", JsonExporter())
+registry.register("pdf", PdfExporter())
 
 csv_exporter = registry.get("csv")
 csv_output = csv_exporter.export(shopping_list)
+
+pdf_exporter = registry.get("pdf")
+pdf_bytes = pdf_exporter.export(shopping_list)
 ```
+
+**Поддерживаемые форматы:**
+- `text` — текстовый файл с простым форматированием
+- `csv` — таблица для Excel/Google Sheets
+- `json` — структурированный формат с полной информацией (закупочное и рецептурное количество)
+- `pdf` — переносимый формат для печати (требует reportlab)
 
 ---
 
