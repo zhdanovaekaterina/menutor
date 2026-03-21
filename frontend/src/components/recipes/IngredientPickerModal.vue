@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { ActiveCategory, Product, Recipe } from '@/api/types'
+import type { ActiveCategory, Product, ProductCreate, Recipe } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
 import { useTabbedFilter } from '@/composables/useTabbedFilter'
 import IconCheck from '@/components/ui/icons/IconCheck.vue'
+import ProductForm from '@/components/products/ProductForm.vue'
+import { useProductStore } from '@/stores/products'
 
 type IngredientRow = {
   product_id: number | null
@@ -164,9 +166,27 @@ function onConfirm() {
   emit('close')
 }
 
+// ------- create product -------
+const productStore = useProductStore()
+const showCreateProduct = ref(false)
+
+async function handleProductSave(data: ProductCreate, _id: number | null) {
+  const created = await productStore.create(data)
+  const s = new Set(selectedProductIds.value)
+  s.add(created.id)
+  selectedProductIds.value = s
+  showCreateProduct.value = false
+}
+
 // ESC key support
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') emit('close')
+  if (e.key === 'Escape') {
+    if (showCreateProduct.value) {
+      showCreateProduct.value = false
+    } else {
+      emit('close')
+    }
+  }
 }
 </script>
 
@@ -271,6 +291,15 @@ function onKeydown(e: KeyboardEvent) {
                 <!-- Checkmark when selected -->
                 <IconCheck v-if="selectedProductIds.has(p.id)" class="w-4 h-4 text-blue-600 shrink-0" />
               </button>
+              <!-- Always-visible create row -->
+              <button
+                type="button"
+                class="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors border-b border-dashed border-gray-100"
+                @click="showCreateProduct = true"
+              >
+                <span class="w-2 h-2 rounded-full border border-dashed border-gray-300 shrink-0" />
+                <span>+ Новый продукт</span>
+              </button>
             </template>
 
             <!-- Recipes tab -->
@@ -325,6 +354,38 @@ function onKeydown(e: KeyboardEvent) {
               Готово
             </button>
           </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Nested modal: create new product -->
+    <Transition name="fade">
+      <div
+        v-if="showCreateProduct"
+        class="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4"
+        @click.self="showCreateProduct = false"
+      >
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-semibold text-gray-900">Новый продукт</h3>
+            <button
+              type="button"
+              class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+              aria-label="Закрыть"
+              @click="showCreateProduct = false"
+            >
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <ProductForm
+            :product="null"
+            :categories="productCategories"
+            @save="handleProductSave"
+            @clear="() => {}"
+            @remove="() => {}"
+          />
         </div>
       </div>
     </Transition>
