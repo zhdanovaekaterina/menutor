@@ -20,6 +20,12 @@ from backend.infrastructure.database.connection import (
     seed_defaults,
 )
 from backend.infrastructure.export.csv_exporter import ShoppingListCsvExporter
+from backend.infrastructure.export.shopping_list_json_exporter import (
+    ShoppingListJsonExporter,
+)
+from backend.infrastructure.export.shopping_list_pdf_exporter import (
+    ShoppingListPdfExporter,
+)
 from backend.infrastructure.export.text_exporter import ShoppingListTextExporter
 from backend.infrastructure.repositories.orm_family_member_repository import (
     OrmFamilyMemberRepository,
@@ -65,6 +71,8 @@ class _Infrastructure:
     recipe_category_repo: OrmRecipeCategoryRepository
     text_exporter: ShoppingListTextExporter
     csv_exporter: ShoppingListCsvExporter
+    json_exporter: ShoppingListJsonExporter
+    pdf_exporter: ShoppingListPdfExporter
     builder: ShoppingListBuilder
 
 
@@ -115,6 +123,8 @@ def _create_infrastructure(db_url: str | None) -> _Infrastructure:
         recipe_category_repo=OrmRecipeCategoryRepository(session),
         text_exporter=ShoppingListTextExporter(),
         csv_exporter=ShoppingListCsvExporter(),
+        json_exporter=ShoppingListJsonExporter(),
+        pdf_exporter=ShoppingListPdfExporter(),
         builder=ShoppingListBuilder(
             recipe_repo=recipe_repo,
             product_repo=product_repo,

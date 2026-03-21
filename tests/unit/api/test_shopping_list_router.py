@@ -136,3 +136,106 @@ class TestExportShoppingListText:
         )
         resp = client.post("/api/menus/999/shopping-list/export/text")
         assert resp.status_code == 404
+
+
+# ---- POST /api/menus/{menu_id}/shopping-list/export/json ----
+
+
+class TestExportShoppingListJson:
+    def test_exports_as_json(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        payload = '{"title": "Список покупок"}'.encode("utf-8")
+        container.export_shopping_list.execute.return_value = (
+            payload,
+            "application/json",
+            "shopping_list.json",
+        )
+        resp = client.post("/api/menus/1/shopping-list/export/json")
+        assert resp.status_code == 200
+        assert "application/json" in resp.headers["content-type"]
+
+    def test_content_disposition_header(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.export_shopping_list.execute.return_value = (
+            b"{}",
+            "application/json",
+            "shopping_list.json",
+        )
+        resp = client.post("/api/menus/1/shopping-list/export/json")
+        assert "shopping_list.json" in resp.headers["content-disposition"]
+
+    def test_calls_use_case_with_json_format(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.export_shopping_list.execute.return_value = (
+            b"{}",
+            "application/json",
+            "shopping_list.json",
+        )
+        client.post("/api/menus/5/shopping-list/export/json")
+        container.export_shopping_list.execute.assert_called_once()
+        args = container.export_shopping_list.execute.call_args
+        assert args[0][2] == "json"
+
+    def test_returns_404_when_menu_not_found(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.export_shopping_list.execute.side_effect = EntityNotFoundError(
+            "Меню 999 не найдено"
+        )
+        resp = client.post("/api/menus/999/shopping-list/export/json")
+        assert resp.status_code == 404
+        assert "не найдено" in resp.json()["detail"]
+
+
+# ---- POST /api/menus/{menu_id}/shopping-list/export/pdf ----
+
+
+class TestExportShoppingListPdf:
+    def test_exports_as_pdf(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.export_shopping_list.execute.return_value = (
+            b"%PDF-1.4 fake",
+            "application/pdf",
+            "shopping_list.pdf",
+        )
+        resp = client.post("/api/menus/1/shopping-list/export/pdf")
+        assert resp.status_code == 200
+        assert resp.headers["content-type"] == "application/pdf"
+
+    def test_content_disposition_header(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.export_shopping_list.execute.return_value = (
+            b"%PDF-1.4 fake",
+            "application/pdf",
+            "shopping_list.pdf",
+        )
+        resp = client.post("/api/menus/1/shopping-list/export/pdf")
+        assert "shopping_list.pdf" in resp.headers["content-disposition"]
+
+    def test_calls_use_case_with_pdf_format(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.export_shopping_list.execute.return_value = (
+            b"%PDF-1.4 fake",
+            "application/pdf",
+            "shopping_list.pdf",
+        )
+        client.post("/api/menus/3/shopping-list/export/pdf")
+        container.export_shopping_list.execute.assert_called_once()
+        args = container.export_shopping_list.execute.call_args
+        assert args[0][2] == "pdf"
+
+    def test_returns_404_when_menu_not_found(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.export_shopping_list.execute.side_effect = EntityNotFoundError(
+            "Меню 999 не найдено"
+        )
+        resp = client.post("/api/menus/999/shopping-list/export/pdf")
+        assert resp.status_code == 404
+        assert "не найдено" in resp.json()["detail"]

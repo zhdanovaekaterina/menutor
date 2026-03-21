@@ -193,6 +193,14 @@ export const downloadShoppingListCsv = (menuId: number) =>
   api
     .post(`/menus/${menuId}/shopping-list/export/csv`, null, { responseType: 'blob' })
     .then((r) => r.data as Blob)
+export const downloadShoppingListPdf = (menuId: number) =>
+  api
+    .post(`/menus/${menuId}/shopping-list/export/pdf`, null, { responseType: 'blob' })
+    .then((r) => r.data as Blob)
+export const downloadShoppingListJson = (menuId: number) =>
+  api
+    .post(`/menus/${menuId}/shopping-list/export/json`, null, { responseType: 'blob' })
+    .then((r) => r.data as Blob)
 
 /* Import / Export */
 export const exportEntities = (entityType: string, format: string, ids?: number[]) =>

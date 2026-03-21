@@ -56,3 +56,35 @@ def export_shopping_list_csv(
         media_type=content_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/menus/{menu_id}/shopping-list/export/json")
+def export_shopping_list_json(
+    menu_id: int,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> Response:
+    data, content_type, filename = container.export_shopping_list.execute(
+        MenuId(menu_id), user.id, "json"
+    )
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/menus/{menu_id}/shopping-list/export/pdf")
+def export_shopping_list_pdf(
+    menu_id: int,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> Response:
+    data, content_type, filename = container.export_shopping_list.execute(
+        MenuId(menu_id), user.id, "pdf"
+    )
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

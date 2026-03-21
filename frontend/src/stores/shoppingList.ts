@@ -7,6 +7,7 @@ import { useToastStore } from './toast'
 export const useShoppingListStore = defineStore('shoppingList', () => {
   const data = ref<ShoppingList | null>(null)
   const loading = ref(false)
+  const menuId = ref<number | null>(null)
 
   const items = computed(() => data.value?.items ?? [])
   const totalCost = computed(() => {
@@ -26,10 +27,11 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     return grouped
   })
 
-  async function generate(menuId: number) {
+  async function generate(id: number) {
     loading.value = true
     try {
-      data.value = await generateShoppingList(menuId)
+      data.value = await generateShoppingList(id)
+      menuId.value = id
     } catch {
       useToastStore().show('Ошибка генерации списка покупок', 'error')
     } finally {
@@ -80,6 +82,7 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
   return {
     data,
     loading,
+    menuId,
     items,
     totalCost,
     purchasedCount,

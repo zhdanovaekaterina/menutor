@@ -6,6 +6,7 @@ import ShoppingSummary from '@/components/shopping/ShoppingSummary.vue'
 import ShoppingTable from '@/components/shopping/ShoppingTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
+import { downloadShoppingListPdf } from '@/api/client'
 import { downloadBlob } from '@/composables/useFileDownload'
 import { useSelection } from '@/composables/useSelection'
 import { useProductStore } from '@/stores/products'
@@ -107,6 +108,38 @@ function onExportText() {
 function onExportCsv() {
   if (!store.data) { toast.show('Список покупок пуст', 'info'); return }
   downloadBlob(new Blob([buildCsvExport()], { type: 'text/csv;charset=utf-8' }), 'shopping_list.csv')
+}
+
+function buildJsonExport(): string {
+  const payload = {
+    title: 'Список покупок',
+    total_cost: store.totalCost,
+    items: store.items.map((item) => ({
+      category: item.category,
+      product_name: item.product_name,
+      recipe_quantity: item.recipe_quantity ?? null,
+      buy_quantity: item.buy_quantity,
+      cost: item.cost,
+      purchased: item.purchased,
+    })),
+  }
+  return JSON.stringify(payload, null, 2)
+}
+
+function onExportJson() {
+  if (!store.data) { toast.show('Список покупок пуст', 'info'); return }
+  downloadBlob(new Blob([buildJsonExport()], { type: 'application/json;charset=utf-8' }), 'shopping_list.json')
+}
+
+async function onExportPdf() {
+  if (!store.data) { toast.show('Список покупок пуст', 'info'); return }
+  if (!store.menuId) { toast.show('Не удалось определить меню для экспорта', 'error'); return }
+  try {
+    const blob = await downloadShoppingListPdf(store.menuId)
+    downloadBlob(blob, 'shopping_list.pdf')
+  } catch {
+    toast.show('Ошибка экспорта в PDF', 'error')
+  }
 }
 
 function onAddProduct(productId: number, quantity: number) {
@@ -224,6 +257,8 @@ function onConfirmDeleteAll() {
           :progress-percent="store.progressPercent"
           @export-text="onExportText"
           @export-csv="onExportCsv"
+          @export-json="onExportJson"
+          @export-pdf="onExportPdf"
         />
         <AddProductForm
           :products="productStore.items"
