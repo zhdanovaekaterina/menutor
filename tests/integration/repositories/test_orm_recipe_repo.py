@@ -15,26 +15,26 @@ from backend.domain.value_objects.types import (
     RecipeId,
     UserId,
 )
-from backend.infrastructure.repositories.sqlalchemy_product_repository import (
-    SqlAlchemyProductRepository,
+from backend.infrastructure.repositories.orm_product_repository import (
+    OrmProductRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_recipe_repository import (
-    SqlAlchemyRecipeRepository,
+from backend.infrastructure.repositories.orm_recipe_repository import (
+    OrmRecipeRepository,
 )
 
 
 @pytest.fixture
-def product_repo(conn: object) -> SqlAlchemyProductRepository:
-    return SqlAlchemyProductRepository(conn)  # type: ignore[arg-type]
+def product_repo(conn: object) -> OrmProductRepository:
+    return OrmProductRepository(conn)  # type: ignore[arg-type]
 
 
 @pytest.fixture
-def recipe_repo(conn: object) -> SqlAlchemyRecipeRepository:
-    return SqlAlchemyRecipeRepository(conn)  # type: ignore[arg-type]
+def recipe_repo(conn: object) -> OrmRecipeRepository:
+    return OrmRecipeRepository(conn)  # type: ignore[arg-type]
 
 
 @pytest.fixture
-def flour(product_repo: SqlAlchemyProductRepository, user_id: UserId) -> Product:
+def flour(product_repo: OrmProductRepository, user_id: UserId) -> Product:
     return product_repo.save(Product(
         id=ProductId(0), name="Мука",
         recipe_unit="g", purchase_unit="kg",
@@ -57,13 +57,13 @@ def _pancake_recipe(flour_id: ProductId, user_id: UserId) -> Recipe:
     )
 
 
-def test_save_assigns_id(recipe_repo: SqlAlchemyRecipeRepository,
+def test_save_assigns_id(recipe_repo: OrmRecipeRepository,
                           flour: Product, user_id: UserId) -> None:
     saved = recipe_repo.save(_pancake_recipe(flour.id, user_id))
     assert saved.id != RecipeId(0)
 
 
-def test_save_and_get_by_id_full_roundtrip(recipe_repo: SqlAlchemyRecipeRepository,
+def test_save_and_get_by_id_full_roundtrip(recipe_repo: OrmRecipeRepository,
                                             flour: Product, user_id: UserId) -> None:
     saved = recipe_repo.save(_pancake_recipe(flour.id, user_id))
     retrieved = recipe_repo.get_by_id(saved.id)
@@ -83,18 +83,18 @@ def test_save_and_get_by_id_full_roundtrip(recipe_repo: SqlAlchemyRecipeReposito
     assert retrieved.steps[1].order == 2
 
 
-def test_get_by_id_returns_none_when_absent(recipe_repo: SqlAlchemyRecipeRepository) -> None:
+def test_get_by_id_returns_none_when_absent(recipe_repo: OrmRecipeRepository) -> None:
     assert recipe_repo.get_by_id(RecipeId(9999)) is None
 
 
-def test_delete_removes_recipe(recipe_repo: SqlAlchemyRecipeRepository,
+def test_delete_removes_recipe(recipe_repo: OrmRecipeRepository,
                                 flour: Product, user_id: UserId) -> None:
     saved = recipe_repo.save(_pancake_recipe(flour.id, user_id))
     recipe_repo.delete([saved.id])
     assert recipe_repo.get_by_id(saved.id) is None
 
 
-def test_delete_cascades_to_ingredients_and_steps(recipe_repo: SqlAlchemyRecipeRepository,
+def test_delete_cascades_to_ingredients_and_steps(recipe_repo: OrmRecipeRepository,
                                                    flour: Product,
                                                    conn: object, user_id: UserId) -> None:
     from sqlalchemy import text
@@ -115,7 +115,7 @@ def test_delete_cascades_to_ingredients_and_steps(recipe_repo: SqlAlchemyRecipeR
     assert step_count == 0
 
 
-def test_find_by_category_id(recipe_repo: SqlAlchemyRecipeRepository,
+def test_find_by_category_id(recipe_repo: OrmRecipeRepository,
                               flour: Product, user_id: UserId) -> None:
     recipe_repo.save(_pancake_recipe(flour.id, user_id))
     recipe_repo.save(Recipe(id=RecipeId(0), name="Котлеты", servings=4,
@@ -126,7 +126,7 @@ def test_find_by_category_id(recipe_repo: SqlAlchemyRecipeRepository,
     assert breakfast[0].name == "Блины"
 
 
-def test_find_all(recipe_repo: SqlAlchemyRecipeRepository,
+def test_find_all(recipe_repo: OrmRecipeRepository,
                   flour: Product, user_id: UserId) -> None:
     recipe_repo.save(_pancake_recipe(flour.id, user_id))
     recipe_repo.save(Recipe(id=RecipeId(0), name="Котлеты", servings=4,
@@ -134,7 +134,7 @@ def test_find_all(recipe_repo: SqlAlchemyRecipeRepository,
     assert len(recipe_repo.find_all(user_id)) == 2
 
 
-def test_update_replaces_ingredients_and_steps(recipe_repo: SqlAlchemyRecipeRepository,
+def test_update_replaces_ingredients_and_steps(recipe_repo: OrmRecipeRepository,
                                                 flour: Product, user_id: UserId) -> None:
     saved = recipe_repo.save(_pancake_recipe(flour.id, user_id))
     updated = Recipe(
@@ -171,7 +171,7 @@ def _sauce_recipe(user_id: UserId) -> Recipe:
 
 
 def test_save_recipe_with_sub_recipe_ingredient(
-    recipe_repo: SqlAlchemyRecipeRepository, user_id: UserId
+    recipe_repo: OrmRecipeRepository, user_id: UserId
 ) -> None:
     sauce = recipe_repo.save(_sauce_recipe(user_id))
     parent = recipe_repo.save(
@@ -198,7 +198,7 @@ def test_save_recipe_with_sub_recipe_ingredient(
 
 
 def test_save_recipe_mixed_ingredients(
-    recipe_repo: SqlAlchemyRecipeRepository, flour: Product, user_id: UserId
+    recipe_repo: OrmRecipeRepository, flour: Product, user_id: UserId
 ) -> None:
     sauce = recipe_repo.save(_sauce_recipe(user_id))
     parent = recipe_repo.save(
@@ -228,7 +228,7 @@ def test_save_recipe_mixed_ingredients(
 
 
 def test_find_parents_of_returns_parents(
-    recipe_repo: SqlAlchemyRecipeRepository, user_id: UserId
+    recipe_repo: OrmRecipeRepository, user_id: UserId
 ) -> None:
     sauce = recipe_repo.save(_sauce_recipe(user_id))
     parent = recipe_repo.save(
@@ -252,7 +252,7 @@ def test_find_parents_of_returns_parents(
 
 
 def test_find_parents_of_returns_empty_for_no_parents(
-    recipe_repo: SqlAlchemyRecipeRepository, user_id: UserId
+    recipe_repo: OrmRecipeRepository, user_id: UserId
 ) -> None:
     sauce = recipe_repo.save(_sauce_recipe(user_id))
     parents = recipe_repo.find_parents_of(sauce.id, user_id)
@@ -260,7 +260,7 @@ def test_find_parents_of_returns_empty_for_no_parents(
 
 
 def test_update_recipe_replaces_sub_recipe_ingredients(
-    recipe_repo: SqlAlchemyRecipeRepository, user_id: UserId
+    recipe_repo: OrmRecipeRepository, user_id: UserId
 ) -> None:
     sauce_a = recipe_repo.save(_sauce_recipe(user_id))
     sauce_b = recipe_repo.save(

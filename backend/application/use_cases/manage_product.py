@@ -10,6 +10,7 @@ from backend.application.use_cases.crud_base import (
     load_owned,
 )
 from backend.domain.entities.product import Product
+from backend.domain.exceptions import DuplicateNameError
 from backend.domain.ports.product_category_repository import ProductCategoryRepository
 from backend.domain.ports.product_repository import ProductRepository
 from backend.domain.value_objects.category import ActiveCategory
@@ -50,6 +51,11 @@ class CreateProduct(CreateEntity):
 
     def _build_entity(self, data: Any, user_id: UserId) -> Product:
         return _build_product(ProductId(0), data, user_id)
+
+    def execute(self, data: Any, user_id: UserId) -> Any:
+        if self._repo.find_by_name(data.name, user_id) is not None:
+            raise DuplicateNameError("продукт")
+        return self._repo.save(self._build_entity(data, user_id))
 
 
 class EditProduct(EditEntity):

@@ -12,7 +12,7 @@ from backend.infrastructure.database.models import ProductRow, RecipeIngredientR
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
 
-class SqlAlchemyProductRepository(
+class OrmProductRepository(
     BaseOrmRepository[Product, ProductId],
     ProductRepository,
 ):
@@ -65,12 +65,7 @@ class SqlAlchemyProductRepository(
         )
 
     def find_all(self, user_id: UserId) -> list[Product]:
-        rows = (
-            self._session.query(ProductRow)
-            .filter(ProductRow.user_id == int(user_id))
-            .all()
-        )
-        return [self._row_to_entity(r) for r in rows]
+        return self.find_all_by_user(int(user_id))
 
     def find_by_category_id(
         self, category_id: ProductCategoryId, user_id: UserId
@@ -96,6 +91,17 @@ class SqlAlchemyProductRepository(
             .all()
         )
         return [ProductId(r[0]) for r in rows]
+
+    def find_by_name(self, name: str, user_id: UserId) -> Product | None:
+        row = (
+            self._session.query(ProductRow)
+            .filter(
+                ProductRow.name == name,
+                ProductRow.user_id == int(user_id),
+            )
+            .first()
+        )
+        return self._row_to_entity(row) if row is not None else None
 
     def delete(self, ids: list[ProductId]) -> None:
         if not ids:

@@ -1,65 +1,65 @@
-# Domain Layer — Entities, Value Objects, Services, Ports
+# Доменный слой — Сущности, Объекты-значения, Сервисы, Порты
 
-File location: `backend/domain/`
+Расположение файла: `backend/domain/`
 
-The Domain layer contains all business logic and is completely independent of frameworks. It has **zero dependencies** on FastAPI, SQLAlchemy, Vue, or any external library.
+Доменный слой содержит всю бизнес-логику и полностью независим от фреймворков. Он имеет **ноль зависимостей** от FastAPI, SQLAlchemy, Vue или любой внешней библиотеки.
 
 ---
 
-## Entities
+## Сущности
 
-Entities have **identity** (ID) and mutable state. They enforce business invariants.
+Сущности имеют **идентичность** (ID) и изменяемое состояние. Они применяют бизнес-инварианты.
 
 ### Recipe
 
-**File:** `backend/domain/entities/recipe.py`
+**Файл:** `backend/domain/entities/recipe.py`
 
 ```python
 @dataclass
 class Recipe:
     id: RecipeId
     name: str
-    servings: int                          # Base servings (default portion size)
-    ingredients: list[RecipeIngredient]    # Value objects
-    steps: list[CookingStep]               # Value objects
+    servings: int                          # Базовый размер порции
+    ingredients: list[RecipeIngredient]    # Объекты-значения
+    steps: list[CookingStep]               # Объекты-значения
     category_id: RecipeCategoryId
-    weight: int = 0                        # Finished dish weight in grams (optional)
-    user_id: UserId = UserId(0)            # Multi-tenancy scoping
-    total_pieces: int | None = None        # For pieces-based recipes (e.g., 12 cookies)
-    pieces_per_portion: int | None = None  # e.g., 3 cookies per portion
+    weight: int = 0                        # Вес готового блюда в граммах (опционально)
+    user_id: UserId = UserId(0)            # Многопользовательское ограничение
+    total_pieces: int | None = None        # Для рецептов на основе штук (например, 12 печений)
+    pieces_per_portion: int | None = None  # например, 3 печенья на порцию
 ```
 
-**Invariants (enforced in `__post_init__`):**
-- If `total_pieces` is set, `pieces_per_portion` must also be set (and vice versa)
-- Both must be ≥ 1
+**Инварианты (применяются в `__post_init__`):**
+- Если `total_pieces` установлен, `pieces_per_portion` должен также быть установлен (и наоборот)
+- Оба должны быть ≥ 1
 - `pieces_per_portion ≤ total_pieces`
 
-**Key properties:**
+**Ключевые свойства:**
 
 ```python
 @property
 def is_pieces_mode(self) -> bool:
-    """Returns True if recipe uses pieces-based scaling."""
+    """Возвращает True если рецепт использует масштабирование на основе штук."""
     return self.total_pieces is not None and self.pieces_per_portion is not None
 
 @property
 def computed_servings(self) -> int:
-    """Calculates effective servings from pieces if in pieces mode, else uses servings."""
+    """Вычисляет эффективные порции из штук если в штучном режиме, иначе использует servings."""
     if self.is_pieces_mode:
         return self.total_pieces // self.pieces_per_portion
     return self.servings
 ```
 
-**Key method:**
+**Ключевой метод:**
 
 ```python
 def scale_to(self, target_servings: float) -> Recipe:
     """
-    Returns a new Recipe scaled to target servings.
-    Immutable: original recipe unchanged.
+    Возвращает новый Recipe масштабированный к целевым порциям.
+    Неизменяемость: исходный рецепт не изменяется.
 
-    Example:
-        recipe.scale_to(6)  # Scale from 4 servings to 6
+    Пример:
+        recipe.scale_to(6)  # Масштабировать с 4 порций на 6
     """
     factor = target_servings / self.servings
     scaled_ingredients = [
@@ -71,7 +71,7 @@ def scale_to(self, target_servings: float) -> Recipe:
         )
         for ing in self.ingredients
     ]
-    # Recalculate total_pieces if in pieces mode
+    # Пересчитать total_pieces если в штучном режиме
     new_total_pieces = None
     if self.is_pieces_mode:
         assert self.total_pieces is not None
@@ -91,17 +91,17 @@ def scale_to(self, target_servings: float) -> Recipe:
     )
 ```
 
-**Use case example:**
+**Пример use case:**
 
 ```python
-# Menu planner scales recipe based on family
-menu_recipe = recipe.scale_to(4)  # 2 adults (×1.0 each) + 1 child (×0.5) = 2.5 → round to 4
-ingredients_needed = menu_recipe.ingredients  # Quantities already scaled
+# Планировщик меню масштабирует рецепт на основе семьи
+menu_recipe = recipe.scale_to(4)  # 2 взрослых (×1.0 каждый) + 1 ребенок (×0.5) = 2.5 → округлить на 4
+ingredients_needed = menu_recipe.ingredients  # Количества уже масштабированы
 ```
 
 ### Product
 
-**File:** `backend/domain/entities/product.py`
+**Файл:** `backend/domain/entities/product.py`
 
 ```python
 @dataclass
@@ -109,16 +109,16 @@ class Product:
     id: ProductId
     name: str
     category_id: ProductCategoryId
-    recipe_unit: str                       # Unit used in recipes (e.g., "g", "ml", "pcs")
-    purchase_unit: str                     # Unit for buying (e.g., "kg", "l", "box")
-    price_per_purchase_unit: Money         # Value object: price in RUB
-    conversion_factor: float               # e.g., 1000 (to convert g → kg)
+    recipe_unit: str                       # Единица используемая в рецептах (например, "g", "ml", "pcs")
+    purchase_unit: str                     # Единица для покупки (например, "kg", "l", "box")
+    price_per_purchase_unit: Money         # Объект-значение: цена в RUB
+    conversion_factor: float               # например, 1000 (для преобразования g → kg)
     user_id: UserId = UserId(0)
-    brand: str = ""                        # Optional: product brand
-    supplier: str = ""                     # Optional: typical supplier/retailer
+    brand: str = ""                        # Опционально: марка продукта
+    supplier: str = ""                     # Опционально: типичный поставщик/розница
 ```
 
-**Example:**
+**Пример:**
 ```python
 flour = Product(
     id=ProductId(1),
@@ -128,14 +128,14 @@ flour = Product(
     price_per_purchase_unit=Money(Decimal("80.00")),
     conversion_factor=1000,
 )
-# In recipe: 200g → cost = (200 / 1000) * 80.00 = 16.00 RUB
+# В рецепте: 200g → стоимость = (200 / 1000) * 80.00 = 16.00 RUB
 ```
 
 ### Menu & MenuSlot
 
-**File:** `backend/domain/entities/menu.py`
+**Файл:** `backend/domain/entities/menu.py`
 
-A Menu is a named collection of meal slots for a week.
+Меню — это именованная коллекция слотов приема пищи на неделю.
 
 ```python
 @dataclass
@@ -150,37 +150,37 @@ class Menu:
 class MenuSlot:
     id: MenuSlotId
     menu_id: MenuId
-    recipe_id: RecipeId | None = None              # Either recipe OR product (XOR)
+    recipe_id: RecipeId | None = None              # Либо рецепт ИЛИ продукт (XOR)
     product_id: ProductId | None = None
-    quantity: Quantity | None = None               # For products
-    servings: int | None = None                    # For recipes
+    quantity: Quantity | None = None               # Для продуктов
+    servings: int | None = None                    # Для рецептов
     meal_type: str = "обед"                        # "завтрак", "обед", "ужин"
-    day_of_week: int = 0                           # 0=Mon, ..., 6=Sun
-    position: int = 0                              # Ordering within (day, meal_type)
+    day_of_week: int = 0                           # 0=Пн, ..., 6=Вс
+    position: int = 0                              # Упорядочение внутри (день, meal_type)
 ```
 
-**Invariant:** `(recipe_id is None) XOR (product_id is None)` — either recipe or product, never both.
+**Инвариант:** `(recipe_id is None) XOR (product_id is None)` — либо рецепт, либо продукт, никогда оба.
 
 **Use case:**
 ```python
-# Planning week for 2.5 effective servings (2 adults × 1.0 + 1 child × 0.5)
+# Планирование недели для 2.5 эффективных порций (2 взрослых × 1.0 + 1 ребенок × 0.5)
 menu_slot = MenuSlot(
-    recipe_id=RecipeId(5),  # "Блины" (pancakes)
-    servings=4,             # Scale to 4 servings
+    recipe_id=RecipeId(5),  # "Блины" (блины)
+    servings=4,             # Масштабировать на 4 порции
     meal_type="завтрак",
-    day_of_week=0,          # Monday
+    day_of_week=0,          # Понедельник
 )
 
-recipe = get_recipe(menu_slot.recipe_id)  # "Блины" with 4 servings base
-scaled = recipe.scale_to(menu_slot.servings * 2.5 / recipe.computed_servings)  # Scale to family
-ingredients = scaled.ingredients  # Use for shopping list
+recipe = get_recipe(menu_slot.recipe_id)  # "Блины" с 4 порциями базовой
+scaled = recipe.scale_to(menu_slot.servings * 2.5 / recipe.computed_servings)  # Масштабировать на семью
+ingredients = scaled.ingredients  # Использовать для списка покупок
 ```
 
 ### ShoppingList & ShoppingListItem
 
-**File:** `backend/domain/entities/shopping_list.py`
+**Файл:** `backend/domain/entities/shopping_list.py`
 
-Result of aggregating recipes by menu + family members. Contains final, deduplicated product list with costs.
+Результат агрегирования рецептов по меню пользователя + члены семьи. Содержит итоговый, дедублированный список продуктов с затратами.
 
 ```python
 @dataclass
@@ -197,24 +197,24 @@ class ShoppingListItem:
     price_per_unit: Money = field(default_factory=lambda: Money(Decimal("0.00")))
     total_cost: Money = field(default_factory=lambda: Money(Decimal("0.00")))
     category_id: ProductCategoryId = ProductCategoryId(0)
-    purchased: bool = False                        # Track check-off state
+    purchased: bool = False                        # Отслеживание состояния check-off
 ```
 
-**Example:**
+**Пример:**
 ```python
 item = ShoppingListItem(
     product_id=ProductId(1),
     name="Мука",
-    quantity=Quantity(1.2, "kg"),        # 200g from pancakes + 400g from bread + 600g from cake
+    quantity=Quantity(1.2, "kg"),        # 200g из блинов + 400g из хлеба + 600g из торта
     price_per_unit=Money(Decimal("80")),
     total_cost=Money(Decimal("96.00")),  # 1.2 * 80
-    category_id=ProductCategoryId(2),    # "Сыпучие" (dry goods)
+    category_id=ProductCategoryId(2),    # "Сыпучие" (сухие товары)
 )
 ```
 
 ### User & RefreshToken
 
-**File:** `backend/domain/entities/user.py` and `refresh_token.py`
+**Файл:** `backend/domain/entities/user.py` и `refresh_token.py`
 
 ```python
 @dataclass
@@ -222,116 +222,116 @@ class User:
     id: UserId
     email: str
     nickname: str
-    password_hash: str                     # bcrypt hash (never plaintext)
+    password_hash: str                     # bcrypt хеш (никогда открытый текст)
     created_at: datetime
 
 @dataclass
 class RefreshToken:
     id: RefreshTokenId
     user_id: UserId
-    token_hash: str                        # Hash of JWT token (not stored plaintext)
+    token_hash: str                        # Хеш JWT токена (не хранится открытым)
     expires_at: datetime
     created_at: datetime
-    revoked: bool = False                  # Soft revocation (logout)
+    revoked: bool = False                  # Мягкая отмена (выход)
 ```
 
 ### FamilyMember
 
-**File:** `backend/domain/entities/family_member.py`
+**Файл:** `backend/domain/entities/family_member.py`
 
 ```python
 @dataclass
 class FamilyMember:
     id: FamilyMemberId
     name: str
-    portion_multiplier: float = 1.0        # 1.0 = adult, 0.5 = child
-    dietary_restrictions: str = ""         # e.g., "vegetarian, nut allergy" (free text)
+    portion_multiplier: float = 1.0        # 1.0 = взрослый, 0.5 = ребенок
+    dietary_restrictions: str = ""         # например, "vegetarian, nut allergy" (свободный текст)
     user_id: UserId = UserId(0)
-    comment: str = ""                      # Optional notes
+    comment: str = ""                      # Опциональные примечания
 
     def effective_servings(self, base_servings: int) -> float:
-        """Calculates this member's portion of a recipe."""
+        """Вычисляет порцию этого члена рецепта."""
         return base_servings * self.portion_multiplier
 ```
 
 ---
 
-## Value Objects
+## Объекты-значения
 
-Value objects are **immutable**, identified by their attributes (not by ID), and cannot exist independently of an entity.
+Объекты-значения **неизменяемы**, идентифицируются их атрибутами (не ID), и не могут существовать независимо от сущности.
 
 ### Quantity
 
-**File:** `backend/domain/value_objects/quantity.py`
+**Файл:** `backend/domain/value_objects/quantity.py`
 
-Most important value object. Handles unit conversion and arithmetic.
+Наиболее важный объект-значение. Обрабатывает преобразование единиц и арифметику.
 
 ```python
 @dataclass(frozen=True)
 class Quantity:
     amount: float
-    unit: str  # "g", "kg", "ml", "l", "pcs", "tsp", "tbsp", etc.
+    unit: str  # "g", "kg", "ml", "l", "pcs", "tsp", "tbsp", и т.д.
 
     def to_unit(self, target_unit: str) -> "Quantity":
-        """Convert to different unit within same group."""
+        """Преобразовать в другую единицу в той же группе."""
         if self.unit == target_unit:
             return self
         factor = unit_conversion_factor(self.unit, target_unit)
         return Quantity(self.amount * factor, target_unit)
 
     def __add__(self, other: "Quantity") -> "Quantity":
-        """Add quantities with auto-conversion."""
+        """Добавить количества с автоматическим преобразованием."""
         if self.unit == other.unit:
             return Quantity(self.amount + other.amount, self.unit)
 
-        # Try to find common unit
+        # Попытаться найти общую единицу
         if are_compatible(self.unit, other.unit):
             other_converted = other.to_unit(self.unit)
             return Quantity(self.amount + other_converted.amount, self.unit)
 
-        raise IncompatibleUnitsError(f"Cannot add {self.unit} + {other.unit}")
+        raise IncompatibleUnitsError(f"Не удается добавить {self.unit} + {other.unit}")
 ```
 
-**Unit groups:**
+**Группы единиц:**
 ```
-Weight:   g ↔ kg  (factor: 1000)
-Volume:   ml ↔ l  (factor: 1000)
-Cooking:  tsp ↔ tbsp  (factor: 3)
-Count:    pcs (no conversion)
+Вес:   g ↔ kg  (множитель: 1000)
+Объем:   ml ↔ l  (множитель: 1000)
+Кулинария:  tsp ↔ tbsp  (множитель: 3)
+Подсчет:    pcs (без преобразования)
 ```
 
-**Example:**
+**Пример:**
 ```python
 flour_1 = Quantity(200, "g")
 flour_2 = Quantity(0.5, "kg")
-total = flour_1 + flour_2  # Quantity(700, "g") or Quantity(0.7, "kg")
+total = flour_1 + flour_2  # Quantity(700, "g") или Quantity(0.7, "kg")
 
 milk = Quantity(250, "ml")
 milk_l = milk.to_unit("l")  # Quantity(0.25, "l")
 
-apples = Quantity(5, "pcs")  # Pieces don't convert
+apples = Quantity(5, "pcs")  # Штуки не преобразуются
 ```
 
 ### Money
 
-**File:** `backend/domain/value_objects/money.py`
+**Файл:** `backend/domain/value_objects/money.py`
 
 ```python
 @dataclass(frozen=True)
 class Money:
-    amount: Decimal  # Use Decimal for exact currency math
+    amount: Decimal  # Используйте Decimal для точной валютной математики
     currency: str = "RUB"
 
     def __add__(self, other: "Money") -> "Money":
         if self.currency != other.currency:
-            raise ValueError("Cannot add different currencies")
+            raise ValueError("Не удается добавить разные валюты")
         return Money(self.amount + other.amount, self.currency)
 
     def multiply(self, factor: float) -> "Money":
         return Money(self.amount * Decimal(str(factor)), self.currency)
 ```
 
-**Example:**
+**Пример:**
 ```python
 price_per_kg = Money(Decimal("80.00"), "RUB")
 quantity_kg = 1.2
@@ -344,17 +344,17 @@ total_cost = cost_1 + cost_2  # Money(Decimal("150"), "RUB")
 
 ### RecipeIngredient
 
-**File:** `backend/domain/value_objects/recipe_ingredient.py`
+**Файл:** `backend/domain/value_objects/recipe_ingredient.py`
 
-Links a product to a recipe.
+Связывает продукт с рецептом.
 
 ```python
 @dataclass(frozen=True)
 class RecipeIngredient:
     product_id: ProductId
-    sub_recipe_id: RecipeId | None = None  # For nested recipes
+    sub_recipe_id: RecipeId | None = None  # Для вложенных рецептов
     quantity: Quantity = field(default_factory=lambda: Quantity(0, "g"))
-    order: int = 0                         # Position in ingredient list
+    order: int = 0                         # Позиция в списке ингредиентов
 
     def is_sub_recipe(self) -> bool:
         return self.sub_recipe_id is not None
@@ -363,16 +363,16 @@ class RecipeIngredient:
         return self.sub_recipe_id is None
 ```
 
-**Example:**
+**Пример:**
 ```python
-# Recipe "Борщ" includes beets (product) and "Вегетальный бульон" (sub-recipe)
+# Рецепт "Борщ" включает свеклу (продукт) и "Овощной бульон" (sub-recipe)
 ing_1 = RecipeIngredient(product_id=ProductId(5), quantity=Quantity(500, "g"), order=1)
 ing_2 = RecipeIngredient(sub_recipe_id=RecipeId(3), quantity=Quantity(1, "l"), order=2)
 ```
 
 ### CookingStep
 
-**File:** `backend/domain/value_objects/cooking_step.py`
+**Файл:** `backend/domain/value_objects/cooking_step.py`
 
 ```python
 @dataclass(frozen=True)
@@ -386,22 +386,22 @@ class CookingStep:
 
 ### Category
 
-**File:** `backend/domain/value_objects/category.py`
+**Файл:** `backend/domain/value_objects/category.py`
 
 ```python
 @dataclass(frozen=True)
 class Category:
     id: int
     name: str
-    type: str  # "product" or "recipe"
+    type: str  # "product" или "recipe"
     active: bool = True
 ```
 
-### Typed IDs
+### Типизированные ID
 
-**File:** `backend/domain/value_objects/types.py`
+**Файл:** `backend/domain/value_objects/types.py`
 
-Using `NewType` prevents mixing up different ID types at static analysis time:
+Использование `NewType` предотвращает путаницу разных типов ID во время статического анализа:
 
 ```python
 from typing import NewType
@@ -418,32 +418,32 @@ MenuSlotId = NewType("MenuSlotId", int)
 ShoppingListItemId = NewType("ShoppingListItemId", int)
 ```
 
-**Why?** mypy enforces correct ID types at compile time:
+**Почему?** mypy применяет корректные типы ID во время компиляции:
 
 ```python
 def get_recipe(recipe_id: RecipeId, user_id: UserId) -> Recipe:
     ...
 
-# ✗ mypy error: incompatible types in argument 1
+# ✗ ошибка mypy: несовместимые типы в аргументе 1
 get_recipe(ProductId(5), UserId(1))
 
 # ✓ OK
 get_recipe(RecipeId(5), UserId(1))
 ```
 
-At runtime, `RecipeId` is just an `int`, so no performance cost.
+Во время выполнения `RecipeId` — это просто `int`, поэтому нет затрат на производительность.
 
 ---
 
-## Domain Services
+## Доменные сервисы
 
-Stateless services encapsulating logic that doesn't belong to a single entity.
+Логика без состояния, которая не подходит отдельной сущности.
 
 ### ShoppingListBuilder
 
-**File:** `backend/domain/services/shopping_list_builder.py`
+**Файл:** `backend/domain/services/shopping_list_builder.py`
 
-Most complex domain service. Converts a menu + family members into a deduplicated, cost-tracked shopping list.
+Наиболее сложный доменный сервис. Преобразует меню + членов семьи в дедублированный, отслеживаемый по затратам список покупок.
 
 ```python
 class ShoppingListBuilder:
@@ -455,17 +455,17 @@ class ShoppingListBuilder:
         recipes: dict[RecipeId, Recipe],
     ) -> ShoppingList:
         """
-        Build shopping list from menu by:
-        1. Get all recipes from menu slots
-        2. Scale by family member portion multipliers
-        3. Aggregate quantities (sum + convert units)
-        4. Convert to purchase units
-        5. Calculate costs
+        Построить список покупок из меню на основе:
+        1. Получить все рецепты из слотов меню
+        2. Масштабировать по множителям порции членов семьи
+        3. Агрегировать количества (сумма + преобразование единиц)
+        4. Преобразовать в единицы покупки
+        5. Рассчитать затраты
         """
-        # Calculate total effective servings
+        # Рассчитать полные эффективные порции
         total_servings = sum(fm.portion_multiplier for fm in family_members)
 
-        # Aggregate product quantities
+        # Агрегировать количества продуктов
         product_quantities: dict[ProductId, Quantity] = {}
         for slot in menu.slots:
             if slot.recipe_id:
@@ -477,16 +477,16 @@ class ShoppingListBuilder:
                     else:
                         product_quantities[ingredient.product_id] = ingredient.quantity
 
-        # Create shopping list items
+        # Создать элементы списка покупок
         items = []
         total_cost = Money(Decimal("0.00"))
         for product_id, quantity in product_quantities.items():
             product = products[product_id]
 
-            # Convert to purchase unit
+            # Преобразовать в единицу покупки
             converted = quantity.to_unit(product.purchase_unit)
 
-            # Calculate cost
+            # Рассчитать стоимость
             item_cost = product.price_per_purchase_unit.multiply(converted.amount)
             total_cost = total_cost + item_cost
 
@@ -502,28 +502,28 @@ class ShoppingListBuilder:
         return ShoppingList(items=items, total_cost=total_cost)
 ```
 
-**Example:**
+**Пример:**
 ```python
-menu = Menu(id=MenuId(1), ...)  # 7-day meal plan
+menu = Menu(id=MenuId(1), ...)  # 7-дневный план питания
 family = [
     FamilyMember(name="Мама", portion_multiplier=1.0),
     FamilyMember(name="Папа", portion_multiplier=1.0),
     FamilyMember(name="Сын", portion_multiplier=0.5),
-]  # Total: 2.5 servings
+]  # Итого: 2.5 порций
 
 shopping_list = builder.build(menu, family, products, recipes)
-# Result: aggregated products with costs for 2.5 servings
+# Результат: агрегированные продукты с затратами для 2.5 порций
 ```
 
 ### PortionCalculator
 
-**File:** `backend/domain/services/portion_calculator.py`
+**Файл:** `backend/domain/services/portion_calculator.py`
 
 ```python
 class PortionCalculator:
     @staticmethod
     def calculate_total_servings(family_members: list[FamilyMember]) -> float:
-        """Sum all portion multipliers."""
+        """Сумма всех множителей порции."""
         return sum(fm.portion_multiplier for fm in family_members)
 
     @staticmethod
@@ -531,7 +531,7 @@ class PortionCalculator:
         base_servings: int,
         family_members: list[FamilyMember],
     ) -> dict[FamilyMemberId, float]:
-        """Map each member to their portion size."""
+        """Карта каждого члена семьи на их размер порции."""
         return {
             fm.id: base_servings * fm.portion_multiplier
             for fm in family_members
@@ -540,25 +540,25 @@ class PortionCalculator:
 
 ### UnitConverter
 
-**File:** `backend/domain/services/unit_converter.py`
+**Файл:** `backend/domain/services/unit_converter.py`
 
 ```python
 class UnitConverter:
-    # Unit groups and conversion factors
+    # Группы единиц и коэффициенты преобразования
     WEIGHT_UNITS = {"g": 1, "kg": 1000}
     VOLUME_UNITS = {"ml": 1, "l": 1000}
     COOKING_UNITS = {"tsp": 1, "tbsp": 3}
 
     @staticmethod
     def convert(quantity: Quantity, target_unit: str) -> Quantity:
-        """Convert to different unit within same group."""
+        """Преобразовать в другую единицу в той же группе."""
         if quantity.unit == target_unit:
             return quantity
         return quantity.to_unit(target_unit)
 
     @staticmethod
     def get_unit_group(unit: str) -> str | None:
-        """Return group name or None if not convertible."""
+        """Возвращает имя группы или None если не преобразуемо."""
         if unit in UnitConverter.WEIGHT_UNITS:
             return "weight"
         elif unit in UnitConverter.VOLUME_UNITS:
@@ -570,11 +570,11 @@ class UnitConverter:
 
 ---
 
-## Ports (Abstract Interfaces)
+## Порты (абстрактные интерфейсы)
 
-Ports define the contract between Domain and Infrastructure. Infrastructure implements these ports.
+Порты определяют контракт между доменным слоем и инфраструктурой. Инфраструктура реализует эти порты.
 
-**Location:** `backend/domain/ports/`
+**Расположение:** `backend/domain/ports/`
 
 ### RecipeRepository
 
@@ -582,29 +582,29 @@ Ports define the contract between Domain and Infrastructure. Infrastructure impl
 class RecipeRepository(ABC):
     @abstractmethod
     def get_by_id(self, recipe_id: RecipeId, user_id: UserId) -> Recipe | None:
-        """Get recipe by ID, scoped to user."""
+        """Получить рецепт по ID, ограниченный пользователем."""
         pass
 
     @abstractmethod
     def list_by_user(self, user_id: UserId) -> list[Recipe]:
-        """List all user's recipes."""
+        """Вывести все рецепты пользователя."""
         pass
 
     @abstractmethod
     def list_by_category(
         self, user_id: UserId, category_id: RecipeCategoryId
     ) -> list[Recipe]:
-        """List recipes in category."""
+        """Вывести рецепты в категории."""
         pass
 
     @abstractmethod
     def save(self, recipe: Recipe) -> RecipeId:
-        """Create or update recipe. Returns ID."""
+        """Создать или обновить рецепт. Возвращает ID."""
         pass
 
     @abstractmethod
     def delete(self, recipe_id: RecipeId, user_id: UserId) -> None:
-        """Soft or hard delete."""
+        """Мягкое или жесткое удаление."""
         pass
 ```
 
@@ -668,71 +668,71 @@ class MenuRepository(ABC):
         pass
 ```
 
-### Other Ports
+### Другие порты
 
-- `FamilyMemberRepository` — CRUD family members
-- `UserRepository` — CRUD users, find by email
-- `RefreshTokenRepository` — CRUD refresh tokens
-- `RecipeCategoryRepository` — CRUD recipe categories
-- `ProductCategoryRepository` — CRUD product categories
-- `PasswordHasher` — hash and verify passwords
-- `TokenService` — create and validate JWTs
+- `FamilyMemberRepository` — CRUD членов семьи
+- `UserRepository` — CRUD пользователей, поиск по email
+- `RefreshTokenRepository` — CRUD refresh токенов
+- `RecipeCategoryRepository` — CRUD категорий рецептов
+- `ProductCategoryRepository` — CRUD категорий продуктов
+- `PasswordHasher` — хеширование и проверка пароля
+- `TokenService` — создание и валидация JWT
 
 ---
 
-## Exceptions
+## Исключения
 
-**File:** `backend/domain/exceptions.py`
+**Файл:** `backend/domain/exceptions.py`
 
-All domain exceptions inherit from `DomainError`.
+Все доменные исключения наследуют от `DomainError`.
 
 ```python
 class DomainError(Exception):
-    """Base for all domain errors."""
+    """База для всех доменных ошибок."""
     pass
 
 class InvalidEntityError(DomainError):
-    """Entity invariant violated (e.g., servings < 1)."""
+    """Нарушение инварианта сущности (например, servings < 1)."""
     pass
 
 class EntityNotFoundError(DomainError):
-    """Requested entity not found."""
+    """Запрошенная сущность не найдена."""
     pass
 
 class AuthenticationError(DomainError):
-    """Invalid credentials or token."""
+    """Неверные учетные данные или токен."""
     pass
 
 class CircularDependencyError(DomainError):
-    """Recipe A includes recipe B which includes recipe A."""
+    """Рецепт A включает рецепт B который включает рецепт A."""
     pass
 
 class NestingDepthExceededError(DomainError):
-    """Sub-recipe nesting too deep (e.g., > 5 levels)."""
+    """Глубина вложения sub-recipe слишком велика (например, > 5 уровней)."""
     pass
 
 class IncompatibleUnitsError(DomainError):
-    """Cannot convert between units (e.g., g + l)."""
+    """Не удается преобразовать между единицами (например, g + l)."""
     pass
 
 class SubRecipeWeightError(DomainError):
-    """Sub-recipe missing weight for flattening."""
+    """Sub-recipe отсутствует вес для выравнивания."""
     pass
 ```
 
 ---
 
-## Summary
+## Резюме
 
-The Domain layer is a **self-contained, framework-free model** of Menu Planner's business:
-- **Entities** capture core concepts (Recipe, Product, Menu, User)
-- **Value objects** are immutable and safe (Quantity, Money, RecipeIngredient)
-- **Services** orchestrate complex logic (ShoppingListBuilder)
-- **Ports** define contracts with the outside world (repositories, auth)
-- **Exceptions** communicate business rule violations
+Доменный слой — это **автономная, свободная от фреймворка модель** бизнеса Menu Planner:
+- **Сущности** захватывают основные концепции (Recipe, Product, Menu, User)
+- **Объекты-значения** неизменяемы и безопасны (Quantity, Money, RecipeIngredient)
+- **Сервисы** оркестрируют сложную логику (ShoppingListBuilder)
+- **Порты** определяют контракты с внешним миром (репозитории, аутентификация)
+- **Исключения** сообщают о нарушениях бизнес-правил
 
-All layers above (Application, API, Frontend) depend on this core. It can be tested without any mocks or framework setup.
+Все слои выше (приложение, API, фронтенд) зависят от этого ядра. Он может быть протестирован без мокирования или настройки фреймворка.
 
 ---
 
-**Next:** See [backend-application.md](04-backend-application.md) for use case patterns.
+**Далее:** См. [backend-application.md](04-backend-application.md) для паттернов use case.

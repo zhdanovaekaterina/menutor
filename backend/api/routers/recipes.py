@@ -21,7 +21,7 @@ from backend.api.schemas.recipe import (
 from backend.application.use_cases.preview_flattened_products import IngredientData
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
-from backend.domain.exceptions import SubRecipeWeightError
+from backend.domain.exceptions import DuplicateNameError, SubRecipeWeightError
 from backend.domain.value_objects.types import RecipeCategoryId, RecipeId, UserId
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
@@ -160,7 +160,10 @@ def create_recipe(
     user: User = Depends(get_current_user),
 ) -> RecipeResponse:
     data = schema_to_recipe_data(body)
-    recipe = container.create_recipe.execute(data, user.id)
+    try:
+        recipe = container.create_recipe.execute(data, user.id)
+    except DuplicateNameError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     return recipe_to_response(recipe, _make_name_lookup(container, user.id))
 
 

@@ -6,11 +6,13 @@ import ShoppingSummary from '@/components/shopping/ShoppingSummary.vue'
 import ShoppingTable from '@/components/shopping/ShoppingTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
+import { downloadShoppingListPdf, downloadShoppingListJson } from '@/api/client'
 import { downloadBlob } from '@/composables/useFileDownload'
 import { useSelection } from '@/composables/useSelection'
 import { useProductStore } from '@/stores/products'
 import { useShoppingListStore } from '@/stores/shoppingList'
 import { useToastStore } from '@/stores/toast'
+import { formatUnit } from '@/utils/units'
 
 const store = useShoppingListStore()
 const productStore = useProductStore()
@@ -59,10 +61,6 @@ function onConfirmRemove() {
   }
 }
 
-const UNIT_MAP: Record<string, string> = {
-  g: 'г', kg: 'кг', ml: 'мл', l: 'л', pcs: 'шт', box: 'кор', pack: 'уп', tsp: 'ч.л.', tbsp: 'ст.л.',
-}
-function fmtUnit(u: string) { return UNIT_MAP[u] ?? u }
 function fmtRound2(n: number) { return String(Number(n.toFixed(2))) }
 function fmtBuyAmt(amount: number, unit: string) { return unit === 'kg' ? fmtRound2(amount) : String(amount) }
 
@@ -73,8 +71,8 @@ function buildTextExport(): string {
     for (const item of items) {
       const rq = item.recipe_quantity
       const bq = item.buy_quantity
-      const recipeStr = rq ? `${fmtRound2(rq.amount)} ${fmtUnit(rq.unit)}` : '-'
-      const buyStr = `${fmtBuyAmt(bq.amount, bq.unit)} ${fmtUnit(bq.unit)}`
+      const recipeStr = rq ? `${fmtRound2(rq.amount)} ${formatUnit(rq.unit)}` : '-'
+      const buyStr = `${fmtBuyAmt(bq.amount, bq.unit)} ${formatUnit(bq.unit)}`
       lines.push(`• ${item.product_name} — купить: ${buyStr} (рецепт: ${recipeStr}) — ${Number(item.cost.amount).toFixed(2)} руб`)
     }
     lines.push('')
@@ -110,6 +108,63 @@ function onExportText() {
 function onExportCsv() {
   if (!store.data) { toast.show('Список покупок пуст', 'info'); return }
   downloadBlob(new Blob([buildCsvExport()], { type: 'text/csv;charset=utf-8' }), 'shopping_list.csv')
+}
+
+function buildJsonExport(): string {
+  const payload = {
+    title: 'Список покупок',
+    total_cost: store.totalCost,
+    items: store.items.map((item) => ({
+      category: item.category,
+      product_name: item.product_name,
+      recipe_quantity: item.recipe_quantity ?? null,
+      buy_quantity: item.buy_quantity,
+      cost: item.cost,
+      purchased: item.purchased,
+    })),
+  }
+  return JSON.stringify(payload, null, 2)
+}
+
+function onExportJson() {
+  if (!store.data) { toast.show('Список покупок пуст', 'info'); return }
+  downloadBlob(new Blob([buildJsonExport()], { type: 'application/json;charset=utf-8' }), 'shopping_list.json')
+}
+
+async function onExportPdf() {
+  if (!store.data) { toast.show('Список покупок пуст', 'info'); return }
+  if (!store.menuId) { toast.show('Не удалось определить меню для экспорта', 'error'); return }
+  try {
+    const blob = await downloadShoppingListPdf(store.menuId)
+    downloadBlob(blob, 'shopping_list.pdf')
+  } catch {
+    toast.show('Ошибка экспорта в PDF', 'error')
+  }
+}
+
+const exportLoading = ref(false)
+
+async function onExport(format: string) {
+  if (!store.data) { toast.show('Список покупок пуст', 'info'); return }
+  if (format === 'txt') { onExportText(); return }
+  if (format === 'csv') { onExportCsv(); return }
+  if (format === 'json') {
+    if (store.menuId) {
+      exportLoading.value = true
+      try {
+        const blob = await downloadShoppingListJson(store.menuId)
+        downloadBlob(blob, 'shopping_list.json')
+      } catch {
+        toast.show('Ошибка экспорта в JSON', 'error')
+      } finally {
+        exportLoading.value = false
+      }
+    } else {
+      onExportJson()
+    }
+    return
+  }
+  if (format === 'pdf') { await onExportPdf(); return }
 }
 
 function onAddProduct(productId: number, quantity: number) {
@@ -225,8 +280,8 @@ function onConfirmDeleteAll() {
           :item-count="store.items.length"
           :purchased-count="store.purchasedCount"
           :progress-percent="store.progressPercent"
-          @export-text="onExportText"
-          @export-csv="onExportCsv"
+          :export-loading="exportLoading"
+          @export="onExport"
         />
         <AddProductForm
           :products="productStore.items"
@@ -318,8 +373,8 @@ function onConfirmDeleteAll() {
                 :item-count="store.items.length"
                 :purchased-count="store.purchasedCount"
                 :progress-percent="store.progressPercent"
-                @export-text="onExportText"
-                @export-csv="onExportCsv"
+                :export-loading="exportLoading"
+                @export="onExport"
               />
               <AddProductForm
                 :products="productStore.items"
@@ -334,22 +389,3 @@ function onConfirmDeleteAll() {
   </div>
 </template>
 
-<style scoped>
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: transform 0.3s ease;
-}
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(100%);
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>

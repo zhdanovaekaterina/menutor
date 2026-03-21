@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useDropdown } from '@/composables/useDropdown'
+import IconDotsVertical from '@/components/ui/icons/IconDotsVertical.vue'
 
 defineProps<{
   showDeleteAll?: boolean
@@ -22,9 +23,7 @@ const { open, toggle, close } = useDropdown()
       title="Дополнительные действия"
       @click="toggle()"
     >
-      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
-      </svg>
+      <IconDotsVertical class="w-5 h-5" />
     </button>
     <div
       v-if="open"

@@ -34,6 +34,8 @@ def _wire_import_export(
     export_registry.register("menus", "json", MenuJsonExporter())
     export_registry.register("shopping_list", "txt", infra.text_exporter)
     export_registry.register("shopping_list", "csv", infra.csv_exporter)
+    export_registry.register("shopping_list", "json", infra.json_exporter)
+    export_registry.register("shopping_list", "pdf", infra.pdf_exporter)
 
     import_registry = ImportRegistry()
     import_registry.register("products", "csv", ProductCsvImporter(infra.product_repo))

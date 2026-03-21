@@ -48,6 +48,7 @@ def _saved_recipe(id: int = 1) -> Recipe:
 
 def test_create_recipe_calls_save_and_returns_result() -> None:
     repo = MagicMock()
+    repo.find_by_name.return_value = None
     repo.save.return_value = _saved_recipe()
 
     result = CreateRecipe(repo).execute(_data(), UID)
@@ -58,6 +59,7 @@ def test_create_recipe_calls_save_and_returns_result() -> None:
 
 def test_create_recipe_builds_entity_with_correct_fields() -> None:
     repo = MagicMock()
+    repo.find_by_name.return_value = None
     repo.save.side_effect = lambda r: r
 
     result = CreateRecipe(repo).execute(_data(name="Борщ", servings=6), UID)
@@ -148,6 +150,7 @@ def _sub_recipe(id: int = 10, user_id: UserId = UID) -> Recipe:
 def test_create_recipe_with_sub_recipe_calls_validator() -> None:
     repo = MagicMock()
     validator = MagicMock()
+    repo.find_by_name.return_value = None
     repo.get_by_id.return_value = _sub_recipe()
     repo.save.side_effect = lambda r: r
 
@@ -160,6 +163,7 @@ def test_create_recipe_with_sub_recipe_calls_validator() -> None:
 def test_create_recipe_sub_recipe_not_found_raises() -> None:
     repo = MagicMock()
     validator = MagicMock()
+    repo.find_by_name.return_value = None
     repo.get_by_id.return_value = None
 
     data = _data(ingredients=[_sub_recipe_ingredient()])
@@ -170,6 +174,7 @@ def test_create_recipe_sub_recipe_not_found_raises() -> None:
 def test_create_recipe_sub_recipe_wrong_user_raises() -> None:
     repo = MagicMock()
     validator = MagicMock()
+    repo.find_by_name.return_value = None
     other_uid = UserId(99)
     repo.get_by_id.return_value = _sub_recipe(user_id=other_uid)
 
@@ -181,6 +186,7 @@ def test_create_recipe_sub_recipe_wrong_user_raises() -> None:
 def test_create_recipe_circular_dependency_raises() -> None:
     repo = MagicMock()
     validator = MagicMock()
+    repo.find_by_name.return_value = None
     repo.get_by_id.return_value = _sub_recipe()
     validator.validate.side_effect = CircularDependencyError("цикл")
 
@@ -192,6 +198,7 @@ def test_create_recipe_circular_dependency_raises() -> None:
 def test_create_recipe_without_sub_recipes_skips_validation() -> None:
     repo = MagicMock()
     validator = MagicMock()
+    repo.find_by_name.return_value = None
     repo.save.side_effect = lambda r: r
 
     # product-only ingredients

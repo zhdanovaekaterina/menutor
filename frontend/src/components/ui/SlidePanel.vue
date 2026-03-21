@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import IconBackArrow from '@/components/ui/icons/IconBackArrow.vue'
+
 defineProps<{
   open: boolean
   title?: string
@@ -35,9 +37,7 @@ const emit = defineEmits<{
               class="sm:hidden p-1 rounded hover:bg-gray-100 text-gray-500 -ml-1"
               @click="emit('close')"
             >
-              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-              </svg>
+              <IconBackArrow class="w-5 h-5" />
             </button>
             <h2 class="text-lg font-semibold">{{ title }}</h2>
           </div>
@@ -60,15 +60,6 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
 .slide-enter-active,
 .slide-leave-active {
   transition: transform 0.25s ease;

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import {
   addSlot,
   clearMenu,
+  copyMenu,
   createMenu,
   deleteMenu,
   fetchMenu,
@@ -125,6 +126,14 @@ export const useMenuStore = defineStore('menus', () => {
     useToastStore().show('Меню очищено', 'success')
   }
 
+  async function copy(id: number) {
+    const newMenu = await copyMenu(id)
+    menus.value.push(newMenu)
+    selectedId.value = newMenu.id
+    useToastStore().show('Меню скопировано', 'success')
+    return newMenu
+  }
+
   function _autoMenuName(): string {
     const now = new Date()
     const hh = String(now.getHours()).padStart(2, '0')
@@ -140,5 +149,5 @@ export const useMenuStore = defineStore('menus', () => {
     await create(_autoMenuName())
   }
 
-  return { menus, current, selectedId, loading, load, select, create, remove, addSlotToMenu, removeSlotFromMenu, moveSlot, reorderSlots, mergeItemsIntoSlot, clear, ensureMenuSelected }
+  return { menus, current, selectedId, loading, load, select, create, remove, copy, addSlotToMenu, removeSlotFromMenu, moveSlot, reorderSlots, mergeItemsIntoSlot, clear, ensureMenuSelected }
 })

@@ -130,3 +130,34 @@ class ClearMenu:
         menu = load_owned(self._repo, menu_id, user_id, "Меню", not_found="не найдено")
         menu.clear_slots()
         return self._repo.save(menu)
+
+
+class CopyMenu:
+    """Create a full copy of an existing menu with all its slots."""
+
+    def __init__(self, repo: MenuRepository) -> None:
+        self._repo = repo
+
+    def execute(self, menu_id: MenuId, user_id: UserId) -> WeeklyMenu:
+        source = load_owned(self._repo, menu_id, user_id, "Меню", not_found="не найдено")
+        copied_slots = [
+            MenuSlot(
+                day=s.day,
+                meal_type=s.meal_type,
+                recipe_id=s.recipe_id,
+                product_id=s.product_id,
+                quantity=s.quantity,
+                unit=s.unit,
+                servings_override=s.servings_override,
+                pieces_override=s.pieces_override,
+                position=s.position,
+            )
+            for s in source.slots
+        ]
+        new_menu = WeeklyMenu(
+            id=MenuId(0),
+            name=f"Копия: {source.name}",
+            slots=copied_slots,
+            user_id=user_id,
+        )
+        return self._repo.save(new_menu)

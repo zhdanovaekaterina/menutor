@@ -12,6 +12,7 @@ import ExportModal from '@/components/ui/ExportModal.vue'
 import ImportModal from '@/components/ui/ImportModal.vue'
 import InputDialog from '@/components/ui/InputDialog.vue'
 import SlotEditDialog from '@/components/ui/SlotEditDialog.vue'
+import SplitDropdownButton from '@/components/ui/SplitDropdownButton.vue'
 import IconCart from '@/components/ui/icons/IconCart.vue'
 import IconChevronLeft from '@/components/ui/icons/IconChevronLeft.vue'
 import IconChevronRight from '@/components/ui/icons/IconChevronRight.vue'
@@ -19,8 +20,9 @@ import IconClose from '@/components/ui/icons/IconClose.vue'
 import IconDownload from '@/components/ui/icons/IconDownload.vue'
 import IconHamburger from '@/components/ui/icons/IconHamburger.vue'
 import IconUpload from '@/components/ui/icons/IconUpload.vue'
-import { exportEntities } from '@/api/client'
+import { exportEntities, exportMenuPdf } from '@/api/client'
 import { useContextMenu } from '@/composables/useContextMenu'
+import { formatUnit } from '@/utils/units'
 import { downloadBlob } from '@/composables/useFileDownload'
 import { useFamilyStore } from '@/stores/family'
 import { useMenuStore } from '@/stores/menus'
@@ -40,7 +42,15 @@ const toast = useToastStore()
 
 const isXl = ref(typeof window !== 'undefined' && window.innerWidth >= 1280)
 const leftPanelOpen = ref(true)
-const rightPanelOpen = ref(isXl.value)
+const rightPanelOpen = ref(false)
+const autoSwitchDone = ref(false)
+
+function doAutoSwitch() {
+  if (autoSwitchDone.value) return
+  autoSwitchDone.value = true
+  leftPanelOpen.value = false
+  rightPanelOpen.value = true
+}
 
 const mobileLeftOpen = ref(false)
 
@@ -99,12 +109,14 @@ const pickerExistingSlots = computed(() =>
 
 async function onSelectMenu(id: number) {
   await menuStore.select(id)
+  doAutoSwitch()
 }
 
 async function onCreateMenu(name: string) {
   nameDialogOpen.value = false
   if (!name.trim()) return
   await menuStore.create(name.trim())
+  doAutoSwitch()
 }
 
 async function onDeleteMenu() {
@@ -138,8 +150,8 @@ async function onAddItem(day: number, mealType: string, data: { type: 'recipe' |
     meal_type: mealType,
     recipe_id: data.type === 'recipe' ? data.id : null,
     product_id: data.type === 'product' ? data.id : null,
-    quantity: data.type === 'product' ? 1 : null,
     unit: data.type === 'product' ? (productStore.items.find((p) => p.id === data.id)?.recipe_unit ?? null) : null,
+    quantity: data.type === 'product' ? (productStore.items.find((p) => p.id === data.id)?.recipe_unit === 'g' ? 100 : 1) : null,
     servings_override: data.type === 'recipe' ? totalFamilyPortions.value : null,
   }
   await menuStore.addSlotToMenu(slot)
@@ -227,13 +239,48 @@ async function onClear() {
   await menuStore.clear()
 }
 
-async function onExportCurrentMenu() {
+async function onCopyMenu() {
+  if (!selectedId.value) return
+  await menuStore.copy(selectedId.value)
+}
+
+const exportFormat = ref<'pdf' | 'json'>('pdf')
+const paperSize = ref<'a4' | 'a3'>('a4')
+const exportLoading = ref(false)
+
+const exportFormats = [
+  { value: 'pdf', label: 'PDF' },
+  { value: 'json', label: 'JSON' },
+]
+
+async function onExportMenu() {
   if (!menuStore.current) return
+  exportLoading.value = true
   try {
-    const blob = await exportEntities('menus', 'json', [menuStore.current.id])
-    downloadBlob(blob, `menu_${menuStore.current.name}.json`)
+    if (exportFormat.value === 'pdf') {
+      const blob = await exportMenuPdf(menuStore.current.id, paperSize.value)
+      downloadBlob(blob, `menu_${menuStore.current.name}.pdf`)
+    } else {
+      const blob = await exportEntities('menus', 'json', [menuStore.current.id])
+      downloadBlob(blob, `menu_${menuStore.current.name}.json`)
+    }
   } catch (e: any) {
-    toast.show(e?.response?.data?.detail ?? 'Ошибка экспорта меню', 'error')
+    let message = 'Ошибка экспорта меню'
+    const data = e?.response?.data
+    if (data instanceof Blob) {
+      try {
+        const text = await data.text()
+        const parsed = JSON.parse(text)
+        if (parsed?.detail) message = parsed.detail
+      } catch {
+        // keep default message
+      }
+    } else if (data?.detail) {
+      message = data.detail
+    }
+    toast.show(message, 'error')
+  } finally {
+    exportLoading.value = false
   }
 }
 
@@ -277,6 +324,7 @@ async function onGenerateShoppingList() {
             :selected-id="selectedId"
             @select="onSelectMenu"
             @create="nameDialogOpen = true"
+            @copy="onCopyMenu"
             @remove="confirmDeleteOpen = true"
           />
         </div>
@@ -284,7 +332,7 @@ async function onGenerateShoppingList() {
 
       <!-- Center: always visible -->
       <div class="flex-1 flex flex-col gap-4 min-w-0">
-        <div class="flex-1 overflow-hidden lg:overflow-auto">
+        <div class="flex-1 overflow-hidden lg:overflow-x-auto">
           <PlannerGrid
             :slots="slots"
             :recipe-names="recipeNames"
@@ -330,15 +378,36 @@ async function onGenerateShoppingList() {
             >
               <IconDownload class="w-4 h-4" />
             </button>
-            <button
-              class="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-blue-300 text-blue-700 bg-blue-50 text-sm hover:bg-blue-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              :disabled="!menuStore.current"
-              @click="onExportCurrentMenu"
-              title="Скачать текущее меню как JSON"
-            >
-              <IconDownload class="w-4 h-4" />
-              <span class="hidden sm:inline">Скачать меню</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <SplitDropdownButton
+                :formats="exportFormats"
+                v-model="exportFormat"
+                :loading="exportLoading"
+                :disabled="!menuStore.current"
+                @export="onExportMenu"
+              />
+              <div
+                v-if="exportFormat === 'pdf'"
+                class="flex items-center rounded-lg border border-gray-300 text-sm"
+              >
+                <button
+                  type="button"
+                  class="px-2.5 py-2 transition-colors rounded-l-lg"
+                  :class="paperSize === 'a4' ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-700'"
+                  @click="paperSize = 'a4'"
+                >
+                  A4
+                </button>
+                <button
+                  type="button"
+                  class="px-2.5 py-2 transition-colors border-l border-gray-300 rounded-r-lg"
+                  :class="paperSize === 'a3' ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-700'"
+                  @click="paperSize = 'a3'"
+                >
+                  A3
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="flex-1" />
@@ -403,7 +472,7 @@ async function onGenerateShoppingList() {
     <InputDialog
       :open="!!editSlot && !editPiecesMode"
       :title="editSlot?.recipe_id != null ? 'Порции' : 'Количество'"
-      :label="editSlot?.recipe_id != null ? 'Количество порций' : 'Количество'"
+      :label="editSlot?.recipe_id != null ? 'Количество порций' : (editSlot?.unit ? `Количество, ${formatUnit(editSlot.unit)}` : 'Количество')"
       :initial-value="editValue"
       input-type="number"
       :show-delete="true"
@@ -473,6 +542,7 @@ async function onGenerateShoppingList() {
             :selected-id="selectedId"
             @select="(id) => { onSelectMenu(id); mobileLeftOpen = false }"
             @create="nameDialogOpen = true; mobileLeftOpen = false"
+            @copy="onCopyMenu"
             @remove="confirmDeleteOpen = true; mobileLeftOpen = false"
           />
         </div>
@@ -491,18 +561,3 @@ async function onGenerateShoppingList() {
   </div>
 </template>
 
-<style scoped>
-.slide-left-enter-active, .slide-left-leave-active {
-  transition: transform 0.25s ease;
-}
-.slide-left-enter-from, .slide-left-leave-to {
-  transform: translateX(-100%);
-}
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
-</style>

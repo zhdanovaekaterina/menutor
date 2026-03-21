@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import type { ProductCreate } from '@/api/types'
 import ProductForm from '@/components/products/ProductForm.vue'
 import ProductTable from '@/components/products/ProductTable.vue'
@@ -8,103 +8,35 @@ import ExportModal from '@/components/ui/ExportModal.vue'
 import ImportModal from '@/components/ui/ImportModal.vue'
 import MoreActionsDropdown from '@/components/ui/MoreActionsDropdown.vue'
 import SlidePanel from '@/components/ui/SlidePanel.vue'
-import { useSelection } from '@/composables/useSelection'
+import { useCrudView } from '@/composables/useCrudView'
 import { useProductStore } from '@/stores/products'
-import { useToastStore } from '@/stores/toast'
 
 const store = useProductStore()
-const toast = useToastStore()
-const selection = useSelection()
 
-const selectedId = ref<number | null>(null)
-const confirmDeleteOpen = ref(false)
-const formOpen = ref(false)
-const exportOpen = ref(false)
-const importOpen = ref(false)
+const {
+  selection,
+  selectedId,
+  selectedItem: selectedProduct,
+  confirmDeleteOpen,
+  formOpen,
+  exportOpen,
+  importOpen,
+  confirmBatchDeleteOpen,
+  confirmDeleteAllOpen,
+  onSelect,
+  openNew,
+  onSave,
+  onRemove,
+  onConfirmDelete,
+  onClear,
+  toggleSelectMode,
+  onConfirmBatchDelete,
+  onConfirmDeleteAll,
+} = useCrudView<(typeof store.items)[number], ProductCreate>(store)
 
 onMounted(() => {
   store.load()
 })
-
-const selectedProduct = computed(() =>
-  store.items.find((p) => p.id === selectedId.value) ?? null,
-)
-
-function onSelect(id: number) {
-  selectedId.value = id
-  formOpen.value = true
-}
-
-function openNew() {
-  selectedId.value = null
-  formOpen.value = true
-}
-
-async function onSave(data: ProductCreate, id: number | null) {
-  try {
-    if (id) {
-      await store.update(id, data)
-    } else {
-      const created = await store.create(data)
-      selectedId.value = created.id
-    }
-    formOpen.value = false
-  } catch (e: any) {
-    toast.show(e?.response?.data?.detail ?? 'Ошибка сохранения', 'error')
-  }
-}
-
-function onRemove(id: number) {
-  selectedId.value = id
-  confirmDeleteOpen.value = true
-}
-
-async function onConfirmDelete() {
-  confirmDeleteOpen.value = false
-  if (!selectedId.value) return
-  try {
-    await store.remove(selectedId.value)
-    selectedId.value = null
-    formOpen.value = false
-  } catch (e: any) {
-    toast.show(e?.response?.data?.detail ?? 'Ошибка удаления', 'error')
-  }
-}
-
-function onClear() {
-  selectedId.value = null
-  formOpen.value = false
-}
-
-const confirmBatchDeleteOpen = ref(false)
-const confirmDeleteAllOpen = ref(false)
-
-function toggleSelectMode() {
-  if (selection.active.value) selection.exit()
-  else { selection.enter(); formOpen.value = false }
-}
-
-async function onConfirmBatchDelete() {
-  confirmBatchDeleteOpen.value = false
-  const ids = [...selection.selected.value]
-  try {
-    await store.removeMany(ids)
-    selection.clear()
-  } catch (e: any) {
-    toast.show(e?.response?.data?.detail ?? 'Ошибка удаления', 'error')
-  }
-}
-
-async function onConfirmDeleteAll() {
-  confirmDeleteAllOpen.value = false
-  const ids = store.items.map((p) => p.id)
-  try {
-    await store.removeMany(ids)
-    selection.exit()
-  } catch (e: any) {
-    toast.show(e?.response?.data?.detail ?? 'Ошибка удаления', 'error')
-  }
-}
 </script>
 
 <template>

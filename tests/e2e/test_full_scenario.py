@@ -56,23 +56,23 @@ from backend.infrastructure.database.connection import (
     seed_defaults,
 )
 from backend.infrastructure.export.text_exporter import ShoppingListTextExporter
-from backend.infrastructure.repositories.sqlalchemy_family_member_repository import (
-    SqlAlchemyFamilyMemberRepository,
+from backend.infrastructure.repositories.orm_family_member_repository import (
+    OrmFamilyMemberRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_menu_repository import (
-    SqlAlchemyMenuRepository,
+from backend.infrastructure.repositories.orm_menu_repository import (
+    OrmMenuRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_product_category_repository import (
-    SqlAlchemyProductCategoryRepository,
+from backend.infrastructure.repositories.orm_product_category_repository import (
+    OrmProductCategoryRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_product_repository import (
-    SqlAlchemyProductRepository,
+from backend.infrastructure.repositories.orm_product_repository import (
+    OrmProductRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_recipe_category_repository import (
-    SqlAlchemyRecipeCategoryRepository,
+from backend.infrastructure.repositories.orm_recipe_category_repository import (
+    OrmRecipeCategoryRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_recipe_repository import (
-    SqlAlchemyRecipeRepository,
+from backend.infrastructure.repositories.orm_recipe_repository import (
+    OrmRecipeRepository,
 )
 
 TEST_USER_ID = UserId(1)
@@ -101,12 +101,12 @@ def db():
 def repos(db):
     """All repository instances backed by the in-memory DB."""
     return {
-        "recipe": SqlAlchemyRecipeRepository(db),
-        "product": SqlAlchemyProductRepository(db),
-        "menu": SqlAlchemyMenuRepository(db),
-        "family": SqlAlchemyFamilyMemberRepository(db),
-        "product_cat": SqlAlchemyProductCategoryRepository(db),
-        "recipe_cat": SqlAlchemyRecipeCategoryRepository(db),
+        "recipe": OrmRecipeRepository(db),
+        "product": OrmProductRepository(db),
+        "menu": OrmMenuRepository(db),
+        "family": OrmFamilyMemberRepository(db),
+        "product_cat": OrmProductCategoryRepository(db),
+        "recipe_cat": OrmRecipeCategoryRepository(db),
     }
 
 

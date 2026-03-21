@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
 from backend.domain.entities.product import Product
-from backend.domain.exceptions import DomainError, EntityNotFoundError
+from backend.domain.exceptions import DomainError, DuplicateNameError, EntityNotFoundError
 from backend.domain.value_objects.category import ActiveCategory
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.types import ProductCategoryId, ProductId
@@ -103,6 +103,21 @@ class TestCreateProduct:
     ) -> None:
         resp = client.post("/api/products", json={"name": "Мука"})
         assert resp.status_code == 422
+
+    def test_returns_409_on_duplicate_name(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.create_product.execute.side_effect = DuplicateNameError("продукт")
+        body = {
+            "name": "Мука",
+            "category_id": 1,
+            "recipe_unit": "g",
+            "purchase_unit": "kg",
+            "price_amount": "80",
+        }
+        resp = client.post("/api/products", json=body)
+        assert resp.status_code == 409
+        assert "Продукт с таким названием уже существует" in resp.json()["detail"]
 
 
 # ---- PUT /api/products/{product_id} ----

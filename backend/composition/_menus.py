@@ -5,6 +5,7 @@ from typing import Any
 from backend.application.use_cases.plan_menu import (
     AddDishToSlot,
     ClearMenu,
+    CopyMenu,
     CreateMenu,
     DeleteMenu,
     ListMenus,
@@ -27,4 +28,5 @@ def _wire_menus(infra: _Infrastructure) -> dict[str, Any]:
         "move_slot_in_menu": MoveSlotInMenu(infra.menu_repo),
         "remove_item_from_slot": RemoveItemFromSlot(infra.menu_repo),
         "clear_menu": ClearMenu(infra.menu_repo),
+        "copy_menu": CopyMenu(infra.menu_repo),
     }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ShoppingListItem } from '@/api/types'
+import { formatUnit } from '@/utils/units'
 
 const props = defineProps<{
   itemsByCategory: Record<string, ShoppingListItem[]>
@@ -17,21 +18,15 @@ const emit = defineEmits<{
   select: [productId: number]
 }>()
 
-const UNIT_MAP: Record<string, string> = {
-  g: 'г', kg: 'кг', ml: 'мл', l: 'л', pcs: 'шт', box: 'кор', pack: 'уп', tsp: 'ч.л.', tbsp: 'ст.л.',
-}
-
-function fmtUnit(u: string) { return UNIT_MAP[u] ?? u }
-
 function fmtQty(item: ShoppingListItem) {
   if (!item.recipe_quantity) return '—'
-  return `${Number(item.recipe_quantity.amount.toFixed(2))} ${fmtUnit(item.recipe_quantity.unit)}`
+  return `${Number(item.recipe_quantity.amount.toFixed(2))} ${formatUnit(item.recipe_quantity.unit)}`
 }
 
 function fmtBuyQty(item: ShoppingListItem) {
   const q = item.buy_quantity
   const amount = q.unit === 'kg' ? Number(q.amount.toFixed(2)) : q.amount
-  return `${amount} ${fmtUnit(q.unit)}`
+  return `${amount} ${formatUnit(q.unit)}`
 }
 
 const allProductIds = computed(() => {

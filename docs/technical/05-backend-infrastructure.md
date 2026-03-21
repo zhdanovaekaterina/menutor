@@ -1,20 +1,20 @@
-# Infrastructure Layer — Repositories, Auth, Database
+# Инфраструктурный слой — Репозитории, Аутентификация, База данных
 
-**File location:** `backend/infrastructure/`
+**Расположение файла:** `backend/infrastructure/`
 
-The Infrastructure layer implements Domain ports (abstractions). It contains all framework-specific code: SQLAlchemy ORM, bcrypt password hashing, JWT token generation, and file I/O.
+Инфраструктурный слой реализует порты домена. Содержит все код, специфичный для фреймворка: SQLAlchemy ORM, хеширование пароля bcrypt, генерация JWT токенов и file I/O.
 
 ---
 
-## Repository Pattern
+## Паттерн репозиториев
 
-Repositories implement the Repository port (interface) from Domain. They abstract data access.
+Репозитории реализуют порт Repository (интерфейс) из домена. Они абстрагируют доступ к данным.
 
-### ORM Models
+### ORM модели
 
-**File:** `backend/infrastructure/database/models.py`
+**Файл:** `backend/infrastructure/database/models.py`
 
-SQLAlchemy models map to database tables. Each model has a corresponding domain entity.
+Модели SQLAlchemy маппируют в таблицы БД. Каждая модель имеет соответствующую доменную сущность.
 
 ```python
 from sqlalchemy import ForeignKey, String, Integer, DateTime, Boolean, Numeric
@@ -23,7 +23,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeBase
 class Base(DeclarativeBase):
     pass
 
-# ─────── Users ───────────────────────────────────────────
+# ─────── Пользователи ───────────────────────────────────────────
 
 class UserRow(Base):
     __tablename__ = "users"
@@ -34,14 +34,14 @@ class UserRow(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    # Relationships
+    # Отношения
     recipes: Mapped[list["RecipeRow"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     products: Mapped[list["ProductRow"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     menus: Mapped[list["MenuRow"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     family_members: Mapped[list["FamilyMemberRow"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     refresh_tokens: Mapped[list["RefreshTokenRow"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
-# ─────── Recipes ──────────────────────────────────────────
+# ─────── Рецепты ──────────────────────────────────────────
 
 class RecipeRow(Base):
     __tablename__ = "recipes"
@@ -57,13 +57,13 @@ class RecipeRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Relationships
+    # Отношения
     user: Mapped[UserRow] = relationship(back_populates="recipes")
     category: Mapped["RecipeCategoryRow"] = relationship(back_populates="recipes")
     ingredients: Mapped[list["RecipeIngredientRow"]] = relationship(back_populates="recipe", cascade="all, delete-orphan")
     steps: Mapped[list["CookingStepRow"]] = relationship(back_populates="recipe", cascade="all, delete-orphan")
 
-# ─────── Recipe Ingredients ───────────────────────────────
+# ─────── Ингредиенты рецепта ───────────────────────────────────────────
 
 class RecipeIngredientRow(Base):
     __tablename__ = "recipe_ingredients"
@@ -76,84 +76,17 @@ class RecipeIngredientRow(Base):
     quantity_unit: Mapped[str] = mapped_column(String(50))
     order: Mapped[int] = mapped_column(default=0)
 
-    # Relationships
+    # Отношения
     recipe: Mapped[RecipeRow] = relationship(back_populates="ingredients", foreign_keys=[recipe_id])
     product: Mapped["ProductRow"] = relationship(back_populates="recipe_ingredients")
     sub_recipe: Mapped[RecipeRow] = relationship(foreign_keys=[sub_recipe_id])
-
-# ─────── Cooking Steps ────────────────────────────────────
-
-class CookingStepRow(Base):
-    __tablename__ = "cooking_steps"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.id"), index=True)
-    description: Mapped[str] = mapped_column(String(1000))
-    order: Mapped[int] = mapped_column(default=0)
-
-    recipe: Mapped[RecipeRow] = relationship(back_populates="steps")
-
-# ─────── Products ──────────────────────────────────────────
-
-class ProductRow(Base):
-    __tablename__ = "products"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    name: Mapped[str] = mapped_column(String(255), index=True)
-    category_id: Mapped[int] = mapped_column(ForeignKey("product_categories.id"))
-    recipe_unit: Mapped[str] = mapped_column(String(50))
-    purchase_unit: Mapped[str] = mapped_column(String(50))
-    price_per_purchase_unit: Mapped[Decimal] = mapped_column(Numeric(10, 2))
-    conversion_factor: Mapped[float] = mapped_column(default=1.0)
-    brand: Mapped[str] = mapped_column(String(255), default="")
-    supplier: Mapped[str] = mapped_column(String(255), default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    user: Mapped[UserRow] = relationship(back_populates="products")
-    category: Mapped["ProductCategoryRow"] = relationship(back_populates="products")
-    recipe_ingredients: Mapped[list["RecipeIngredientRow"]] = relationship(back_populates="product")
-
-# ─────── Menus & Slots ────────────────────────────────────
-
-class MenuRow(Base):
-    __tablename__ = "menus"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    name: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    user: Mapped[UserRow] = relationship(back_populates="menus")
-    slots: Mapped[list["MenuSlotRow"]] = relationship(back_populates="menu", cascade="all, delete-orphan")
-
-class MenuSlotRow(Base):
-    __tablename__ = "menu_slots"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    menu_id: Mapped[int] = mapped_column(ForeignKey("menus.id"), index=True)
-    recipe_id: Mapped[int | None] = mapped_column(ForeignKey("recipes.id"))
-    product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id"))
-    quantity_amount: Mapped[float | None]
-    quantity_unit: Mapped[str | None] = mapped_column(String(50))
-    servings: Mapped[int | None]
-    meal_type: Mapped[str] = mapped_column(String(50), default="обед")
-    day_of_week: Mapped[int] = mapped_column(default=0)  # 0=Mon, 6=Sun
-    position: Mapped[int] = mapped_column(default=0)
-
-    menu: Mapped[MenuRow] = relationship(back_populates="slots")
-    recipe: Mapped[RecipeRow | None] = relationship(foreign_keys=[recipe_id])
-    product: Mapped[ProductRow | None] = relationship(foreign_keys=[product_id])
 ```
 
-### Repository Implementation
+### Реализация репозиториев
 
-**File:** `backend/infrastructure/repositories/sqlalchemy_recipe_repository.py`
+**Файл:** `backend/infrastructure/repositories/sqlalchemy_recipe_repository.py`
 
-Each repository implements its corresponding port.
+Каждый репозиторий реализует соответствующий порт.
 
 ```python
 from backend.domain.ports.recipe_repository import RecipeRepository
@@ -165,7 +98,7 @@ class SqlalchemyRecipeRepository(RecipeRepository):
         self.session = session
 
     def get_by_id(self, recipe_id: RecipeId, user_id: UserId) -> Recipe | None:
-        """Fetch recipe by ID, scoped to user."""
+        """Получить рецепт по ID, ограниченный пользователем."""
         row = self.session.query(RecipeRow).filter(
             RecipeRow.id == int(recipe_id),
             RecipeRow.user_id == int(user_id),
@@ -174,7 +107,7 @@ class SqlalchemyRecipeRepository(RecipeRepository):
         return recipe_row_to_domain(row) if row else None
 
     def list_by_user(self, user_id: UserId) -> list[Recipe]:
-        """List all user's recipes."""
+        """Вывести все рецепты пользователя."""
         rows = self.session.query(RecipeRow).filter(
             RecipeRow.user_id == int(user_id)
         ).order_by(RecipeRow.name).all()
@@ -184,7 +117,7 @@ class SqlalchemyRecipeRepository(RecipeRepository):
     def list_by_category(
         self, user_id: UserId, category_id: RecipeCategoryId
     ) -> list[Recipe]:
-        """List recipes in category."""
+        """Вывести рецепты в категории."""
         rows = self.session.query(RecipeRow).filter(
             RecipeRow.user_id == int(user_id),
             RecipeRow.category_id == int(category_id),
@@ -193,21 +126,21 @@ class SqlalchemyRecipeRepository(RecipeRepository):
         return [recipe_row_to_domain(row) for row in rows]
 
     def save(self, recipe: Recipe) -> RecipeId:
-        """Create or update recipe."""
+        """Создать или обновить рецепт."""
         if int(recipe.id) == 0:
-            # Insert
+            # Вставить
             row = recipe_domain_to_row(recipe)
             self.session.add(row)
         else:
-            # Update
+            # Обновить
             row = self.session.query(RecipeRow).filter(
                 RecipeRow.id == int(recipe.id),
                 RecipeRow.user_id == int(recipe.user_id),
             ).first()
             if not row:
-                raise RepositoryError(f"Recipe {recipe.id} not found")
+                raise RepositoryError(f"Рецепт {recipe.id} не найден")
 
-            # Update fields
+            # Обновить поля
             row.name = recipe.name
             row.servings = recipe.servings
             row.category_id = int(recipe.category_id)
@@ -216,7 +149,7 @@ class SqlalchemyRecipeRepository(RecipeRepository):
             row.pieces_per_portion = recipe.pieces_per_portion
             row.updated_at = datetime.utcnow()
 
-            # Update ingredients and steps (cascade delete)
+            # Обновить ингредиенты и шаги (каскадное удаление)
             self.session.query(RecipeIngredientRow).filter(
                 RecipeIngredientRow.recipe_id == int(recipe.id)
             ).delete()
@@ -224,7 +157,7 @@ class SqlalchemyRecipeRepository(RecipeRepository):
                 CookingStepRow.recipe_id == int(recipe.id)
             ).delete()
 
-            # Re-add
+            # Переиспользовать
             for ing in recipe.ingredients:
                 ing_row = RecipeIngredientRow(
                     recipe_id=int(recipe.id),
@@ -244,31 +177,31 @@ class SqlalchemyRecipeRepository(RecipeRepository):
                 )
                 row.steps.append(step_row)
 
-        self.session.flush()  # Get ID without commit
+        self.session.flush()  # Получить ID без коммита
         return RecipeId(row.id)
 
     def delete(self, recipe_id: RecipeId, user_id: UserId) -> None:
-        """Soft or hard delete recipe."""
+        """Мягкое или жесткое удаление рецепта."""
         row = self.session.query(RecipeRow).filter(
             RecipeRow.id == int(recipe_id),
             RecipeRow.user_id == int(user_id),
         ).first()
 
         if not row:
-            raise RepositoryError(f"Recipe {recipe_id} not found")
+            raise RepositoryError(f"Рецепт {recipe_id} не найден")
 
         self.session.delete(row)
 ```
 
-### Converters (Row ↔ Domain)
+### Конвертеры (Row ↔ Domain)
 
-**File:** `backend/infrastructure/repositories/mappers.py`
+**Файл:** `backend/infrastructure/repositories/mappers.py`
 
-Convert between ORM rows and domain entities.
+Преобразовать между ORM строками и доменными сущностями.
 
 ```python
 def recipe_row_to_domain(row: RecipeRow) -> Recipe:
-    """Map SQLAlchemy RecipeRow to domain Recipe."""
+    """Маппировать SQLAlchemy RecipeRow в доменный Recipe."""
     ingredients = [
         RecipeIngredient(
             product_id=ProductId(ing_row.product_id),
@@ -301,7 +234,7 @@ def recipe_row_to_domain(row: RecipeRow) -> Recipe:
     )
 
 def recipe_domain_to_row(recipe: Recipe) -> RecipeRow:
-    """Map domain Recipe to SQLAlchemy RecipeRow."""
+    """Маппировать доменный Recipe в SQLAlchemy RecipeRow."""
     return RecipeRow(
         id=int(recipe.id) if int(recipe.id) != 0 else None,
         name=recipe.name,
@@ -316,32 +249,32 @@ def recipe_domain_to_row(recipe: Recipe) -> RecipeRow:
 
 ---
 
-## Authentication Services
+## Сервисы аутентификации
 
 ### BcryptPasswordHasher
 
-**File:** `backend/infrastructure/auth/bcrypt_password_hasher.py`
+**Файл:** `backend/infrastructure/auth/bcrypt_password_hasher.py`
 
-Implements `PasswordHasher` port from domain.
+Реализует порт `PasswordHasher` из домена.
 
 ```python
 import bcrypt
 from backend.domain.services.password_hasher import PasswordHasher
 
 class BcryptPasswordHasher(PasswordHasher):
-    """Hash and verify passwords using bcrypt."""
+    """Хешировать и проверять пароли используя bcrypt."""
 
     def hash_password(self, password: str) -> str:
-        """Generate bcrypt hash with salt."""
+        """Генерировать bcrypt хеш с солью."""
         salt = bcrypt.gensalt(rounds=12)
         return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
     def verify_password(self, password: str, hash: str) -> bool:
-        """Verify password against hash."""
+        """Проверить пароль против хеша."""
         return bcrypt.checkpw(password.encode("utf-8"), hash.encode("utf-8"))
 ```
 
-**Example:**
+**Пример:**
 ```python
 hasher = BcryptPasswordHasher()
 hash = hasher.hash_password("secret123")  # "$2b$12$..."
@@ -351,9 +284,9 @@ is_invalid = hasher.verify_password("wrong", hash)  # False
 
 ### JwtTokenService
 
-**File:** `backend/infrastructure/auth/jwt_token_service.py`
+**Файл:** `backend/infrastructure/auth/jwt_token_service.py`
 
-Implements `TokenService` port from domain. Creates and validates JWTs.
+Реализует порт `TokenService` из домена. Создает и валидирует JWT.
 
 ```python
 import os
@@ -364,7 +297,7 @@ from backend.domain.exceptions import AuthenticationError
 from backend.domain.value_objects.types import UserId
 
 class JwtTokenService(TokenService):
-    """Create and validate JWT tokens."""
+    """Создать и валидировать JWT токены."""
 
     def __init__(self, secret_key: str, algorithm: str = "HS256"):
         self.secret_key = secret_key
@@ -372,13 +305,13 @@ class JwtTokenService(TokenService):
 
     def create_access_token(self, user_id: UserId, expires_in_minutes: int = 30) -> str:
         """
-        Create short-lived access token.
+        Создать короткоживущий токен доступа.
 
-        Payload:
-            user_id: User ID
-            exp: Expiration time
+        Полезная нагрузка:
+            user_id: ID пользователя
+            exp: Время истечения
             type: "access"
-            iat: Issued at
+            iat: Выданный в
         """
         now = datetime.now(UTC)
         expires_at = now + timedelta(minutes=expires_in_minutes)
@@ -394,7 +327,7 @@ class JwtTokenService(TokenService):
         return token
 
     def create_refresh_token(self, user_id: UserId, expires_in_days: int = 30) -> str:
-        """Create long-lived refresh token."""
+        """Создать долгоживущий refresh токен."""
         now = datetime.now(UTC)
         expires_at = now + timedelta(days=expires_in_days)
 
@@ -410,43 +343,43 @@ class JwtTokenService(TokenService):
 
     def validate_token(self, token: str) -> dict:
         """
-        Validate JWT and return payload.
+        Валидировать JWT и вернуть полезную нагрузку.
 
-        Raises:
-            AuthenticationError: Invalid or expired token
+        Выбрасывает:
+            AuthenticationError: Неверный или истекший токен
         """
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
             return payload
         except jwt.ExpiredSignatureError:
-            raise AuthenticationError("Token has expired")
+            raise AuthenticationError("Токен истек")
         except jwt.InvalidTokenError as e:
-            raise AuthenticationError(f"Invalid token: {e}")
+            raise AuthenticationError(f"Неверный токен: {e}")
 ```
 
-**Example:**
+**Пример:**
 ```python
 service = JwtTokenService(secret_key="my-secret-key")
 
-# Create tokens
+# Создать токены
 access = service.create_access_token(UserId(1), expires_in_minutes=30)
 refresh = service.create_refresh_token(UserId(1), expires_in_days=30)
 
-# Validate
+# Валидировать
 payload = service.validate_token(access)  # {"user_id": 1, "type": "access", ...}
 
-# Expired token
+# Истекший токен
 old_token = "eyJ0eXAiOiJKV1QiLCJhbGc..."
-service.validate_token(old_token)  # Raises AuthenticationError
+service.validate_token(old_token)  # Выбрасывает AuthenticationError
 ```
 
 ---
 
-## Database Setup
+## Настройка БД
 
-### SQLAlchemy Engine & Session
+### SQLAlchemy engine & session
 
-**File:** `backend/infrastructure/database/__init__.py`
+**Файл:** `backend/infrastructure/database/__init__.py`
 
 ```python
 from sqlalchemy import create_engine, Engine, event
@@ -455,27 +388,27 @@ from sqlalchemy.pool import StaticPool
 
 def get_engine(db_url: str | None = None) -> Engine:
     """
-    Create SQLAlchemy engine.
+    Создать SQLAlchemy engine.
 
-    Defaults to SQLite in dev, accepts PostgreSQL URL.
+    По умолчанию SQLite в dev, принимает URL PostgreSQL.
 
-    Example URLs:
-        sqlite:///./menutor.db          # File-based SQLite
-        sqlite:///:memory:              # In-memory (for tests)
+    Примеры URL:
+        sqlite:///./menutor.db          # SQLite на основе файла
+        sqlite:///:memory:              # В памяти (для тестов)
         postgresql://user:pass@host/db  # PostgreSQL
     """
     url = db_url or os.environ.get("DATABASE_URL", "sqlite:///./menutor.db")
 
     if url.startswith("sqlite"):
-        # SQLite-specific setup
+        # Настройка специфичная для SQLite
         engine = create_engine(
             url,
             connect_args={"check_same_thread": False},
-            poolclass=StaticPool,  # For :memory:
+            poolclass=StaticPool,  # Для :memory:
             echo=False,
         )
 
-        # Enable foreign keys
+        # Включить внешние ключи
         @event.listens_for(Engine, "connect")
         def set_sqlite_pragma(dbapi_conn, connection_record):
             cursor = dbapi_conn.cursor()
@@ -488,16 +421,16 @@ def get_engine(db_url: str | None = None) -> Engine:
     return engine
 
 def get_session(engine: Engine) -> Session:
-    """Create SQLAlchemy session."""
+    """Создать SQLAlchemy сессию."""
     SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
     return SessionLocal()
 ```
 
-### Alembic Migrations
+### Миграции Alembic
 
-**File:** `backend/infrastructure/database/migrations/env.py`
+**Файл:** `backend/infrastructure/database/migrations/env.py`
 
-Alembic configuration for automatic schema updates.
+Конфигурация Alembic для автоматических обновлений схемы.
 
 ```python
 from alembic import context
@@ -509,7 +442,7 @@ fileConfig(config.config_file_name)
 target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
-    """Run migrations in offline mode."""
+    """Запустить миграции в режиме offline."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -521,7 +454,7 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 def run_migrations_online() -> None:
-    """Run migrations in online mode."""
+    """Запустить миграции в режиме online."""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
@@ -534,20 +467,20 @@ def run_migrations_online() -> None:
             context.run_migrations()
 ```
 
-### Migration Workflow
+### Рабочий процесс миграций
 
 ```bash
-# Auto-detect changes
-alembic revision --autogenerate -m "Add weight to recipes"
+# Автоопределение изменений
+alembic revision --autogenerate -m "Добавить вес к рецептам"
 
-# Apply migrations
+# Применить миграции
 alembic upgrade head
 
-# Rollback
+# Откатить
 alembic downgrade -1
 ```
 
-**Example migration:**
+**Пример миграции:**
 
 ```python
 # backend/infrastructure/database/migrations/versions/001_initial_schema.py
@@ -578,7 +511,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         sa.Index('ix_recipes_user_id', 'user_id'),
     )
-    # ... more tables
+    # ... еще таблицы
 
 def downgrade() -> None:
     op.drop_table('recipes')
@@ -588,11 +521,11 @@ def downgrade() -> None:
 
 ---
 
-## Exporters (Strategy Pattern)
+## Экспортеры (паттерн Strategy)
 
-**File:** `backend/infrastructure/export/`
+**Файл:** `backend/infrastructure/export/`
 
-Interchangeable export algorithms.
+Взаимозаменяемые алгоритмы экспорта для списка покупок и меню.
 
 ```python
 from abc import ABC, abstractmethod
@@ -603,8 +536,26 @@ class ShoppingListExporter(ABC):
     def export(self, shopping_list: ShoppingList) -> str:
         pass
 
+class TextExporter(ShoppingListExporter):
+    """Экспортировать список покупок как простой текст."""
+
+    def export(self, shopping_list: ShoppingList) -> str:
+        lines = ["=== Список покупок ===\n"]
+
+        current_category = None
+        for item in shopping_list.items:
+            if item.category_id != current_category:
+                lines.append(f"\n{item.category_name}:")
+                current_category = item.category_id
+
+            quantity_str = f"{item.quantity.amount} {item.quantity.unit}"
+            lines.append(f"  ☐ {item.name}: {quantity_str}")
+
+        lines.append(f"\nИтого: {shopping_list.total_cost.amount} руб.")
+        return "\n".join(lines)
+
 class CsvExporter(ShoppingListExporter):
-    """Export shopping list as CSV."""
+    """Экспортировать список покупок как CSV."""
 
     def export(self, shopping_list: ShoppingList) -> str:
         lines = ["Продукт,Категория,Количество,Цена,Сумма"]
@@ -624,7 +575,7 @@ class CsvExporter(ShoppingListExporter):
         return "\n".join(lines)
 
 class JsonExporter(ShoppingListExporter):
-    """Export shopping list as JSON."""
+    """Экспортировать список покупок как JSON."""
 
     def export(self, shopping_list: ShoppingList) -> str:
         data = {
@@ -632,10 +583,11 @@ class JsonExporter(ShoppingListExporter):
                 {
                     "product_id": int(item.product_id),
                     "name": item.name,
-                    "quantity": {
-                        "amount": item.quantity.amount,
-                        "unit": item.quantity.unit,
-                    },
+                    "category_name": item.category_name,
+                    "quantity_amount": item.quantity.amount,
+                    "quantity_unit": item.quantity.unit,
+                    "recipe_quantity_amount": item.recipe_quantity.amount if item.recipe_quantity else None,
+                    "recipe_quantity_unit": item.recipe_quantity.unit if item.recipe_quantity else None,
                     "price_per_unit": float(item.price_per_unit.amount),
                     "total_cost": float(item.total_cost.amount),
                 }
@@ -644,9 +596,51 @@ class JsonExporter(ShoppingListExporter):
             "total_cost": float(shopping_list.total_cost.amount),
         }
         return json.dumps(data, indent=2, ensure_ascii=False)
+
+class PdfExporter(ShoppingListExporter):
+    """Экспортировать список покупок как PDF (используя reportlab)."""
+
+    def export(self, shopping_list: ShoppingList) -> bytes:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        from io import BytesIO
+
+        # Создать PDF в памяти
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = []
+
+        # Заголовок
+        styles = getSampleStyleSheet()
+        title = Paragraph("Список покупок", styles['Title'])
+        elements.append(title)
+        elements.append(Spacer(1, 12))
+
+        # Таблица элементов
+        data = [["Продукт", "Категория", "Количество", "Сумма"]]
+        for item in shopping_list.items:
+            data.append([
+                item.name,
+                item.category_name,
+                f"{item.quantity.amount} {item.quantity.unit}",
+                f"{item.total_cost.amount} руб."
+            ])
+
+        table = Table(data)
+        elements.append(table)
+        elements.append(Spacer(1, 12))
+
+        # Итого
+        total = Paragraph(f"Итого: {shopping_list.total_cost.amount} руб.", styles['Normal'])
+        elements.append(total)
+
+        # Построить PDF
+        doc.build(elements)
+        return buffer.getvalue()
 ```
 
-### Exporter Registry
+### Реестр экспортёров
 
 ```python
 class ExporterRegistry:
@@ -658,56 +652,67 @@ class ExporterRegistry:
 
     def get(self, format_name: str) -> ShoppingListExporter:
         if format_name not in self._exporters:
-            raise ValueError(f"Unknown exporter: {format_name}")
+            raise ValueError(f"Неизвестный экспортёр: {format_name}")
         return self._exporters[format_name]
 
-# Usage
+# Использование
 registry = ExporterRegistry()
+registry.register("text", TextExporter())
 registry.register("csv", CsvExporter())
 registry.register("json", JsonExporter())
+registry.register("pdf", PdfExporter())
 
 csv_exporter = registry.get("csv")
 csv_output = csv_exporter.export(shopping_list)
+
+pdf_exporter = registry.get("pdf")
+pdf_bytes = pdf_exporter.export(shopping_list)
 ```
+
+**Поддерживаемые форматы:**
+- `text` — текстовый файл с простым форматированием
+- `csv` — таблица для Excel/Google Sheets
+- `json` — структурированный формат с полной информацией (закупочное и рецептурное количество)
+- `pdf` — переносимый формат для печати (требует reportlab)
 
 ---
 
-## Multi-Database Support
+## Поддержка нескольких БД
 
-### SQLite (Development)
+### SQLite (разработка)
 
 ```
 DATABASE_URL=sqlite:///./menutor.db
 ```
 
-- File-based
-- No server setup needed
-- Good for single-user dev
+- На основе файла
+- Не требует настройки сервера
+- Хорошо для dev одного пользователя
 
-### PostgreSQL (Production)
+### PostgreSQL (продакшен)
 
 ```
 DATABASE_URL=postgresql://username:password@host:5432/menutor_db
 ```
 
-- Multi-user, concurrent access
-- ACID guarantees
-- Better for scale
+- Многопользовательский, параллельный доступ
+- Гарантии ACID
+- Лучше для масштабирования
 
-Both work identically through SQLAlchemy layer. No code changes needed.
+Обе работают идентично через слой SQLAlchemy. Изменения кода не требуются.
 
 ---
 
-## Testing with In-Memory Database
+## Тестирование с БД в памяти
 
-**Pattern:** Use SQLite `:memory:` for fast tests.
+**Паттерн:** Используйте SQLite `:memory:` для быстрых тестов.
 
 ```python
 # tests/conftest.py
 
 @pytest.fixture
 def db_session():
-    """In-memory SQLite database for tests."""
+    """БД SQLite в памяти для тестов."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
 
@@ -721,7 +726,7 @@ def db_session():
 
 @pytest.fixture
 def recipe_repo(db_session):
-    """Recipe repository with test DB."""
+    """Репозиторий рецептов с тестовой БД."""
     return SqlalchemyRecipeRepository(db_session)
 
 def test_save_recipe(recipe_repo):
@@ -735,21 +740,21 @@ def test_save_recipe(recipe_repo):
 
 ---
 
-## Summary
+## Резюме
 
-The Infrastructure layer:
-- **Implements** all Domain ports (repositories, auth, exporters)
-- **Manages** database schema via SQLAlchemy + Alembic
-- **Handles** password hashing and JWT generation
-- **Supports** multiple databases (SQLite, PostgreSQL)
-- **Is testable** via dependency injection
+Инфраструктурный слой:
+- **Реализует** все порты домена (репозитории, аутентификация, экспортеры)
+- **Управляет** схемой БД через SQLAlchemy + Alembic
+- **Обрабатывает** хеширование пароля и генерацию JWT
+- **Поддерживает** несколько БД (SQLite, PostgreSQL)
+- **Тестируемо** через внедрение зависимостей
 
-Key patterns:
-- **Repository:** Abstract data access
-- **ORM Mapper:** Convert rows ↔ domain entities
-- **Strategy:** Interchangeable exporters
-- **Service:** Stateless auth operations
+Ключевые паттерны:
+- **Repository:** Абстрактный доступ к данным
+- **ORM маппер:** Преобразование строк ↔ доменные сущности
+- **Strategy:** Взаимозаменяемые экспортеры
+- **Service:** Логика без состояния для аутентификации
 
 ---
 
-**Next:** See [backend-api.md](06-backend-api.md) for HTTP layer details.
+**Далее:** См. [backend-api.md](06-backend-api.md) для деталей HTTP слоя.

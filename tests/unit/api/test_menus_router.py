@@ -266,3 +266,56 @@ class TestPiecesOverride:
         assert resp.status_code == 200
         slot = resp.json()["slots"][0]
         assert slot["pieces_override"] == 8
+
+
+# ---- POST /api/menus/{menu_id}/export/pdf ----
+
+
+class TestExportMenuPdf:
+    def test_returns_pdf_for_ascii_menu_name(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.load_menu.execute.return_value = _menu(3)
+        container.list_recipes.execute.return_value = []
+        container.list_products.execute.return_value = []
+        resp = client.post("/api/menus/3/export/pdf")
+        assert resp.status_code == 200
+        assert resp.headers["content-type"] == "application/pdf"
+        assert resp.content[:4] == b"%PDF"
+
+    def test_returns_pdf_for_cyrillic_menu_name(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        """Cyrillic menu name must not trigger a UnicodeEncodeError (HTTP headers are Latin-1)."""
+        from backend.domain.value_objects.types import MenuId
+
+        cyrillic_menu = WeeklyMenu(id=MenuId(3), name="Тест меню", slots=[_slot_recipe()])
+        container.load_menu.execute.return_value = cyrillic_menu
+        container.list_recipes.execute.return_value = []
+        container.list_products.execute.return_value = []
+        resp = client.post("/api/menus/3/export/pdf")
+        assert resp.status_code == 200
+        assert resp.content[:4] == b"%PDF"
+        cd = resp.headers["content-disposition"]
+        assert "filename*=UTF-8''" in cd
+        assert "%D0" in cd  # percent-encoded Cyrillic bytes present
+
+    def test_returns_404_when_menu_not_found(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.load_menu.execute.return_value = None
+        resp = client.post("/api/menus/999/export/pdf")
+        assert resp.status_code == 404
+
+    def test_content_disposition_has_ascii_fallback(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        """Content-Disposition must include a plain ASCII filename= fallback."""
+        container.load_menu.execute.return_value = _menu(1)
+        container.list_recipes.execute.return_value = []
+        container.list_products.execute.return_value = []
+        resp = client.post("/api/menus/1/export/pdf")
+        assert resp.status_code == 200
+        cd = resp.headers["content-disposition"]
+        assert 'filename="' in cd
+        assert "filename*=UTF-8''" in cd

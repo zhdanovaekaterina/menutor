@@ -3,10 +3,9 @@ import { ref } from 'vue'
 import type { ActiveCategory, Product, Recipe } from '@/api/types'
 import IngredientTypeIcon from './IngredientTypeIcon.vue'
 import IngredientPickerModal from './IngredientPickerModal.vue'
-
-const UNIT_MAP: Record<string, string> = {
-  g: 'г', kg: 'кг', ml: 'мл', l: 'л', tsp: 'ч.л.', tbsp: 'ст.л.', pcs: 'шт', box: 'кор', pack: 'уп', serv: 'порц.',
-}
+import { UNIT_MAP } from '@/utils/units'
+import IconChevronDown from '@/components/ui/icons/IconChevronDown.vue'
+import IconPlus from '@/components/ui/icons/IconPlus.vue'
 
 const props = defineProps<{
   products: Product[]
@@ -89,13 +88,7 @@ function onPickerConfirm(delta: PickerDelta) {
       @click="expanded = !expanded"
     >
       <span>Ингредиенты</span>
-      <svg
-        :class="expanded ? 'rotate-180' : ''"
-        class="w-4 h-4 transition-transform duration-200"
-        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-      >
-        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-      </svg>
+      <IconChevronDown :class="expanded ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-200" />
     </button>
     <div v-show="expanded" class="pt-2 space-y-2">
       <!-- Existing ingredient rows with quantity editing and delete -->
@@ -178,9 +171,7 @@ function onPickerConfirm(delta: PickerDelta) {
           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-600 text-blue-600 text-sm font-medium hover:bg-blue-50 transition-colors"
           @click="pickerOpen = true"
         >
-          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
+          <IconPlus class="w-4 h-4" />
           Выбрать
         </button>
       </div>

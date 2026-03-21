@@ -8,7 +8,7 @@ from backend.application.use_cases.flatten_recipe_products import FlattenedProdu
 from backend.application.use_cases.preview_flattened_products import IngredientData
 from backend.application.use_cases.validate_sub_recipe import ValidationResult
 from backend.domain.entities.recipe import Recipe
-from backend.domain.exceptions import EntityNotFoundError, SubRecipeWeightError
+from backend.domain.exceptions import DuplicateNameError, EntityNotFoundError, SubRecipeWeightError
 from backend.domain.value_objects.category import ActiveCategory
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.quantity import Quantity
@@ -133,6 +133,15 @@ class TestCreateRecipe:
     ) -> None:
         resp = client.post("/api/recipes", json={"name": "Каша"})
         assert resp.status_code == 422
+
+    def test_returns_409_on_duplicate_name(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.create_recipe.execute.side_effect = DuplicateNameError("рецепт")
+        body = {"name": "Блины", "category_id": 1, "servings": 4}
+        resp = client.post("/api/recipes", json=body)
+        assert resp.status_code == 409
+        assert "Рецепт с таким названием уже существует" in resp.json()["detail"]
 
 
 # ---- PUT /api/recipes/{recipe_id} ----

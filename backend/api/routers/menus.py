@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from urllib.parse import quote
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 
 from backend.api.auth import get_current_user
 from backend.api.converters import menu_to_response, schema_to_menu_slot
@@ -123,3 +126,64 @@ def clear_menu(
 ) -> MenuResponse:
     menu = container.clear_menu.execute(MenuId(menu_id), user.id)
     return menu_to_response(menu)
+
+
+@router.post("/{menu_id}/copy", response_model=MenuResponse, status_code=status.HTTP_201_CREATED)
+def copy_menu(
+    menu_id: int,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> MenuResponse:
+    menu = container.copy_menu.execute(MenuId(menu_id), user.id)
+    return menu_to_response(menu)
+
+
+@router.post("/{menu_id}/export/pdf")
+def export_menu_pdf(
+    menu_id: int,
+    paper: str = Query(default="a4", pattern="^(a4|a3)$"),
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> Response:
+    from backend.infrastructure.export.menu_pdf_exporter import MenuPdfExporter
+
+    menu = container.load_menu.execute(MenuId(menu_id), user.id)
+    if menu is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Меню {menu_id} не найдено",
+        )
+
+    # Collect referenced recipe and product ids from all slots
+    recipe_ids = {int(s.recipe_id) for s in menu.slots if s.recipe_id is not None}
+    product_ids = {int(s.product_id) for s in menu.slots if s.product_id is not None}
+
+    recipes = container.list_recipes.execute(user.id)
+    products = container.list_products.execute(user.id)
+
+    recipe_names: dict[int, str] = {
+        int(r.id): r.name for r in recipes if int(r.id) in recipe_ids
+    }
+    product_names: dict[int, str] = {
+        int(p.id): p.name for p in products if int(p.id) in product_ids
+    }
+
+    pdf_bytes = MenuPdfExporter().export_bytes(menu, recipe_names, product_names, paper)
+
+    safe_name = menu.name.replace(" ", "_")
+    ascii_name = safe_name.encode("ascii", errors="ignore").decode("ascii") or "menu"
+    ascii_filename = f"menu_{ascii_name}.pdf"
+    # RFC 5987 — percent-encode the full UTF-8 filename so Cyrillic names are
+    # preserved for clients that support it, while the ASCII fallback covers
+    # older clients that cannot decode the extended form.
+    utf8_filename = f"menu_{safe_name}.pdf"
+    encoded_filename = quote(utf8_filename, safe="")
+    content_disposition = (
+        f'attachment; filename="{ascii_filename}"; '
+        f"filename*=UTF-8''{encoded_filename}"
+    )
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": content_disposition},
+    )

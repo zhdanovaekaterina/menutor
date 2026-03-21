@@ -20,30 +20,36 @@ from backend.infrastructure.database.connection import (
     seed_defaults,
 )
 from backend.infrastructure.export.csv_exporter import ShoppingListCsvExporter
+from backend.infrastructure.export.shopping_list_json_exporter import (
+    ShoppingListJsonExporter,
+)
+from backend.infrastructure.export.shopping_list_pdf_exporter import (
+    ShoppingListPdfExporter,
+)
 from backend.infrastructure.export.text_exporter import ShoppingListTextExporter
-from backend.infrastructure.repositories.sqlalchemy_family_member_repository import (
-    SqlAlchemyFamilyMemberRepository,
+from backend.infrastructure.repositories.orm_family_member_repository import (
+    OrmFamilyMemberRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_menu_repository import (
-    SqlAlchemyMenuRepository,
+from backend.infrastructure.repositories.orm_menu_repository import (
+    OrmMenuRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_product_category_repository import (
-    SqlAlchemyProductCategoryRepository,
+from backend.infrastructure.repositories.orm_product_category_repository import (
+    OrmProductCategoryRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_product_repository import (
-    SqlAlchemyProductRepository,
+from backend.infrastructure.repositories.orm_product_repository import (
+    OrmProductRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_recipe_category_repository import (
-    SqlAlchemyRecipeCategoryRepository,
+from backend.infrastructure.repositories.orm_recipe_category_repository import (
+    OrmRecipeCategoryRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_recipe_repository import (
-    SqlAlchemyRecipeRepository,
+from backend.infrastructure.repositories.orm_recipe_repository import (
+    OrmRecipeRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_refresh_token_repository import (
-    SqlAlchemyRefreshTokenRepository,
+from backend.infrastructure.repositories.orm_refresh_token_repository import (
+    OrmRefreshTokenRepository,
 )
-from backend.infrastructure.repositories.sqlalchemy_user_repository import (
-    SqlAlchemyUserRepository,
+from backend.infrastructure.repositories.orm_user_repository import (
+    OrmUserRepository,
 )
 
 
@@ -53,19 +59,37 @@ class _Infrastructure:
 
     engine: Any
     session: Session
-    user_repo: SqlAlchemyUserRepository
-    refresh_token_repo: SqlAlchemyRefreshTokenRepository
+    user_repo: OrmUserRepository
+    refresh_token_repo: OrmRefreshTokenRepository
     password_hasher: PasswordHasher
     token_service: JwtTokenService
-    recipe_repo: SqlAlchemyRecipeRepository
-    product_repo: SqlAlchemyProductRepository
-    menu_repo: SqlAlchemyMenuRepository
-    family_repo: SqlAlchemyFamilyMemberRepository
-    product_category_repo: SqlAlchemyProductCategoryRepository
-    recipe_category_repo: SqlAlchemyRecipeCategoryRepository
+    recipe_repo: OrmRecipeRepository
+    product_repo: OrmProductRepository
+    menu_repo: OrmMenuRepository
+    family_repo: OrmFamilyMemberRepository
+    product_category_repo: OrmProductCategoryRepository
+    recipe_category_repo: OrmRecipeCategoryRepository
     text_exporter: ShoppingListTextExporter
     csv_exporter: ShoppingListCsvExporter
+    json_exporter: ShoppingListJsonExporter
+    pdf_exporter: ShoppingListPdfExporter
     builder: ShoppingListBuilder
+
+
+_TEST_JWT_SECRET = "test-only-secret-do-not-use-in-production"
+
+
+def _get_jwt_secret(db_url: str) -> str:
+    """Return JWT secret key, raising if not configured for non-SQLite databases."""
+    secret = os.environ.get("JWT_SECRET_KEY")
+    if secret:
+        return secret
+    if db_url.startswith("sqlite"):
+        return _TEST_JWT_SECRET
+    raise RuntimeError(
+        "JWT_SECRET_KEY environment variable is required for non-SQLite databases. "
+        "Set it in .config/.env or your environment."
+    )
 
 
 def _create_infrastructure(db_url: str | None) -> _Infrastructure:
@@ -80,30 +104,27 @@ def _create_infrastructure(db_url: str | None) -> _Infrastructure:
     session = Session(engine)
     seed_defaults(session)
 
-    recipe_repo = SqlAlchemyRecipeRepository(session)
-    product_repo = SqlAlchemyProductRepository(session)
-    product_category_repo = SqlAlchemyProductCategoryRepository(session)
+    recipe_repo = OrmRecipeRepository(session)
+    product_repo = OrmProductRepository(session)
+    product_category_repo = OrmProductCategoryRepository(session)
 
     return _Infrastructure(
         engine=engine,
         session=session,
-        user_repo=SqlAlchemyUserRepository(session),
-        refresh_token_repo=SqlAlchemyRefreshTokenRepository(session),
+        user_repo=OrmUserRepository(session),
+        refresh_token_repo=OrmRefreshTokenRepository(session),
         password_hasher=BcryptPasswordHasher(),
-        token_service=JwtTokenService(
-            os.environ.get(
-                "JWT_SECRET_KEY",
-                "change-me-in-production-use-a-long-random-string!",
-            )
-        ),
+        token_service=JwtTokenService(_get_jwt_secret(db_url)),
         recipe_repo=recipe_repo,
         product_repo=product_repo,
-        menu_repo=SqlAlchemyMenuRepository(session),
-        family_repo=SqlAlchemyFamilyMemberRepository(session),
+        menu_repo=OrmMenuRepository(session),
+        family_repo=OrmFamilyMemberRepository(session),
         product_category_repo=product_category_repo,
-        recipe_category_repo=SqlAlchemyRecipeCategoryRepository(session),
+        recipe_category_repo=OrmRecipeCategoryRepository(session),
         text_exporter=ShoppingListTextExporter(),
         csv_exporter=ShoppingListCsvExporter(),
+        json_exporter=ShoppingListJsonExporter(),
+        pdf_exporter=ShoppingListPdfExporter(),
         builder=ShoppingListBuilder(
             recipe_repo=recipe_repo,
             product_repo=product_repo,

@@ -9,7 +9,7 @@ from backend.infrastructure.database.models import MenuRow, MenuSlotRow
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
 
-class SqlAlchemyMenuRepository(
+class OrmMenuRepository(
     BaseOrmRepository[WeeklyMenu, MenuId],
     MenuRepository,
 ):
@@ -55,12 +55,7 @@ class SqlAlchemyMenuRepository(
         )
 
     def find_all(self, user_id: UserId) -> list[WeeklyMenu]:
-        rows = (
-            self._session.query(MenuRow)
-            .filter(MenuRow.user_id == int(user_id))
-            .all()
-        )
-        return [self._row_to_entity(r) for r in rows]
+        return self.find_all_by_user(int(user_id))
 
     @staticmethod
     def _slot_to_row(slot: MenuSlot) -> MenuSlotRow:

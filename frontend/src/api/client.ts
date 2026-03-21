@@ -153,6 +153,8 @@ export const removeSlot = (menuId: number, data: RemoveItemRequest) =>
   api.delete<Menu>(`/menus/${menuId}/slots`, { data }).then((r) => r.data)
 export const clearMenu = (menuId: number) =>
   api.post<Menu>(`/menus/${menuId}/clear`).then((r) => r.data)
+export const copyMenu = (menuId: number) =>
+  api.post<Menu>(`/menus/${menuId}/copy`).then((r) => r.data)
 
 /* Family */
 export const fetchFamilyMembers = () =>
@@ -192,6 +194,23 @@ export const downloadShoppingListText = (menuId: number) =>
 export const downloadShoppingListCsv = (menuId: number) =>
   api
     .post(`/menus/${menuId}/shopping-list/export/csv`, null, { responseType: 'blob' })
+    .then((r) => r.data as Blob)
+export const downloadShoppingListPdf = (menuId: number) =>
+  api
+    .post(`/menus/${menuId}/shopping-list/export/pdf`, null, { responseType: 'blob' })
+    .then((r) => r.data as Blob)
+export const downloadShoppingListJson = (menuId: number) =>
+  api
+    .post(`/menus/${menuId}/shopping-list/export/json`, null, { responseType: 'blob' })
+    .then((r) => r.data as Blob)
+
+/* Menu PDF export */
+export const exportMenuPdf = (menuId: number, paper: 'a4' | 'a3'): Promise<Blob> =>
+  api
+    .post(`/menus/${menuId}/export/pdf`, null, {
+      params: { paper },
+      responseType: 'blob',
+    })
     .then((r) => r.data as Blob)
 
 /* Import / Export */

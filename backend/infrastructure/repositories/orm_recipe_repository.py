@@ -21,7 +21,7 @@ from backend.infrastructure.database.models import (
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
 
-class SqlAlchemyRecipeRepository(
+class OrmRecipeRepository(
     BaseOrmRepository[Recipe, RecipeId],
     RecipeRepository,
 ):
@@ -36,6 +36,26 @@ class SqlAlchemyRecipeRepository(
     def _wrap_id(self, raw_id: int) -> RecipeId:
         return RecipeId(raw_id)
 
+    @staticmethod
+    def _ingredients_to_rows(ingredients: list[RecipeIngredient]) -> list[RecipeIngredientRow]:
+        return [
+            RecipeIngredientRow(
+                product_id=int(ing.product_id) if ing.product_id is not None else None,
+                sub_recipe_id=int(ing.sub_recipe_id) if ing.sub_recipe_id is not None else None,
+                amount=ing.quantity.amount,
+                unit=ing.quantity.unit,
+                ingredient_order=ing.order,
+            )
+            for ing in ingredients
+        ]
+
+    @staticmethod
+    def _steps_to_rows(steps: list[CookingStep]) -> list[CookingStepRow]:
+        return [
+            CookingStepRow(step_order=step.order, description=step.description)
+            for step in steps
+        ]
+
     def _make_new_row(self, entity: Recipe) -> RecipeRow:
         row = RecipeRow(
             user_id=int(entity.user_id),
@@ -46,20 +66,8 @@ class SqlAlchemyRecipeRepository(
             total_pieces=entity.total_pieces,
             pieces_per_portion=entity.pieces_per_portion,
         )
-        row.ingredients = [
-            RecipeIngredientRow(
-                product_id=int(ing.product_id) if ing.product_id is not None else None,
-                sub_recipe_id=int(ing.sub_recipe_id) if ing.sub_recipe_id is not None else None,
-                amount=ing.quantity.amount,
-                unit=ing.quantity.unit,
-                ingredient_order=ing.order,
-            )
-            for ing in entity.ingredients
-        ]
-        row.steps = [
-            CookingStepRow(step_order=step.order, description=step.description)
-            for step in entity.steps
-        ]
+        row.ingredients = self._ingredients_to_rows(entity.ingredients)
+        row.steps = self._steps_to_rows(entity.steps)
         return row
 
     def _update_row(self, row: Any, entity: Recipe) -> None:
@@ -69,20 +77,8 @@ class SqlAlchemyRecipeRepository(
         row.weight = entity.weight
         row.total_pieces = entity.total_pieces
         row.pieces_per_portion = entity.pieces_per_portion
-        row.ingredients = [
-            RecipeIngredientRow(
-                product_id=int(ing.product_id) if ing.product_id is not None else None,
-                sub_recipe_id=int(ing.sub_recipe_id) if ing.sub_recipe_id is not None else None,
-                amount=ing.quantity.amount,
-                unit=ing.quantity.unit,
-                ingredient_order=ing.order,
-            )
-            for ing in entity.ingredients
-        ]
-        row.steps = [
-            CookingStepRow(step_order=step.order, description=step.description)
-            for step in entity.steps
-        ]
+        row.ingredients = self._ingredients_to_rows(entity.ingredients)
+        row.steps = self._steps_to_rows(entity.steps)
 
     def _row_to_entity(self, row: Any) -> Recipe:
         return Recipe(
@@ -110,12 +106,7 @@ class SqlAlchemyRecipeRepository(
         )
 
     def find_all(self, user_id: UserId) -> list[Recipe]:
-        rows = (
-            self._session.query(RecipeRow)
-            .filter(RecipeRow.user_id == int(user_id))
-            .all()
-        )
-        return [self._row_to_entity(r) for r in rows]
+        return self.find_all_by_user(int(user_id))
 
     def find_by_category_id(
         self, category_id: RecipeCategoryId, user_id: UserId
@@ -146,3 +137,14 @@ class SqlAlchemyRecipeRepository(
             .all()
         )
         return [self._row_to_entity(r) for r in rows]
+
+    def find_by_name(self, name: str, user_id: UserId) -> Recipe | None:
+        row = (
+            self._session.query(RecipeRow)
+            .filter(
+                RecipeRow.name == name,
+                RecipeRow.user_id == int(user_id),
+            )
+            .first()
+        )
+        return self._row_to_entity(row) if row is not None else None

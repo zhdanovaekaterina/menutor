@@ -9,7 +9,7 @@ from backend.application.use_cases.crud_base import (
     ListEntities,
 )
 from backend.domain.entities.recipe import Recipe
-from backend.domain.exceptions import EntityNotFoundError
+from backend.domain.exceptions import DuplicateNameError, EntityNotFoundError
 from backend.domain.ports.recipe_category_repository import RecipeCategoryRepository
 from backend.domain.ports.recipe_repository import RecipeRepository
 from backend.domain.services.recipe_dependency_validator import (
@@ -82,6 +82,8 @@ class CreateRecipe(CreateEntity):
         return _build_recipe(RecipeId(0), data, user_id)
 
     def execute(self, data: Any, user_id: UserId) -> Any:
+        if self._repo.find_by_name(data.name, user_id) is not None:
+            raise DuplicateNameError("рецепт")
         entity = self._build_entity(data, user_id)
         if self._validator is not None:
             _validate_sub_recipe_ingredients(entity, user_id, self._repo, self._validator)

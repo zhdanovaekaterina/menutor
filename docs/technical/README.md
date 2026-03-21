@@ -1,217 +1,217 @@
-# Menu Planner — Technical Documentation
+# Планировщик меню — Техническая документация
 
-Complete technical documentation for Menu Planner developers and AI agents working with the codebase.
+Полная техническая документация для разработчиков Menu Planner и ИИ-агентов, работающих с кодовой базой.
 
-## Documentation Files
+## Файлы документации
 
-### 1. [Overview](01-overview.md)
-Quick start guide, tech stack table, project structure, environment setup, running the app.
+### 1. [Обзор](01-overview.md)
+Быстрый старт, таблица технического стека, структура проекта, настройка окружения, запуск приложения.
 
-**Read this first** for a 5-minute orientation.
+**Начните отсюда** за 5 минут ориентировки.
 
-### 2. [Architecture](02-architecture.md)
-Clean Architecture design (4 layers + API + frontend), dependency inversion principle, design patterns, testing pyramid.
+### 2. [Архитектура](02-architecture.md)
+Чистая архитектура (4 слоя + API + фронтенд), принцип инверсии зависимостей, паттерны проектирования, пирамида тестирования.
 
-**Foundation** for understanding the entire codebase.
+**Фундамент** для понимания всей кодовой базы.
 
-### 3. [Domain Layer](03-backend-domain.md)
-Entities (Recipe, Product, Menu, User), value objects (Quantity, Money), domain services, ports, typed IDs, exceptions.
+### 3. [Доменный слой](03-backend-domain.md)
+Сущности (Recipe, Product, Menu, User), объекты-значения (Quantity, Money), доменные сервисы, порты, типизированные ID, исключения.
 
-**Business logic layer** — zero framework dependencies.
+**Бизнес-логика** — ноль зависимостей от фреймворков.
 
-### 4. [Application Layer](04-backend-application.md)
-Use case pattern, all ~20 use cases (auth, recipe CRUD, menu planning, shopping list generation, import/export), input/output DTOs, error handling.
+### 4. [Слой приложения](04-backend-application.md)
+Паттерн Use Case, все ~20 use cases (auth, CRUD рецептов, планирование меню, генерация списка покупок, импорт/экспорт), входные/выходные DTO, обработка ошибок.
 
-**Orchestration layer** — connects domain and infrastructure.
+**Слой оркестрации** — связывает доменный слой и инфраструктуру.
 
-### 5. [Infrastructure Layer](05-backend-infrastructure.md)
-SQLAlchemy ORM models, repository implementations, bcrypt password hashing, JWT token service, Alembic migrations, exporters, multi-DB support.
+### 5. [Инфраструктурный слой](05-backend-infrastructure.md)
+ORM-модели SQLAlchemy, реализации репозиториев, хеширование пароля bcrypt, сервис JWT-токенов, миграции Alembic, экспортеры, поддержка нескольких БД.
 
-**Persistence and auth layer** — framework-specific code.
+**Слой персистентности и аутентификации** — код, специфичный для фреймворков.
 
-### 6. [API Layer](06-backend-api.md)
-FastAPI app setup, authentication middleware (Bearer token extraction), Pydantic schemas, converters (domain ↔ schema), all 8 routers, error responses, testing patterns.
+### 6. [API слой](06-backend-api.md)
+Настройка FastAPI, аутентификационное middleware (извлечение Bearer-токена), схемы Pydantic, конвертеры (доменные ↔ схемы), все 8 маршрутизаторов, ответы об ошибках, паттерны тестирования.
 
-**HTTP adapter layer** — translates requests to domain operations.
+**HTTP-адаптер** — преобразует запросы в доменные операции.
 
-### 7. [Frontend](07-frontend.md)
-Vue 3 + TypeScript architecture, Pinia stores (auth, recipes, products, menus, family, categories, shopping list), Vue Router, Tailwind CSS v4, composables, components, axios API client with JWT interceptor.
+### 7. [Фронтенд](07-frontend.md)
+Архитектура Vue 3 + TypeScript, хранилища Pinia (auth, рецепты, продукты, меню, семья, категории, список покупок), Vue Router, Tailwind CSS v4, компонуемые функции, компоненты, axios API-клиент с JWT-перехватчиком.
 
-**Single-page application** — Vue 3 SPA.
+**Однопроцессное приложение** — Vue 3 SPA.
 
-### 8. [Testing](08-testing.md)
-Testing pyramid, unit tests (domain + application), integration tests (repositories), API tests, fixtures, pytest configuration, running tests, coverage goals.
+### 8. [Тестирование](08-testing.md)
+Пирамида тестирования, unit-тесты (доменный слой + слой приложения), интеграционные тесты (репозитории), API-тесты, фикстуры, конфигурация pytest, запуск тестов, цели по покрытию.
 
-**490+ tests pass** — test fixtures included.
+**490+ тестов проходят** — фикстуры включены.
 
-### 9. [Database](09-database.md)
-Complete SQL schema, all tables with columns and constraints, Alembic migrations (create, apply, rollback), seed data, SQLite vs PostgreSQL, indexes, backup/recovery.
+### 9. [База данных](09-database.md)
+Полная SQL-схема, все таблицы со столбцами и ограничениями, миграции Alembic (создание, применение, отката), данные по умолчанию, SQLite vs PostgreSQL, индексы, резервное копирование/восстановление.
 
-**Data persistence** — schema reference.
-
----
-
-## Quick Navigation
-
-### By Role
-
-**Onboarding Developer:**
-1. [Overview](01-overview.md) — 5 min
-2. [Architecture](02-architecture.md) — 15 min
-3. [Backend API](06-backend-api.md) — 10 min
-4. [Testing](08-testing.md) — 10 min
-
-Total: ~40 minutes to understand the full stack.
-
-**Backend Engineer:**
-1. [Architecture](02-architecture.md)
-2. [Domain Layer](03-backend-domain.md)
-3. [Application Layer](04-backend-application.md)
-4. [Infrastructure Layer](05-backend-infrastructure.md)
-5. [API Layer](06-backend-api.md)
-6. [Testing](08-testing.md)
-7. [Database](09-database.md)
-
-**Frontend Engineer:**
-1. [Overview](01-overview.md)
-2. [Architecture](02-architecture.md)
-3. [Frontend](07-frontend.md)
-4. [API Layer](06-backend-api.md) — understand endpoints
-5. [Testing](08-testing.md)
-
-**DevOps / Database:**
-1. [Overview](01-overview.md)
-2. [Infrastructure Layer](05-backend-infrastructure.md)
-3. [Database](09-database.md)
-
-**AI Agent / Code Analyzer:**
-1. [Architecture](02-architecture.md) — understand structure
-2. [Domain Layer](03-backend-domain.md) — business rules
-3. [Application Layer](04-backend-application.md) — use cases
-4. [API Layer](06-backend-api.md) — endpoints
-5. [Database](09-database.md) — schema
-
-### By Topic
-
-**Understand the Architecture:**
-- [Architecture](02-architecture.md) — layers, dependency inversion, patterns
-- [Domain Layer](03-backend-domain.md) — entities, value objects, business logic
-
-**Add a New Feature:**
-1. Define domain entity in [Domain Layer](03-backend-domain.md)
-2. Create use case in [Application Layer](04-backend-application.md)
-3. Implement repository in [Infrastructure Layer](05-backend-infrastructure.md)
-4. Add API router in [API Layer](06-backend-api.md)
-5. Create Vue component in [Frontend](07-frontend.md)
-6. Write tests in [Testing](08-testing.md)
-7. Add migrations in [Database](09-database.md)
-
-**Debug a Bug:**
-1. Check [API Layer](06-backend-api.md) if HTTP error
-2. Check [Application Layer](04-backend-application.md) if logic error
-3. Check [Domain Layer](03-backend-domain.md) if business rule violation
-4. Check [Testing](08-testing.md) for similar test cases
-
-**Understand Database Queries:**
-- [Database](09-database.md) — schema and indexes
-- [Infrastructure Layer](05-backend-infrastructure.md) — repository queries
-
-**Set Up Local Development:**
-- [Overview](01-overview.md) — quick start
-- [Database](09-database.md) — Alembic migrations
+**Персистентность данных** — справочник схемы.
 
 ---
 
-## Key Concepts
+## Быстрая навигация
 
-### Clean Architecture
+### По ролям
+
+**Разработчик, начинающий работу:**
+1. [Обзор](01-overview.md) — 5 мин
+2. [Архитектура](02-architecture.md) — 15 мин
+3. [API слой](06-backend-api.md) — 10 мин
+4. [Тестирование](08-testing.md) — 10 мин
+
+Всего: ~40 минут для понимания полного стека.
+
+**Бэкенд-инженер:**
+1. [Архитектура](02-architecture.md)
+2. [Доменный слой](03-backend-domain.md)
+3. [Слой приложения](04-backend-application.md)
+4. [Инфраструктурный слой](05-backend-infrastructure.md)
+5. [API слой](06-backend-api.md)
+6. [Тестирование](08-testing.md)
+7. [База данных](09-database.md)
+
+**Фронтенд-инженер:**
+1. [Обзор](01-overview.md)
+2. [Архитектура](02-architecture.md)
+3. [Фронтенд](07-frontend.md)
+4. [API слой](06-backend-api.md) — понимание эндпоинтов
+5. [Тестирование](08-testing.md)
+
+**DevOps / БД:**
+1. [Обзор](01-overview.md)
+2. [Инфраструктурный слой](05-backend-infrastructure.md)
+3. [База данных](09-database.md)
+
+**ИИ-агент / Анализатор кода:**
+1. [Архитектура](02-architecture.md) — понимание структуры
+2. [Доменный слой](03-backend-domain.md) — бизнес-правила
+3. [Слой приложения](04-backend-application.md) — use cases
+4. [API слой](06-backend-api.md) — эндпоинты
+5. [База данных](09-database.md) — схема
+
+### По темам
+
+**Понимание архитектуры:**
+- [Архитектура](02-architecture.md) — слои, инверсия зависимостей, паттерны
+- [Доменный слой](03-backend-domain.md) — сущности, объекты-значения, бизнес-логика
+
+**Добавление новой функции:**
+1. Определить доменную сущность в [Доменном слое](03-backend-domain.md)
+2. Создать use case в [Слое приложения](04-backend-application.md)
+3. Реализовать репозиторий в [Инфраструктурном слое](05-backend-infrastructure.md)
+4. Добавить маршрутизатор API в [API слой](06-backend-api.md)
+5. Создать Vue-компонент в [Фронтенде](07-frontend.md)
+6. Написать тесты в [Тестировании](08-testing.md)
+7. Добавить миграции в [Базу данных](09-database.md)
+
+**Отладка ошибки:**
+1. Проверить [API слой](06-backend-api.md) при HTTP-ошибке
+2. Проверить [Слой приложения](04-backend-application.md) при ошибке логики
+3. Проверить [Доменный слой](03-backend-domain.md) при нарушении бизнес-правила
+4. Проверить [Тестирование](08-testing.md) для похожих тестовых случаев
+
+**Понимание SQL-запросов:**
+- [База данных](09-database.md) — схема и индексы
+- [Инфраструктурный слой](05-backend-infrastructure.md) — запросы репозиториев
+
+**Настройка локальной разработки:**
+- [Обзор](01-overview.md) — быстрый старт
+- [База данных](09-database.md) — миграции Alembic
+
+---
+
+## Ключевые концепции
+
+### Чистая архитектура
 
 ```
-Frontend (Vue 3) → API (FastAPI) → Application → Domain ← Infrastructure
+Фронтенд (Vue 3) → API (FastAPI) → Приложение → Доменный слой ← Инфраструктура
                                       ↑                      │
                                       └──────────────────────┘
-                                   (implements ports)
+                                   (реализует порты)
 ```
 
-- **Domain:** Business logic (zero framework code)
-- **Application:** Orchestration (use cases)
-- **Infrastructure:** Persistence (repositories, auth)
-- **API:** HTTP adapter (routers, schemas)
-- **Frontend:** Vue 3 SPA (components, stores)
+- **Доменный слой:** Бизнес-логика (ноль кода фреймворков)
+- **Приложение:** Оркестрация (use cases)
+- **Инфраструктура:** Персистентность (репозитории, аутентификация)
+- **API:** HTTP-адаптер (маршрутизаторы, схемы)
+- **Фронтенд:** Vue 3 SPA (компоненты, хранилища)
 
-### Key Patterns
+### Ключевые паттерны
 
-| Pattern | Purpose | Location |
-|---------|---------|----------|
-| **Clean Architecture** | Decoupled layers | All |
-| **Repository** | Abstract data access | Infrastructure |
-| **Use Case** | One operation = one class | Application |
-| **Value Object** | Immutable, no identity | Domain (Quantity, Money) |
-| **Domain Service** | Complex logic | Domain (ShoppingListBuilder) |
-| **Dependency Injection** | Explicit wiring | Composition Root |
-| **Converter** | Domain ↔ Schema mapping | API |
-| **Strategy** | Interchangeable algorithms | Exporters |
-| **Pinia Store** | Centralized state | Frontend |
+| Паттерн | Назначение | Расположение |
+|---------|-----------|----------|
+| **Чистая архитектура** | Развязанные слои | Везде |
+| **Repository** | Абстрактный доступ к данным | Инфраструктура |
+| **Use Case** | Одна операция = один класс | Приложение |
+| **Value Object** | Неизменяемо, без идентичности | Доменный (Quantity, Money) |
+| **Domain Service** | Сложная логика | Доменный (ShoppingListBuilder) |
+| **Dependency Injection** | Явная связь | Composition Root |
+| **Converter** | Маппинг доменное ↔ схема | API |
+| **Strategy** | Взаимозаменяемые алгоритмы | Экспортеры |
+| **Pinia Store** | Централизованное состояние | Фронтенд |
 
-### Typed IDs
+### Типизированные ID
 
 ```python
-RecipeId = NewType("RecipeId", int)  # Prevents ID mix-ups
+RecipeId = NewType("RecipeId", int)  # Предотвращает путаницу ID
 ProductId = NewType("ProductId", int)
 ```
 
-Caught by mypy at compile time. No runtime cost.
+Проверяется mypy на этапе компиляции. Нет затрат на производительность.
 
-### Quantity Value Object
+### Объект-значение Quantity
 
-Central to shopping list logic:
+Центральное понятие логики списка покупок:
 
 ```python
 flour = Quantity(200, "g")
 milk = Quantity(0.5, "l")
 
-# Auto-converts units, sums
+# Автоматическое преобразование единиц, суммирование
 flour_total = flour + Quantity(0.3, "kg")  # 500g + 300g = 800g
 ```
 
-### Multi-Tenancy
+### Многопользовательскость
 
-All data scoped by `user_id`:
+Все данные ограничены областью действия по `user_id`:
 
 ```python
-recipes = recipe_repo.list_by_user(UserId(1))  # Only user 1's recipes
+recipes = recipe_repo.list_by_user(UserId(1))  # Только рецепты пользователя 1
 ```
 
 ---
 
-## Common Tasks
+## Частые задачи
 
-### Add a New Recipe Field
+### Добавить новое поле рецепта
 
-1. **Domain:** Add field to `Recipe` entity in [Domain Layer](03-backend-domain.md#recipe)
-2. **Database:** Add column via Alembic migration in [Database](09-database.md#creating-migrations)
-3. **Infrastructure:** Update `RecipeRow` ORM model and repository mapper
-4. **API:** Update `RecipeResponse` schema and converter
-5. **Frontend:** Update `Recipe` interface and form component
-6. **Tests:** Add test case in [Testing](08-testing.md#unit-tests--domain--application)
+1. **Доменный слой:** Добавить поле к сущности `Recipe` в [Доменном слое](03-backend-domain.md#recipe)
+2. **База данных:** Добавить столбец через миграцию Alembic в [Базе данных](09-database.md#creating-migrations)
+3. **Инфраструктура:** Обновить ORM-модель `RecipeRow` и маппер репозитория
+4. **API:** Обновить схему `RecipeResponse` и конвертер
+5. **Фронтенд:** Обновить интерфейс `Recipe` и компонент формы
+6. **Тесты:** Добавить тестовый случай в [Тестировании](08-testing.md#unit-tests--domain--application)
 
-### Create a New Use Case
+### Создать новый use case
 
-1. **Define:** Create class in `backend/application/use_cases/` following [Application Layer](04-backend-application.md#use-case-pattern) pattern
-2. **Implement:** Input validation → fetch domain objects → apply logic → persist → return result
-3. **Test:** Write unit test with mocked repository
-4. **Wire:** Add to composition root in `backend/composition/`
-5. **API:** Create endpoint in appropriate router
+1. **Определить:** Создать класс в `backend/application/use_cases/` по паттерну в [Слое приложения](04-backend-application.md#use-case-pattern)
+2. **Реализовать:** Валидация входных данных → получить доменные объекты → применить логику → персистить → вернуть результат
+3. **Тестировать:** Написать unit-тест с mockированным репозиторием
+4. **Подключить:** Добавить в composition root в `backend/composition/`
+5. **API:** Создать эндпоинт в соответствующем маршрутизаторе
 
-### Debug a Failing Test
+### Отладить падающий тест
 
-1. Run single test: `pytest tests/unit/domain/test_recipe.py::test_recipe_scale_to -v`
-2. Check error message and assertion
-3. Review test fixture setup
-4. Verify domain entity or mock setup
-5. See [Testing](08-testing.md) for patterns
+1. Запустить один тест: `pytest tests/unit/domain/test_recipe.py::test_recipe_scale_to -v`
+2. Проверить сообщение об ошибке и утверждение
+3. Проверить настройку фикстуры тестовой
+4. Убедиться в сущности доменного слоя или mock-сетапе
+5. См. [Тестирование](08-testing.md) для паттернов
 
-### Query Database Directly
+### Запросить БД напрямую
 
 ```bash
 # SQLite
@@ -220,46 +220,46 @@ sqlite3 menutor.db
 # PostgreSQL
 psql -U user -h localhost menutor_db
 
-# View schema
+# Просмотр схемы
 .schema recipes
 
-# Check data
+# Проверка данных
 SELECT * FROM recipes WHERE user_id = 1;
 ```
 
 ---
 
-## API Reference
+## Справочник по API
 
-### Endpoints (All Require Auth)
+### Эндпоинты (все требуют аутентификацию)
 
-| Method | Path | Purpose |
+| Метод | Путь | Назначение |
 |--------|------|---------|
-| **POST** | `/api/auth/register` | Create user account |
-| **POST** | `/api/auth/login` | Login, get tokens |
-| **POST** | `/api/auth/refresh` | Refresh access token |
-| **GET** | `/api/auth/me` | Get current user |
-| **GET** | `/api/recipes` | List recipes |
-| **POST** | `/api/recipes` | Create recipe |
-| **GET** | `/api/recipes/{id}` | Get recipe |
-| **PUT** | `/api/recipes/{id}` | Update recipe |
-| **DELETE** | `/api/recipes/{id}` | Delete recipe |
-| **GET** | `/api/products` | List products |
-| **POST** | `/api/products` | Create product |
-| **GET** | `/api/menus` | List menus |
-| **POST** | `/api/menus` | Create menu |
-| **POST** | `/api/menus/{id}/shopping-list` | Generate shopping list |
-| **GET** | `/api/menus/{id}/shopping-list/export` | Export (CSV/JSON/text) |
+| **POST** | `/api/auth/register` | Создать учетную запись |
+| **POST** | `/api/auth/login` | Вход, получить токены |
+| **POST** | `/api/auth/refresh` | Обновить токен доступа |
+| **GET** | `/api/auth/me` | Получить текущего пользователя |
+| **GET** | `/api/recipes` | Список рецептов |
+| **POST** | `/api/recipes` | Создать рецепт |
+| **GET** | `/api/recipes/{id}` | Получить рецепт |
+| **PUT** | `/api/recipes/{id}` | Обновить рецепт |
+| **DELETE** | `/api/recipes/{id}` | Удалить рецепт |
+| **GET** | `/api/products` | Список продуктов |
+| **POST** | `/api/products` | Создать продукт |
+| **GET** | `/api/menus` | Список меню |
+| **POST** | `/api/menus` | Создать меню |
+| **POST** | `/api/menus/{id}/shopping-list` | Генерировать список покупок |
+| **GET** | `/api/menus/{id}/shopping-list/export` | Экспортировать (CSV/JSON/текст) |
 
-Full documentation: `/docs` (Swagger UI)
+Полная документация: `/docs` (Swagger UI)
 
 ---
 
-## Environment Variables
+## Переменные окружения
 
 ```env
 DATABASE_URL=sqlite:///./menutor.db          # SQLite dev / PostgreSQL prod
-JWT_SECRET_KEY=your-secret-key-here          # Generate: openssl rand -hex 32
+JWT_SECRET_KEY=your-secret-key-here          # Генерировать: openssl rand -hex 32
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=30
@@ -267,99 +267,99 @@ REFRESH_TOKEN_EXPIRE_DAYS=30
 
 ---
 
-## Running the App
+## Запуск приложения
 
 ```bash
-# Backend
+# Бэкенд
 uvicorn backend.api.main:app --reload
-# API docs: http://localhost:8000/docs
+# Документация API: http://localhost:8000/docs
 
-# Frontend
+# Фронтенд
 cd frontend && npm run dev
-# Frontend: http://localhost:5173
+# Фронтенд: http://localhost:5173
 
-# Tests
+# Тесты
 pytest tests/ -v
 ```
 
 ---
 
-## Git Workflow
+## Git-рабочий процесс
 
 ```bash
-# Create feature branch
+# Создать ветку функции
 git checkout -b feature/add-recipe-notes
 
-# Make changes, commit
+# Внести изменения, закоммитить
 git add .
 git commit -m "feat: add notes field to recipes"
 
-# Pre-commit checks run automatically
+# Pre-commit проверки запускаются автоматически
 # mypy, isort, pytest
 
-# Push and create PR
+# Push и создать PR
 git push origin feature/add-recipe-notes
 ```
 
 ---
 
-## Performance Considerations
+## Соображения производительности
 
-1. **Database Indexes:** Strategic on `user_id`, names, foreign keys
-2. **Caching:** Implement in Pinia stores on frontend
-3. **API:** Pagination for large lists
-4. **Quantity Arithmetic:** Immutable value object (safe to cache)
-5. **Shopping List Generation:** Aggregate in domain service (testable, reusable)
-
----
-
-## Security
-
-1. **Passwords:** Hashed with bcrypt (never plaintext)
-2. **JWT:** Signed tokens, 30-min expiry, refresh token rotation
-3. **CORS:** Configured in FastAPI (allow all origins in dev, restrict in prod)
-4. **SQL Injection:** SQLAlchemy ORM prevents parameterized queries
-5. **Multi-tenancy:** All queries filtered by `user_id`
+1. **Индексы БД:** Стратегические на `user_id`, имена, внешние ключи
+2. **Кеширование:** Реализовать в хранилищах Pinia на фронтенде
+3. **API:** Пагинация для больших списков
+4. **Арифметика Quantity:** Неизменяемый объект-значение (безопасен для кеша)
+5. **Генерация списка покупок:** Агрегировать в доменном сервисе (тестируемо, переиспользуемо)
 
 ---
 
-## Version History
+## Безопасность
 
-- **v0.6.0** — Nested recipes, pieces-based recipes, comprehensive testing
-- **v0.5.0** — Web migration (FastAPI + Vue 3), authentication
-- **v0.4.0** — Shopping list generation, exporters
-- **v0.3.0** — Menu planning, family member profiles
-- **v0.2.0** — Recipes and products management
-- **v0.1.0** — MVP: project structure, core domain
-
----
-
-## Resources
-
-- [FastAPI Docs](https://fastapi.tiangolo.com/)
-- [SQLAlchemy Docs](https://docs.sqlalchemy.org/)
-- [Alembic Docs](https://alembic.sqlalchemy.org/)
-- [Vue 3 Docs](https://vuejs.org/)
-- [Pinia Docs](https://pinia.vuejs.org/)
-- [Tailwind CSS Docs](https://tailwindcss.com/)
-- [pytest Docs](https://docs.pytest.org/)
+1. **Пароли:** Хешированы с bcrypt (никогда открытый текст)
+2. **JWT:** Подписанные токены, 30-мин истечение, ротация refresh-токена
+3. **CORS:** Настроена в FastAPI (разрешить все source в dev, ограничить в prod)
+4. **SQL-инъекция:** ORM SQLAlchemy предотвращает параметризованные запросы
+5. **Многопользовательскость:** Все запросы отфильтрованы по `user_id`
 
 ---
 
-## Contributing
+## История версий
 
-1. Read [Architecture](02-architecture.md) to understand structure
-2. Follow Clean Architecture principles
-3. Write tests for new code (see [Testing](08-testing.md))
-4. Update database schema via Alembic migrations
-5. Update this documentation for major changes
-
----
-
-**For detailed information on any topic, see the corresponding document above.**
+- **v0.6.0** — Вложенные рецепты, рецепты на основе штук, полное тестирование
+- **v0.5.0** — Веб-миграция (FastAPI + Vue 3), аутентификация
+- **v0.4.0** — Генерация списка покупок, экспортеры
+- **v0.3.0** — Планирование меню, профили членов семьи
+- **v0.2.0** — Управление рецептами и продуктами
+- **v0.1.0** — MVP: структура проекта, ядро доменного слоя
 
 ---
 
-Generated: 2026-03-20
-Scope: Menu Planner MVP + Web Migration
-Coverage: 9 comprehensive files, ~5000 lines of documentation
+## Ресурсы
+
+- [Документация FastAPI](https://fastapi.tiangolo.com/)
+- [Документация SQLAlchemy](https://docs.sqlalchemy.org/)
+- [Документация Alembic](https://alembic.sqlalchemy.org/)
+- [Документация Vue 3](https://vuejs.org/)
+- [Документация Pinia](https://pinia.vuejs.org/)
+- [Документация Tailwind CSS](https://tailwindcss.com/)
+- [Документация pytest](https://docs.pytest.org/)
+
+---
+
+## Участие
+
+1. Прочитайте [Архитектуру](02-architecture.md) для понимания структуры
+2. Следуйте принципам Чистой архитектуры
+3. Напишите тесты для нового кода (см. [Тестирование](08-testing.md))
+4. Обновите схему БД через миграции Alembic
+5. Обновите эту документацию для больших изменений
+
+---
+
+**Для получения подробной информации по любой теме см. соответствующий документ выше.**
+
+---
+
+Сгенерировано: 2026-03-20
+Область: Menu Planner MVP + Веб-миграция
+Охват: 9 полных файлов, ~5000 строк документации

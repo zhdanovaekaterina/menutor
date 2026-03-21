@@ -2,7 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import type { ActiveCategory, MenuSlot, Product, Recipe } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
-import { useCategoryFilter } from '@/composables/useCategoryFilter'
+import { useTabbedFilter } from '@/composables/useTabbedFilter'
+import IconCheck from '@/components/ui/icons/IconCheck.vue'
 
 const props = defineProps<{
   open: boolean
@@ -22,21 +23,12 @@ const emit = defineEmits<{
   remove: [data: { type: 'recipe' | 'product'; id: number }]
 }>()
 
-const tab = ref<'recipes' | 'products'>('recipes')
-const search = ref('')
-const recipeCF = useCategoryFilter<Recipe>()
-const productCF = useCategoryFilter<Product>()
-
-function switchTab(next: 'recipes' | 'products') {
-  tab.value = next
-  search.value = ''
-  recipeCF.reset()
-  productCF.reset()
-}
-
-// Filter items by search query and category
-const filteredRecipes = computed(() => recipeCF.applyFilter(props.recipes, search.value))
-const filteredProducts = computed(() => productCF.applyFilter(props.products, search.value))
+const {
+  tab, search, recipeCF, productCF, switchTab, filteredRecipes, filteredProducts,
+} = useTabbedFilter<Recipe, Product>(
+  () => props.recipes,
+  () => props.products,
+)
 
 // Track which items are already in this cell
 const existingRecipeIds = computed(() =>
@@ -227,13 +219,7 @@ function onTouchEnd() {
             >
               <span class="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
               <span class="flex-1 truncate">{{ r.name }}</span>
-              <svg
-                v-if="existingRecipeIds.has(r.id)"
-                class="w-4 h-4 text-green-500 shrink-0"
-                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-              </svg>
+              <IconCheck v-if="existingRecipeIds.has(r.id)" class="w-4 h-4 text-green-500 shrink-0" />
             </button>
           </template>
 
@@ -253,13 +239,7 @@ function onTouchEnd() {
             >
               <span class="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
               <span class="flex-1 truncate">{{ p.name }}</span>
-              <svg
-                v-if="existingProductIds.has(p.id)"
-                class="w-4 h-4 text-green-500 shrink-0"
-                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-              </svg>
+              <IconCheck v-if="existingProductIds.has(p.id)" class="w-4 h-4 text-green-500 shrink-0" />
             </button>
           </template>
         </div>
@@ -272,9 +252,6 @@ function onTouchEnd() {
 </template>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-
 .sheet-enter-active { transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
 .sheet-leave-active { transition: transform 0.2s ease-out; }
 .sheet-enter-from, .sheet-leave-to { transform: translateY(100%); }

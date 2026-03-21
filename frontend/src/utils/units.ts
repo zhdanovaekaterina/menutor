@@ -1,4 +1,26 @@
 /**
+ * Maps internal unit codes to Russian display labels.
+ * This is the single source of truth for unit display names.
+ */
+export const UNIT_MAP: Record<string, string> = {
+  g: 'г',
+  kg: 'кг',
+  ml: 'мл',
+  l: 'л',
+  tsp: 'ч.л.',
+  tbsp: 'ст.л.',
+  pcs: 'шт',
+  box: 'кор',
+  pack: 'уп',
+  serv: 'порц.',
+}
+
+/** Format a unit code to its Russian display label, falling back to the raw code. */
+export function formatUnit(unit: string): string {
+  return UNIT_MAP[unit] ?? unit
+}
+
+/**
  * Unit groups and base-unit multipliers — mirrors backend quantity.py.
  *
  * _TO_BASE: how many base units one unit of this kind equals
