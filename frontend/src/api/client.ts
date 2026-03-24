@@ -5,8 +5,10 @@ import type {
   FamilyMember,
   FamilyMemberCreate,
   FlattenedProduct,
+  GenerateFilteredShoppingListRequest,
   ImportResult,
   IngredientRow,
+  MealSummaryResponse,
   Menu,
   MenuSlot,
   MoveSlotRequest,
@@ -190,6 +192,17 @@ export const moveCategoryAndDelete = (
 /* Shopping List */
 export const generateShoppingList = (menuId: number) =>
   api.post<SavedShoppingList>(`/menus/${menuId}/shopping-list`).then((r) => r.data)
+
+/* Meal Summary */
+export const fetchMealSummary = (menuId: number) =>
+  api.get<MealSummaryResponse>(`/menus/${menuId}/summary`).then((r) => r.data)
+
+export const generateFilteredShoppingList = (menuId: number, slotIndices: number[]) =>
+  api
+    .post<SavedShoppingList>(`/menus/${menuId}/shopping-list/filtered`, {
+      slot_indices: slotIndices,
+    } as GenerateFilteredShoppingListRequest)
+    .then((r) => r.data)
 
 /* Saved Shopping Lists */
 export const fetchSavedShoppingLists = () =>

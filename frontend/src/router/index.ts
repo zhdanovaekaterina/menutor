@@ -15,6 +15,11 @@ const router = createRouter({
       component: () => import('@/views/MenuPlannerView.vue'),
     },
     {
+      path: '/menus/:id/summary',
+      name: 'meal-summary',
+      component: () => import('@/views/MealSummaryView.vue'),
+    },
+    {
       path: '/shopping-list',
       component: () => import('@/views/ShoppingListView.vue'),
     },
