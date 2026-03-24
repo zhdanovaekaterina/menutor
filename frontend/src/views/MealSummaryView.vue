@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchMealSummary, generateFilteredShoppingList } from '@/api/client'
+import { exportSummaryTxt } from '@/utils/exportSummaryTxt'
 import type { MealIngredient, MealSummaryRecipe, MealSummaryResponse } from '@/api/types'
 import { useShoppingListStore } from '@/stores/shoppingList'
 import { useToastStore } from '@/stores/toast'
@@ -314,6 +315,17 @@ async function doGenerate(): Promise<void> {
 function goToPlanner() {
   router.push('/planner')
 }
+
+function exportTxt(): void {
+  if (!summary.value) return
+  exportSummaryTxt(
+    summary.value,
+    selectedSlotsByRecipe.value,
+    recipeIngredients.value,
+    nestedRecipes.value,
+    deselectedSubRecipes.value,
+  )
+}
 </script>
 
 <template>
@@ -447,6 +459,7 @@ function goToPlanner() {
         :total-count="totalSlotCount"
         :generating="generating"
         @generate="onGenerate"
+        @export="exportTxt"
       />
     </template>
 

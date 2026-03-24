@@ -16,7 +16,7 @@ const emit = defineEmits<{
   toggleSlot: [slotIndex: number]
 }>()
 
-const expanded = ref(true)
+const expanded = ref(false)
 
 // Checkbox state: checked = all selected, indeterminate = some selected, unchecked = none
 const checkState = computed<'all' | 'some' | 'none'>(() => {
@@ -33,12 +33,26 @@ const totalSelectedServings = computed(() => {
     .reduce((sum, o) => sum + o.servings, 0)
 })
 
+const totalSelectedPieces = computed(() => {
+  if (!props.recipe.pieces_info) return null
+  return Math.round(totalSelectedServings.value * props.recipe.pieces_info.pieces_per_portion)
+})
+
+function occurrencePieces(occ: MealOccurrence): number | null {
+  if (!props.recipe.pieces_info) return null
+  return Math.round(occ.servings * props.recipe.pieces_info.pieces_per_portion)
+}
+
 function occurrenceLabel(occ: MealOccurrence): string {
   return `${DAY_LABELS[occ.day] ?? ''}, ${occ.meal_type}`
 }
 
 function formatQuantity(n: number): string {
   return String(Math.round(n * 100) / 100)
+}
+
+function formatServings(n: number): string {
+  return String(Math.round(n * 10) / 10)
 }
 </script>
 
@@ -93,7 +107,9 @@ function formatQuantity(n: number): string {
         </h3>
         <p class="text-xs text-gray-400 mt-0.5">
           <template v-if="checkState !== 'none'">
-            {{ totalSelectedServings }} порц. · {{ recipe.occurrences.length }}
+            {{ formatServings(totalSelectedServings) }} порц.
+            <template v-if="totalSelectedPieces !== null"> · {{ totalSelectedPieces }} шт.</template>
+            · {{ recipe.occurrences.length }}
             {{ recipe.occurrences.length === 1 ? 'приём пищи' : recipe.occurrences.length < 5 ? 'приёма пищи' : 'приёмов пищи' }}
           </template>
           <template v-else>
@@ -151,7 +167,10 @@ function formatQuantity(n: number): string {
                 </svg>
               </span>
               {{ occurrenceLabel(occ) }}
-              <span class="text-gray-400">{{ occ.servings }} порц.</span>
+              <span class="text-gray-400">
+                {{ formatServings(occ.servings) }} порц.
+                <template v-if="occurrencePieces(occ) !== null"> · {{ occurrencePieces(occ) }} шт.</template>
+              </span>
             </button>
           </div>
         </div>

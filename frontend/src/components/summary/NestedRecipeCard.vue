@@ -18,7 +18,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ toggle: [] }>()
 
-const expanded = ref(true)
+const expanded = ref(false)
 
 function formatQuantity(n: number): string {
   return String(Math.round(n * 100) / 100)

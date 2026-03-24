@@ -7,7 +7,10 @@ from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.ports.menu_repository import MenuRepository
 from backend.domain.ports.product_repository import ProductRepository
 from backend.domain.ports.recipe_repository import RecipeRepository
-from backend.domain.services.shopping_list_builder import IngredientNode, ShoppingListBuilder
+from backend.domain.services.shopping_list_builder import (
+    IngredientNode,
+    ShoppingListBuilder,
+)
 from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, UserId
 
 

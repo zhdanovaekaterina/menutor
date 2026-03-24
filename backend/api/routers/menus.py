@@ -4,7 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 
 from backend.api.auth import get_current_user
-from backend.api.converters import meal_summary_to_response, menu_to_response, schema_to_menu_slot
+from backend.api.converters import (
+    meal_summary_to_response,
+    menu_to_response,
+    schema_to_menu_slot,
+)
 from backend.api.deps import get_container
 from backend.api.schemas.meal_summary import MealSummaryResponseSchema
 from backend.api.schemas.menu import (
