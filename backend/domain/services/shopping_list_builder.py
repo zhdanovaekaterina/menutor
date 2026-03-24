@@ -95,6 +95,12 @@ class ShoppingListBuilder:
                 else:
                     aggregated[pid] = qty
 
+        return self._aggregated_to_shopping_list(aggregated)
+
+    def _aggregated_to_shopping_list(
+        self, aggregated: dict[ProductId, Quantity]
+    ) -> ShoppingList:
+        """Convert an aggregated product→quantity map into a ShoppingList."""
         category_map = dict(self._product_category_repo.find_active())
 
         items: list[ShoppingListItem] = []
@@ -136,6 +142,7 @@ class ShoppingListBuilder:
         recipe: Recipe,
         scale_factor: float,
         visited: set[RecipeId],
+        _excluded_sub_recipe_ids: set[RecipeId] | None = None,
     ) -> dict[ProductId, Quantity]:
         if recipe.id in visited:
             return {}  # defensive guard against cycles
@@ -155,6 +162,11 @@ class ShoppingListBuilder:
                     products[ing.product_id] = qty
             elif ing.is_sub_recipe:
                 assert ing.sub_recipe_id is not None
+                if (
+                    _excluded_sub_recipe_ids is not None
+                    and ing.sub_recipe_id in _excluded_sub_recipe_ids
+                ):
+                    continue
                 sub_recipe = self._recipe_repo.get_by_id(ing.sub_recipe_id)
                 if sub_recipe is None:
                     continue
@@ -174,7 +186,7 @@ class ShoppingListBuilder:
                         sub_scale = pcs / sub_recipe.total_pieces
                     else:
                         sub_scale = scaled_amount / sub_recipe.servings
-                sub_products = self._resolve_recipe_products(sub_recipe, sub_scale, visited)
+                sub_products = self._resolve_recipe_products(sub_recipe, sub_scale, visited, _excluded_sub_recipe_ids)
                 for pid, qty in sub_products.items():
                     if pid in products:
                         try:
@@ -189,18 +201,90 @@ class ShoppingListBuilder:
     def flatten_recipe_products(self, recipe: Recipe) -> dict[ProductId, Quantity]:
         return self._resolve_recipe_products(recipe, 1.0, set())
 
-    def build_filtered(self, menu: WeeklyMenu, slot_indices: set[int]) -> ShoppingList:
-        """Build a shopping list using only the slots at the given indices."""
-        filtered_slots = [
-            slot for i, slot in enumerate(menu.slots) if i in slot_indices
-        ]
-        filtered_menu = WeeklyMenu(
-            id=menu.id,
-            name=menu.name,
-            slots=filtered_slots,
-            user_id=menu.user_id,
-        )
-        return self.build(filtered_menu)
+    def build_filtered(
+        self,
+        menu: WeeklyMenu,
+        slot_indices: set[int],
+        excluded_sub_recipe_ids: set[RecipeId] | None = None,
+    ) -> ShoppingList:
+        """Build a shopping list using only the slots at the given indices.
+
+        If excluded_sub_recipe_ids is provided, sub-recipes whose ID appears
+        in that set are skipped when resolving ingredients.
+        """
+        if excluded_sub_recipe_ids is None:
+            filtered_slots = [
+                slot for i, slot in enumerate(menu.slots) if i in slot_indices
+            ]
+            filtered_menu = WeeklyMenu(
+                id=menu.id,
+                name=menu.name,
+                slots=filtered_slots,
+                user_id=menu.user_id,
+            )
+            return self.build(filtered_menu)
+
+        # When exclusions are present we bypass build() and resolve products
+        # directly so we can thread excluded_sub_recipe_ids down the call chain.
+        aggregated: dict[ProductId, Quantity] = {}
+
+        for i, slot in enumerate(menu.slots):
+            if i not in slot_indices:
+                continue
+
+            if slot.recipe_id is not None:
+                recipe = self._recipe_repo.get_by_id(slot.recipe_id)
+                if recipe is None:
+                    continue
+
+                if recipe.is_pieces_mode:
+                    assert recipe.total_pieces is not None
+                    assert recipe.pieces_per_portion is not None
+                    if slot.pieces_override is not None:
+                        pcs = slot.pieces_override
+                    else:
+                        portions = float(
+                            slot.servings_override
+                            if slot.servings_override is not None
+                            else recipe.servings
+                        )
+                        pcs = max(1, round(portions * recipe.pieces_per_portion))
+                    scale_factor = pcs / recipe.total_pieces
+                else:
+                    base = float(
+                        slot.servings_override
+                        if slot.servings_override is not None
+                        else recipe.servings
+                    )
+                    scale_factor = base / recipe.servings
+
+                slot_products = self._resolve_recipe_products(
+                    recipe, scale_factor, set(), excluded_sub_recipe_ids
+                )
+                for pid, qty in slot_products.items():
+                    if pid in aggregated:
+                        try:
+                            aggregated[pid] = aggregated[pid] + qty
+                        except UnitConversionError:
+                            pass
+                    else:
+                        aggregated[pid] = qty
+
+            elif slot.product_id is not None and slot.quantity is not None and slot.unit is not None:
+                pid = slot.product_id
+                try:
+                    qty = Quantity(slot.quantity, slot.unit)
+                except UnitConversionError:
+                    continue
+                if pid in aggregated:
+                    try:
+                        aggregated[pid] = aggregated[pid] + qty
+                    except UnitConversionError:
+                        pass
+                else:
+                    aggregated[pid] = qty
+
+        return self._aggregated_to_shopping_list(aggregated)
 
     def resolve_recipe_ingredients_tree(
         self,

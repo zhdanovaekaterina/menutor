@@ -61,3 +61,4 @@ class MealSummaryResponseSchema(BaseModel):
 class GenerateFilteredShoppingListRequest(BaseModel):
     """Request body for generating a shopping list from selected slots."""
     slot_indices: list[int]
+    excluded_sub_recipe_ids: list[int] = []

@@ -14,6 +14,7 @@ from backend.domain.ports.saved_shopping_list_repository import (
 from backend.domain.services.shopping_list_builder import ShoppingListBuilder
 from backend.domain.value_objects.types import (
     MenuId,
+    RecipeId,
     SavedShoppingListId,
     SavedShoppingListItemId,
     UserId,
@@ -34,13 +35,22 @@ class GenerateFilteredShoppingList:
         self._saved_list_repo = saved_list_repo
 
     def execute(
-        self, menu_id: MenuId, user_id: UserId, slot_indices: set[int]
+        self,
+        menu_id: MenuId,
+        user_id: UserId,
+        slot_indices: set[int],
+        excluded_sub_recipe_ids: set[int] | None = None,
     ) -> SavedShoppingList:
         menu = self._menu_repo.get_by_id(menu_id)
         if menu is None or menu.user_id != user_id:
             raise EntityNotFoundError(f"Меню {menu_id} не найдено")
 
-        shopping_list = self._builder.build_filtered(menu, slot_indices)
+        excluded: set[RecipeId] | None = (
+            {RecipeId(rid) for rid in excluded_sub_recipe_ids}
+            if excluded_sub_recipe_ids is not None
+            else None
+        )
+        shopping_list = self._builder.build_filtered(menu, slot_indices, excluded)
 
         now = datetime.now(UTC)
         time_str = now.strftime("%H:%M")

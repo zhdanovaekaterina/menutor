@@ -603,3 +603,20 @@ class TestGenerateFilteredShoppingList:
         call_args = container.generate_filtered_shopping_list.execute.call_args
         assert call_args is not None
         assert call_args[0][2] == set()
+
+    def test_generate_filtered_shopping_list_with_exclusions(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.generate_filtered_shopping_list.execute.return_value = _saved_list(
+            items=[_saved_item()],
+        )
+        resp = client.post(
+            "/api/menus/1/shopping-list/filtered",
+            json={"slot_indices": [0], "excluded_sub_recipe_ids": [5, 6]},
+        )
+        assert resp.status_code == 200
+        call_args = container.generate_filtered_shopping_list.execute.call_args
+        assert call_args is not None
+        # slot_indices at positional index 2, excluded_sub_recipe_ids at index 3
+        assert call_args[0][2] == {0}
+        assert call_args[0][3] == {5, 6}

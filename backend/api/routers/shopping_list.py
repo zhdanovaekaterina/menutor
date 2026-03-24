@@ -52,7 +52,7 @@ def generate_filtered_shopping_list(
     user: User = Depends(get_current_user),
 ) -> SavedShoppingListResponse:
     saved = container.generate_filtered_shopping_list.execute(
-        MenuId(menu_id), user.id, set(body.slot_indices)
+        MenuId(menu_id), user.id, set(body.slot_indices), set(body.excluded_sub_recipe_ids)
     )
     return saved_shopping_list_to_response(saved)
 
