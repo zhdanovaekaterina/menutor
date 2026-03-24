@@ -2,11 +2,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchMealSummary, generateFilteredShoppingList } from '@/api/client'
-import { exportSummaryTxt } from '@/utils/exportSummaryTxt'
+import { buildSummaryText, getSummaryFilename } from '@/utils/exportSummaryTxt'
 import type { MealIngredient, MealSummaryRecipe, MealSummaryResponse } from '@/api/types'
 import { useShoppingListStore } from '@/stores/shoppingList'
 import { useToastStore } from '@/stores/toast'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import SummaryExportModal from '@/components/summary/SummaryExportModal.vue'
 import SummaryHeader from '@/components/summary/SummaryHeader.vue'
 import MealCard from '@/components/summary/MealCard.vue'
 import NestedRecipeCard from '@/components/summary/NestedRecipeCard.vue'
@@ -14,7 +15,6 @@ import type { NestedRecipeSummary } from '@/components/summary/NestedRecipeCard.
 import StandaloneProductCard from '@/components/summary/StandaloneProductCard.vue'
 import SummaryFooter from '@/components/summary/SummaryFooter.vue'
 
-const DAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 const route = useRoute()
 const router = useRouter()
@@ -28,6 +28,9 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const generating = ref(false)
 const confirmGenerateOpen = ref(false)
+const exportModalOpen = ref(false)
+const exportText = ref('')
+const exportFilename = ref('')
 
 // Per-recipe slot selection: recipeId -> Set of selected slotIndices
 const selectedSlotsByRecipe = ref<Map<number, Set<number>>>(new Map())
@@ -148,37 +151,7 @@ const selectedSlotCount = computed(() => {
 
 // ── Standalone products ────────────────────────────────────────────────────
 
-interface StandaloneProductItem {
-  key: string
-  productName: string
-  day: number
-  mealTypeLabel: string
-  quantity: number
-  unit: string
-}
-
-const standaloneProducts = computed<StandaloneProductItem[]>(() => {
-  if (!summary.value) return []
-  const items: StandaloneProductItem[] = []
-  for (const product of summary.value.products) {
-    for (const occ of product.occurrences) {
-      items.push({
-        key: `p-${product.product_id}-${occ.slot_index}`,
-        productName: product.product_name,
-        day: occ.day,
-        mealTypeLabel: occ.meal_type,
-        quantity: occ.quantity,
-        unit: occ.unit,
-      })
-    }
-  }
-  return items
-})
-
-// Always selected (all product slots)
-const selectedProductKeys = computed<Set<string>>(() => {
-  return new Set(standaloneProducts.value.map((p) => p.key))
-})
+const standaloneProducts = computed(() => summary.value?.products ?? [])
 
 // ── Load ───────────────────────────────────────────────────────────────────
 
@@ -318,13 +291,15 @@ function goToPlanner() {
 
 function exportTxt(): void {
   if (!summary.value) return
-  exportSummaryTxt(
+  exportText.value = buildSummaryText(
     summary.value,
     selectedSlotsByRecipe.value,
     recipeIngredients.value,
     nestedRecipes.value,
     deselectedSubRecipes.value,
   )
+  exportFilename.value = getSummaryFilename(summary.value.menu_name)
+  exportModalOpen.value = true
 }
 </script>
 
@@ -435,18 +410,11 @@ function exportTxt(): void {
               </span>
               <div class="h-px flex-1 bg-gray-200" />
             </div>
-            <div class="space-y-2">
+            <div class="space-y-3">
               <StandaloneProductCard
-                v-for="item in standaloneProducts"
-                :key="item.key"
-                :slot-key="item.key"
-                :product-name="item.productName"
-                :day-label="DAY_LABELS[item.day] ?? ''"
-                :meal-type-label="item.mealTypeLabel"
-                :quantity="item.quantity"
-                :unit="item.unit"
-                :is-selected="selectedProductKeys.has(item.key)"
-                @toggle="() => {}"
+                v-for="product in standaloneProducts"
+                :key="product.product_id"
+                :product="product"
               />
             </div>
           </div>
@@ -462,6 +430,13 @@ function exportTxt(): void {
         @export="exportTxt"
       />
     </template>
+
+    <SummaryExportModal
+      :open="exportModalOpen"
+      :text="exportText"
+      :filename="exportFilename"
+      @close="exportModalOpen = false"
+    />
 
     <ConfirmDialog
       :open="confirmGenerateOpen"

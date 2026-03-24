@@ -142,13 +142,22 @@ export function buildSummaryText(
     lines.push(SEP_THICK)
     lines.push(`ОТДЕЛЬНЫЕ ПРОДУКТЫ (${summary.products.length})`)
     lines.push(SEP_THIN)
-    lines.push('')
-    for (const product of summary.products) {
+
+    for (let i = 0; i < summary.products.length; i++) {
+      const product = summary.products[i]!
+      if (i > 0) {
+        lines.push('')
+        lines.push(SEP_THIN)
+      }
+
+      lines.push('')
+      lines.push(`[${i + 1}] ${product.product_name.toUpperCase()}`)
+      lines.push(`    Итого: ${fmtQty(product.total_quantity)} ${formatUnit(product.unit)}`)
+      lines.push('')
+      lines.push('    Приёмы пищи:')
       for (const occ of product.occurrences) {
         const day = DAY_LABELS[occ.day] ?? String(occ.day)
-        lines.push(
-          `• ${product.product_name} — ${day}, ${occ.meal_type} — ${fmtQty(occ.quantity)} ${formatUnit(occ.unit)}`,
-        )
+        lines.push(`    • ${day}, ${occ.meal_type} — ${fmtQty(occ.quantity)} ${formatUnit(occ.unit)}`)
       }
     }
     lines.push('')
@@ -158,27 +167,7 @@ export function buildSummaryText(
   return lines.join('\n')
 }
 
-export function exportSummaryTxt(
-  summary: MealSummaryResponse,
-  selectedSlotsByRecipe: Map<number, Set<number>>,
-  recipeIngredients: Map<number, MealIngredient[]>,
-  nestedRecipes: NestedRecipeSummary[],
-  deselectedSubRecipes: Set<number>,
-): void {
-  const text = buildSummaryText(
-    summary,
-    selectedSlotsByRecipe,
-    recipeIngredients,
-    nestedRecipes,
-    deselectedSubRecipes,
-  )
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  const safeName =
-    summary.menu_name.replace(/[^\wа-яёА-ЯЁ _-]/gu, '').replace(/\s+/g, '_') || 'menu'
-  a.download = `plan_${safeName}.txt`
-  a.click()
-  URL.revokeObjectURL(url)
+export function getSummaryFilename(menuName: string): string {
+  const safe = menuName.replace(/[^\wа-яёА-ЯЁ _-]/gu, '').replace(/\s+/g, '_') || 'menu'
+  return `plan_${safe}.txt`
 }
