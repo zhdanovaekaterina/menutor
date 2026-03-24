@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 
 from backend.api.auth import get_current_user
-from backend.api.converters import menu_to_response, schema_to_menu_slot
+from backend.api.converters import meal_summary_to_response, menu_to_response, schema_to_menu_slot
 from backend.api.deps import get_container
+from backend.api.schemas.meal_summary import MealSummaryResponseSchema
 from backend.api.schemas.menu import (
     MenuCreate,
     MenuResponse,
@@ -52,6 +53,16 @@ def get_menu(
             detail=f"Меню {menu_id} не найдено",
         )
     return menu_to_response(menu)
+
+
+@router.get("/{menu_id}/summary", response_model=MealSummaryResponseSchema)
+def get_meal_summary(
+    menu_id: int,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> MealSummaryResponseSchema:
+    summary = container.generate_meal_summary.execute(MenuId(menu_id), user.id)
+    return meal_summary_to_response(summary)
 
 
 @router.delete("/{menu_id}", status_code=status.HTTP_204_NO_CONTENT)
