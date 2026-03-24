@@ -335,4 +335,5 @@ export interface MealSummaryResponse {
 
 export interface GenerateFilteredShoppingListRequest {
   slot_indices: number[]
+  excluded_sub_recipe_ids: number[]
 }

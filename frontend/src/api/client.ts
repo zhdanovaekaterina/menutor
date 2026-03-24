@@ -197,10 +197,11 @@ export const generateShoppingList = (menuId: number) =>
 export const fetchMealSummary = (menuId: number) =>
   api.get<MealSummaryResponse>(`/menus/${menuId}/summary`).then((r) => r.data)
 
-export const generateFilteredShoppingList = (menuId: number, slotIndices: number[]) =>
+export const generateFilteredShoppingList = (menuId: number, slotIndices: number[], excludedSubRecipeIds: number[] = []) =>
   api
     .post<SavedShoppingList>(`/menus/${menuId}/shopping-list/filtered`, {
       slot_indices: slotIndices,
+      excluded_sub_recipe_ids: excludedSubRecipeIds,
     } as GenerateFilteredShoppingListRequest)
     .then((r) => r.data)
 

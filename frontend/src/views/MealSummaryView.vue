@@ -2,12 +2,14 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchMealSummary, generateFilteredShoppingList } from '@/api/client'
-import type { MealIngredient, MealSummaryResponse, PiecesInfo } from '@/api/types'
+import type { MealIngredient, MealSummaryRecipe, MealSummaryResponse } from '@/api/types'
 import { useShoppingListStore } from '@/stores/shoppingList'
 import { useToastStore } from '@/stores/toast'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import SummaryHeader from '@/components/summary/SummaryHeader.vue'
 import MealCard from '@/components/summary/MealCard.vue'
+import NestedRecipeCard from '@/components/summary/NestedRecipeCard.vue'
+import type { NestedRecipeSummary } from '@/components/summary/NestedRecipeCard.vue'
 import StandaloneProductCard from '@/components/summary/StandaloneProductCard.vue'
 import SummaryFooter from '@/components/summary/SummaryFooter.vue'
 
@@ -26,36 +28,12 @@ const error = ref<string | null>(null)
 const generating = ref(false)
 const confirmGenerateOpen = ref(false)
 
-// Selected slot keys: "r-{recipe_id}-{slot_index}" or "p-{product_id}-{slot_index}"
-const selectedKeys = ref<Set<string>>(new Set())
+// Per-recipe slot selection: recipeId -> Set of selected slotIndices
+const selectedSlotsByRecipe = ref<Map<number, Set<number>>>(new Map())
 
-function recipeSlotKey(recipeId: number, slotIndex: number): string {
-  return `r-${recipeId}-${slotIndex}`
-}
+// Deselected nested recipe IDs (excluded from shopping list)
+const deselectedSubRecipes = ref<Set<number>>(new Set())
 
-function productSlotKey(productId: number, slotIndex: number): string {
-  return `p-${productId}-${slotIndex}`
-}
-
-// All possible slot keys derived from summary data
-const allKeys = computed<string[]>(() => {
-  if (!summary.value) return []
-  const keys: string[] = []
-  for (const recipe of summary.value.recipes) {
-    for (const occ of recipe.occurrences) {
-      keys.push(recipeSlotKey(recipe.recipe_id, occ.slot_index))
-    }
-  }
-  for (const product of summary.value.products) {
-    for (const occ of product.occurrences) {
-      keys.push(productSlotKey(product.product_id, occ.slot_index))
-    }
-  }
-  return keys
-})
-
-const totalCount = computed(() => allKeys.value.length)
-const selectedCount = computed(() => selectedKeys.value.size)
 const isEmpty = computed(
   () =>
     summary.value !== null &&
@@ -63,28 +41,9 @@ const isEmpty = computed(
     summary.value.products.length === 0,
 )
 
-interface DisplayItem {
-  key: string
-  type: 'recipe' | 'product'
-  day: number
-  mealType: string
-  mealTypeLabel: string
-  // Recipe-specific
-  recipeName?: string
-  servings?: number
-  piecesInfo?: PiecesInfo | null
-  scaledIngredients?: MealIngredient[]
-  // Product-specific
-  productName?: string
-  quantity?: number
-  unit?: string
-}
+// ── Scale helpers ──────────────────────────────────────────────────────────
 
-// Scale ingredients by factor (per-occurrence)
-function scaleIngredients(
-  ingredients: MealIngredient[],
-  factor: number,
-): MealIngredient[] {
+function scaleIngredients(ingredients: MealIngredient[], factor: number): MealIngredient[] {
   return ingredients.map((ing) => ({
     ...ing,
     quantity_amount: Math.round(ing.quantity_amount * factor * 100) / 100,
@@ -94,58 +53,119 @@ function scaleIngredients(
   }))
 }
 
-// Group display items by day, sorted day 0-6
-const itemsByDay = computed<Map<number, DisplayItem[]>>(() => {
-  if (!summary.value) return new Map()
+function getRecipeScaleFactor(recipe: MealSummaryRecipe): number {
+  const selectedSlots = selectedSlotsByRecipe.value.get(recipe.recipe_id) ?? new Set<number>()
+  const selectedServings = recipe.occurrences
+    .filter((o) => selectedSlots.has(o.slot_index))
+    .reduce((sum, o) => sum + o.servings, 0)
+  return recipe.total_servings > 0 ? selectedServings / recipe.total_servings : 0
+}
 
-  const dayMap = new Map<number, DisplayItem[]>()
-
-  for (const recipe of summary.value.recipes) {
-    for (const occ of recipe.occurrences) {
-      const key = recipeSlotKey(recipe.recipe_id, occ.slot_index)
-      const scaleFactor =
-        recipe.total_servings > 0 ? occ.servings / recipe.total_servings : 1
-
-      const item: DisplayItem = {
-        key,
-        type: 'recipe',
-        day: occ.day,
-        mealType: occ.meal_type,
-        mealTypeLabel: occ.meal_type,
-        recipeName: recipe.recipe_name,
-        servings: occ.servings,
-        piecesInfo: occ.pieces_override != null && recipe.pieces_info
-          ? {
-              total_pieces: occ.pieces_override,
-              pieces_per_portion: recipe.pieces_info.pieces_per_portion,
-            }
-          : null,
-        scaledIngredients: scaleIngredients(recipe.ingredients, scaleFactor),
-      }
-
-      const list = dayMap.get(occ.day) ?? []
-      list.push(item)
-      dayMap.set(occ.day, list)
+// Reactive map: recipeId -> scaled ingredients (tracks selectedSlotsByRecipe)
+const recipeIngredients = computed(() => {
+  const map = new Map<number, MealIngredient[]>()
+  if (summary.value) {
+    for (const recipe of summary.value.recipes) {
+      map.set(recipe.recipe_id, scaleIngredients(recipe.ingredients, getRecipeScaleFactor(recipe)))
     }
   }
-
-  // Sort days 0-6
-  return new Map([...dayMap.entries()].sort((a, b) => a[0] - b[0]))
+  return map
 })
 
-// Standalone products (not grouped by day in a separate map, shown in separate section)
-const standaloneProducts = computed<DisplayItem[]>(() => {
+// ── Nested recipes aggregation ─────────────────────────────────────────────
+
+function aggregateSubIngredients(existing: MealIngredient[], additional: MealIngredient[]): void {
+  for (const addIng of additional) {
+    const match = existing.find(
+      (e) => e.product_name === addIng.product_name && e.quantity_unit === addIng.quantity_unit,
+    )
+    if (match) {
+      match.quantity_amount = Math.round((match.quantity_amount + addIng.quantity_amount) * 100) / 100
+    } else {
+      existing.push({ ...addIng })
+    }
+  }
+}
+
+function collectSubRecipes(
+  ingredients: MealIngredient[],
+  map: Map<number, NestedRecipeSummary>,
+): void {
+  for (const ing of ingredients) {
+    if (ing.sub_recipe_id != null) {
+      const existing = map.get(ing.sub_recipe_id)
+      if (existing) {
+        existing.total_quantity_amount = Math.round(
+          (existing.total_quantity_amount + ing.quantity_amount) * 100,
+        ) / 100
+        aggregateSubIngredients(existing.ingredients, ing.sub_ingredients ?? [])
+      } else {
+        map.set(ing.sub_recipe_id, {
+          sub_recipe_id: ing.sub_recipe_id,
+          sub_recipe_name: ing.sub_recipe_name ?? '',
+          total_quantity_amount: ing.quantity_amount,
+          quantity_unit: ing.quantity_unit,
+          ingredients: (ing.sub_ingredients ?? []).map((i) => ({ ...i })),
+        })
+      }
+      // Recurse into sub-sub-recipes
+      collectSubRecipes(ing.sub_ingredients ?? [], map)
+    }
+  }
+}
+
+const nestedRecipes = computed<NestedRecipeSummary[]>(() => {
   if (!summary.value) return []
-  const items: DisplayItem[] = []
+  const map = new Map<number, NestedRecipeSummary>()
+  for (const recipe of summary.value.recipes) {
+    const scaled = recipeIngredients.value.get(recipe.recipe_id) ?? []
+    collectSubRecipes(scaled, map)
+  }
+  return [...map.values()]
+})
+
+// ── Selection counts ───────────────────────────────────────────────────────
+
+const totalSlotCount = computed(() => {
+  if (!summary.value) return 0
+  return (
+    summary.value.recipes.reduce((sum, r) => sum + r.occurrences.length, 0) +
+    summary.value.products.reduce((sum, p) => sum + p.occurrences.length, 0)
+  )
+})
+
+const selectedSlotCount = computed(() => {
+  if (!summary.value) return 0
+  let count = 0
+  for (const recipe of summary.value.recipes) {
+    count += (selectedSlotsByRecipe.value.get(recipe.recipe_id) ?? new Set()).size
+  }
+  // Products always counted (no deselection for products)
+  count += summary.value.products.reduce((sum, p) => sum + p.occurrences.length, 0)
+  return count
+})
+
+// ── Standalone products ────────────────────────────────────────────────────
+
+interface StandaloneProductItem {
+  key: string
+  productName: string
+  day: number
+  mealTypeLabel: string
+  quantity: number
+  unit: string
+}
+
+const standaloneProducts = computed<StandaloneProductItem[]>(() => {
+  if (!summary.value) return []
+  const items: StandaloneProductItem[] = []
   for (const product of summary.value.products) {
     for (const occ of product.occurrences) {
       items.push({
-        key: productSlotKey(product.product_id, occ.slot_index),
-        type: 'product',
-        day: occ.day,
-        mealType: occ.meal_type,
-        mealTypeLabel: occ.meal_type,
+        key: `p-${product.product_id}-${occ.slot_index}`,
         productName: product.product_name,
+        day: occ.day,
+        mealTypeLabel: occ.meal_type,
         quantity: occ.quantity,
         unit: occ.unit,
       })
@@ -154,13 +174,25 @@ const standaloneProducts = computed<DisplayItem[]>(() => {
   return items
 })
 
+// Always selected (all product slots)
+const selectedProductKeys = computed<Set<string>>(() => {
+  return new Set(standaloneProducts.value.map((p) => p.key))
+})
+
+// ── Load ───────────────────────────────────────────────────────────────────
+
 async function loadSummary() {
   loading.value = true
   error.value = null
   try {
     summary.value = await fetchMealSummary(menuId.value)
-    // Select all by default
-    selectedKeys.value = new Set(allKeys.value)
+    // Select all slots by default
+    const next = new Map<number, Set<number>>()
+    for (const recipe of summary.value.recipes) {
+      next.set(recipe.recipe_id, new Set(recipe.occurrences.map((o) => o.slot_index)))
+    }
+    selectedSlotsByRecipe.value = next
+    deselectedSubRecipes.value = new Set()
   } catch {
     error.value = 'Не удалось загрузить сводку меню'
   } finally {
@@ -170,53 +202,104 @@ async function loadSummary() {
 
 onMounted(loadSummary)
 
-function selectAll() {
-  selectedKeys.value = new Set(allKeys.value)
+// ── Toggle functions ───────────────────────────────────────────────────────
+
+function toggleRecipe(recipeId: number): void {
+  const recipe = summary.value?.recipes.find((r) => r.recipe_id === recipeId)
+  if (!recipe) return
+  const current = selectedSlotsByRecipe.value.get(recipeId) ?? new Set<number>()
+  const allIndices = new Set(recipe.occurrences.map((o) => o.slot_index))
+  const newSelected = current.size === allIndices.size ? new Set<number>() : new Set(allIndices)
+  const next = new Map(selectedSlotsByRecipe.value)
+  next.set(recipeId, newSelected)
+  selectedSlotsByRecipe.value = next
 }
 
-function deselectAll() {
-  selectedKeys.value = new Set()
-}
-
-function toggleKey(key: string) {
-  const next = new Set(selectedKeys.value)
-  if (next.has(key)) {
-    next.delete(key)
+function toggleRecipeSlot(recipeId: number, slotIndex: number): void {
+  const current = new Set(selectedSlotsByRecipe.value.get(recipeId) ?? [])
+  if (current.has(slotIndex)) {
+    current.delete(slotIndex)
   } else {
-    next.add(key)
+    current.add(slotIndex)
   }
-  selectedKeys.value = next
+  const next = new Map(selectedSlotsByRecipe.value)
+  next.set(recipeId, current)
+  selectedSlotsByRecipe.value = next
 }
 
-function collectSelectedSlotIndices(): number[] {
-  const indices: number[] = []
-  for (const key of selectedKeys.value) {
-    // Key format: "r-{recipeId}-{slotIndex}" or "p-{productId}-{slotIndex}"
-    const parts = key.split('-')
-    const idx = Number(parts[parts.length - 1])
-    if (!isNaN(idx)) {
-      indices.push(idx)
+function collectAllSubRecipeIds(ingredients: MealIngredient[], into: Set<number>): void {
+  for (const ing of ingredients) {
+    if (ing.sub_recipe_id != null) {
+      into.add(ing.sub_recipe_id)
+      collectAllSubRecipeIds(ing.sub_ingredients ?? [], into)
     }
   }
-  return indices
 }
 
+function toggleNestedRecipe(subRecipeId: number): void {
+  const next = new Set(deselectedSubRecipes.value)
+  if (next.has(subRecipeId)) {
+    next.delete(subRecipeId)
+  } else {
+    next.add(subRecipeId)
+    // Auto-deselect nested sub-recipes of this sub-recipe
+    const nested = nestedRecipes.value.find((n) => n.sub_recipe_id === subRecipeId)
+    if (nested) {
+      collectAllSubRecipeIds(nested.ingredients, next)
+    }
+  }
+  deselectedSubRecipes.value = next
+}
+
+function selectAll(): void {
+  if (!summary.value) return
+  const next = new Map<number, Set<number>>()
+  for (const recipe of summary.value.recipes) {
+    next.set(recipe.recipe_id, new Set(recipe.occurrences.map((o) => o.slot_index)))
+  }
+  selectedSlotsByRecipe.value = next
+  deselectedSubRecipes.value = new Set()
+}
+
+function deselectAll(): void {
+  if (!summary.value) return
+  const next = new Map<number, Set<number>>()
+  for (const recipe of summary.value.recipes) {
+    next.set(recipe.recipe_id, new Set<number>())
+  }
+  selectedSlotsByRecipe.value = next
+}
+
+// ── Generate shopping list ─────────────────────────────────────────────────
+
 function onGenerate() {
-  if (selectedCount.value === 0) return
-  if (selectedCount.value < totalCount.value) {
-    // Partial selection — show confirmation
+  if (selectedSlotCount.value === 0) return
+  if (selectedSlotCount.value < totalSlotCount.value) {
     confirmGenerateOpen.value = true
   } else {
     doGenerate()
   }
 }
 
-async function doGenerate() {
+async function doGenerate(): Promise<void> {
   confirmGenerateOpen.value = false
   generating.value = true
   try {
-    const slotIndices = collectSelectedSlotIndices()
-    const list = await generateFilteredShoppingList(menuId.value, slotIndices)
+    // Collect all selected recipe slot indices
+    const slotIndices: number[] = []
+    for (const [, slots] of selectedSlotsByRecipe.value) {
+      for (const idx of slots) slotIndices.push(idx)
+    }
+    // Include all standalone product slot indices (no deselection for products)
+    if (summary.value) {
+      for (const product of summary.value.products) {
+        for (const occ of product.occurrences) slotIndices.push(occ.slot_index)
+      }
+    }
+
+    const excludedSubRecipeIds = [...deselectedSubRecipes.value]
+
+    const list = await generateFilteredShoppingList(menuId.value, slotIndices, excludedSubRecipeIds)
     shoppingStore.data = list
     shoppingStore.currentListId = list.id
     toast.show('Список покупок сформирован', 'success')
@@ -287,46 +370,51 @@ function goToPlanner() {
     </div>
 
     <!-- Main content -->
-    <template v-else>
+    <template v-else-if="summary">
       <SummaryHeader
-        :menu-name="summary?.menu_name ?? ''"
-        :selected-count="selectedCount"
-        :total-count="totalCount"
+        :menu-name="summary.menu_name"
+        :selected-count="selectedSlotCount"
+        :total-count="totalSlotCount"
         @back="router.back()"
         @select-all="selectAll"
         @deselect-all="deselectAll"
       />
 
       <div class="flex-1 overflow-y-auto min-h-0">
-        <div class="max-w-3xl mx-auto pb-24 lg:pb-4">
+        <div class="max-w-3xl mx-auto pb-24 lg:pb-4 space-y-3">
 
-          <!-- Day groups (recipe occurrences) -->
-          <div
-            v-for="[day, items] in itemsByDay"
-            :key="day"
-            class="mt-6 first:mt-0"
-          >
-            <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
-              {{ DAY_LABELS[day] }}
-            </h2>
-            <div class="space-y-2">
-              <MealCard
-                v-for="item in items"
-                :key="item.key"
-                :slot-key="item.key"
-                :recipe-name="item.recipeName ?? ''"
-                :day-label="DAY_LABELS[item.day] ?? ''"
-                :meal-type-label="item.mealTypeLabel"
-                :servings="item.servings ?? 0"
-                :pieces-info="item.piecesInfo"
-                :ingredients="item.scaledIngredients ?? []"
-                :is-selected="selectedKeys.has(item.key)"
-                @toggle="toggleKey(item.key)"
+          <!-- Section 1: Recipe cards (one per unique recipe) -->
+          <MealCard
+            v-for="recipe in summary.recipes"
+            :key="recipe.recipe_id"
+            :recipe="recipe"
+            :selected-slots="selectedSlotsByRecipe.get(recipe.recipe_id) ?? new Set()"
+            :scaled-ingredients="recipeIngredients.get(recipe.recipe_id) ?? []"
+            @toggle-recipe="toggleRecipe(recipe.recipe_id)"
+            @toggle-slot="(idx) => toggleRecipeSlot(recipe.recipe_id, idx)"
+          />
+
+          <!-- Section 2: Nested recipes -->
+          <div v-if="nestedRecipes.length > 0" class="mt-8">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="h-px flex-1 bg-amber-200" />
+              <span class="text-xs font-semibold text-amber-600 uppercase tracking-wider">
+                Вложенные рецепты
+              </span>
+              <div class="h-px flex-1 bg-amber-200" />
+            </div>
+            <div class="space-y-3">
+              <NestedRecipeCard
+                v-for="nested in nestedRecipes"
+                :key="nested.sub_recipe_id"
+                :nested="nested"
+                :is-selected="!deselectedSubRecipes.has(nested.sub_recipe_id)"
+                @toggle="toggleNestedRecipe(nested.sub_recipe_id)"
               />
             </div>
           </div>
 
-          <!-- Standalone products section -->
+          <!-- Section 3: Standalone products -->
           <div v-if="standaloneProducts.length > 0" class="mt-8">
             <div class="flex items-center gap-3 mb-3">
               <div class="h-px flex-1 bg-gray-200" />
@@ -340,13 +428,13 @@ function goToPlanner() {
                 v-for="item in standaloneProducts"
                 :key="item.key"
                 :slot-key="item.key"
-                :product-name="item.productName ?? ''"
+                :product-name="item.productName"
                 :day-label="DAY_LABELS[item.day] ?? ''"
                 :meal-type-label="item.mealTypeLabel"
-                :quantity="item.quantity ?? 0"
-                :unit="item.unit ?? ''"
-                :is-selected="selectedKeys.has(item.key)"
-                @toggle="toggleKey(item.key)"
+                :quantity="item.quantity"
+                :unit="item.unit"
+                :is-selected="selectedProductKeys.has(item.key)"
+                @toggle="() => {}"
               />
             </div>
           </div>
@@ -355,8 +443,8 @@ function goToPlanner() {
       </div>
 
       <SummaryFooter
-        :selected-count="selectedCount"
-        :total-count="totalCount"
+        :selected-count="selectedSlotCount"
+        :total-count="totalSlotCount"
         :generating="generating"
         @generate="onGenerate"
       />
@@ -365,7 +453,7 @@ function goToPlanner() {
     <ConfirmDialog
       :open="confirmGenerateOpen"
       title="Частичный выбор"
-      :message="`Вы выбрали ${selectedCount} из ${totalCount} блюд. Сформировать список покупок только для выбранных?`"
+      :message="`Вы выбрали ${selectedSlotCount} из ${totalSlotCount} блюд. Сформировать список покупок только для выбранных?`"
       confirm-label="Сформировать"
       @confirm="doGenerate"
       @cancel="confirmGenerateOpen = false"
