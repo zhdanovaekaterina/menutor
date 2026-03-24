@@ -1,4 +1,5 @@
 import math
+from dataclasses import dataclass, field
 
 from backend.domain.entities.menu import WeeklyMenu
 from backend.domain.entities.recipe import Recipe
@@ -11,6 +12,18 @@ from backend.domain.services.portion_calculator import PortionCalculator
 from backend.domain.services.unit_converter import UnitConverter
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.types import ProductId, RecipeId
+
+
+@dataclass
+class IngredientNode:
+    """A node in the ingredient tree for meal summary display."""
+    product_id: ProductId | None
+    product_name: str
+    quantity_amount: float
+    quantity_unit: str
+    sub_recipe_id: RecipeId | None = None
+    sub_recipe_name: str | None = None
+    children: list["IngredientNode"] = field(default_factory=list)
 
 
 class ShoppingListBuilder:
@@ -175,3 +188,94 @@ class ShoppingListBuilder:
 
     def flatten_recipe_products(self, recipe: Recipe) -> dict[ProductId, Quantity]:
         return self._resolve_recipe_products(recipe, 1.0, set())
+
+    def build_filtered(self, menu: WeeklyMenu, slot_indices: set[int]) -> ShoppingList:
+        """Build a shopping list using only the slots at the given indices."""
+        filtered_slots = [
+            slot for i, slot in enumerate(menu.slots) if i in slot_indices
+        ]
+        filtered_menu = WeeklyMenu(
+            id=menu.id,
+            name=menu.name,
+            slots=filtered_slots,
+            user_id=menu.user_id,
+        )
+        return self.build(filtered_menu)
+
+    def resolve_recipe_ingredients_tree(
+        self,
+        recipe: Recipe,
+        scale_factor: float,
+        visited: set[RecipeId] | None = None,
+    ) -> list[IngredientNode]:
+        """Resolve ingredients into a hierarchical tree, preserving sub-recipe nesting."""
+        if visited is None:
+            visited = set()
+        if recipe.id in visited:
+            return []  # cycle guard
+        visited.add(recipe.id)
+
+        nodes: list[IngredientNode] = []
+        for ing in recipe.ingredients:
+            scaled_amount = ing.quantity.amount * scale_factor
+            if ing.is_product:
+                assert ing.product_id is not None
+                product = self._product_repo.get_by_id(ing.product_id)
+                product_name = product.name if product else f"Продукт не найден (ID: {int(ing.product_id)})"
+                nodes.append(IngredientNode(
+                    product_id=ing.product_id,
+                    product_name=product_name,
+                    quantity_amount=scaled_amount,
+                    quantity_unit=ing.quantity.unit,
+                ))
+            elif ing.is_sub_recipe:
+                assert ing.sub_recipe_id is not None
+                sub_recipe = self._recipe_repo.get_by_id(ing.sub_recipe_id)
+                if sub_recipe is None:
+                    nodes.append(IngredientNode(
+                        product_id=None,
+                        product_name=f"Рецепт не найден (ID: {int(ing.sub_recipe_id)})",
+                        quantity_amount=scaled_amount,
+                        quantity_unit=ing.quantity.unit,
+                        sub_recipe_id=ing.sub_recipe_id,
+                    ))
+                    continue
+
+                # Compute sub-recipe scale
+                if ing.quantity.is_weight:
+                    qty_in_g = ing.quantity.convert_to("g").amount * scale_factor
+                    if sub_recipe.weight == 0:
+                        # Zero-weight warning case: include node but no children
+                        nodes.append(IngredientNode(
+                            product_id=None,
+                            product_name="",
+                            quantity_amount=scaled_amount,
+                            quantity_unit=ing.quantity.unit,
+                            sub_recipe_id=ing.sub_recipe_id,
+                            sub_recipe_name=sub_recipe.name,
+                            children=[],  # empty -- frontend shows warning
+                        ))
+                        continue
+                    sub_scale = qty_in_g / sub_recipe.weight
+                else:
+                    if sub_recipe.is_pieces_mode:
+                        assert sub_recipe.total_pieces is not None
+                        assert sub_recipe.pieces_per_portion is not None
+                        pcs = max(1, round(scaled_amount * sub_recipe.pieces_per_portion))
+                        sub_scale = pcs / sub_recipe.total_pieces
+                    else:
+                        sub_scale = scaled_amount / sub_recipe.servings
+
+                children = self.resolve_recipe_ingredients_tree(sub_recipe, sub_scale, visited)
+                nodes.append(IngredientNode(
+                    product_id=None,
+                    product_name="",
+                    quantity_amount=scaled_amount,
+                    quantity_unit=ing.quantity.unit,
+                    sub_recipe_id=ing.sub_recipe_id,
+                    sub_recipe_name=sub_recipe.name,
+                    children=children,
+                ))
+
+        visited.discard(recipe.id)
+        return nodes
