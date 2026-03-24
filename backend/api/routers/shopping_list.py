@@ -7,6 +7,7 @@ from backend.api.converters import (
     schema_to_saved_shopping_list_item_data,
 )
 from backend.api.deps import get_container
+from backend.api.schemas.meal_summary import GenerateFilteredShoppingListRequest
 from backend.api.schemas.shopping_list import (
     RenameSavedShoppingListRequest,
     SavedShoppingListMetaResponse,
@@ -37,6 +38,22 @@ def generate_shopping_list(
     user: User = Depends(get_current_user),
 ) -> SavedShoppingListResponse:
     saved = container.generate_and_save_shopping_list.execute(MenuId(menu_id), user.id)
+    return saved_shopping_list_to_response(saved)
+
+
+@router.post(
+    "/menus/{menu_id}/shopping-list/filtered",
+    response_model=SavedShoppingListResponse,
+)
+def generate_filtered_shopping_list(
+    menu_id: int,
+    body: GenerateFilteredShoppingListRequest,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> SavedShoppingListResponse:
+    saved = container.generate_filtered_shopping_list.execute(
+        MenuId(menu_id), user.id, set(body.slot_indices), set(body.excluded_sub_recipe_ids)
+    )
     return saved_shopping_list_to_response(saved)
 
 

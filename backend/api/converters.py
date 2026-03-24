@@ -4,6 +4,15 @@ from collections.abc import Callable
 
 from backend.api.schemas.category import ActiveCategoryResponse, CategoryResponse
 from backend.api.schemas.family import FamilyMemberCreate, FamilyMemberResponse
+from backend.api.schemas.meal_summary import (
+    MealIngredientSchema,
+    MealOccurrenceSchema,
+    MealSummaryProductOccurrence,
+    MealSummaryProductSchema,
+    MealSummaryRecipeSchema,
+    MealSummaryResponseSchema,
+    PiecesInfoSchema,
+)
 from backend.api.schemas.menu import MenuResponse, MenuSlotSchema
 from backend.api.schemas.product import ProductCreate, ProductResponse
 from backend.api.schemas.recipe import (
@@ -22,6 +31,9 @@ from backend.api.schemas.shopping_list import (
     ShoppingListItemResponse,
     ShoppingListResponse,
 )
+from backend.application.use_cases.generate_meal_summary import (
+    MealSummaryResponse as MealSummaryDomain,
+)
 from backend.application.use_cases.manage_family import FamilyMemberData
 from backend.application.use_cases.manage_product import ProductData
 from backend.application.use_cases.manage_recipe import RecipeData
@@ -37,6 +49,7 @@ from backend.domain.entities.saved_shopping_list import (
     SavedShoppingListItem,
 )
 from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
+from backend.domain.services.shopping_list_builder import IngredientNode
 from backend.domain.value_objects.category import ActiveCategory, Category
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.money import Money
@@ -304,4 +317,72 @@ def schema_to_menu_slot(s: MenuSlotSchema) -> MenuSlot:
         servings_override=s.servings_override,
         pieces_override=s.pieces_override,
         position=s.position,
+    )
+
+
+# ── Meal Summary ──────────────────────────────────────────────────
+
+def _ingredient_node_to_schema(node: IngredientNode) -> MealIngredientSchema:
+    return MealIngredientSchema(
+        product_id=int(node.product_id) if node.product_id is not None else None,
+        product_name=node.product_name,
+        quantity_amount=node.quantity_amount,
+        quantity_unit=node.quantity_unit,
+        sub_recipe_id=int(node.sub_recipe_id) if node.sub_recipe_id is not None else None,
+        sub_recipe_name=node.sub_recipe_name,
+        sub_ingredients=[_ingredient_node_to_schema(c) for c in node.children],
+    )
+
+
+def meal_summary_to_response(summary: MealSummaryDomain) -> MealSummaryResponseSchema:
+    recipes = []
+    for r in summary.recipes:
+        pieces = None
+        if r.pieces_info is not None:
+            pieces = PiecesInfoSchema(
+                total_pieces=r.pieces_info["total_pieces"],
+                pieces_per_portion=r.pieces_info["pieces_per_portion"],
+            )
+        recipes.append(MealSummaryRecipeSchema(
+            recipe_id=int(r.recipe_id),
+            recipe_name=r.recipe_name,
+            occurrences=[
+                MealOccurrenceSchema(
+                    day=o.day,
+                    meal_type=o.meal_type,
+                    servings=o.servings,
+                    pieces_override=o.pieces_override,
+                    slot_index=o.slot_index,
+                )
+                for o in r.occurrences
+            ],
+            total_servings=r.total_servings,
+            pieces_info=pieces,
+            ingredients=[_ingredient_node_to_schema(n) for n in r.ingredients],
+        ))
+
+    products = []
+    for p in summary.products:
+        products.append(MealSummaryProductSchema(
+            product_id=int(p.product_id),
+            product_name=p.product_name,
+            occurrences=[
+                MealSummaryProductOccurrence(
+                    day=o["day"],
+                    meal_type=o["meal_type"],
+                    quantity=o["quantity"],
+                    unit=o["unit"],
+                    slot_index=o["slot_index"],
+                )
+                for o in p.occurrences
+            ],
+            total_quantity=p.total_quantity,
+            unit=p.unit,
+        ))
+
+    return MealSummaryResponseSchema(
+        menu_id=int(summary.menu_id),
+        menu_name=summary.menu_name,
+        recipes=recipes,
+        products=products,
     )

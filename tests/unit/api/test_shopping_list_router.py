@@ -547,3 +547,76 @@ class TestToggleItemPurchased:
     ) -> None:
         resp = unauth_client.post("/api/shopping-lists/1/items/1/toggle-purchased")
         assert resp.status_code == 401
+
+
+# ---- POST /api/menus/{menu_id}/shopping-list/filtered ----
+
+
+class TestGenerateFilteredShoppingList:
+    def test_generate_filtered_shopping_list_success(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.generate_filtered_shopping_list.execute.return_value = _saved_list(
+            name="Создано из меню «Неделя» 10:00 21.03.2026",
+            items=[_saved_item()],
+        )
+        resp = client.post(
+            "/api/menus/1/shopping-list/filtered",
+            json={"slot_indices": [0, 2]},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["id"] == 1
+        assert len(data["items"]) == 1
+        assert "total_cost" in data
+        # verify execute was called with the correct slot indices set
+        call_args = container.generate_filtered_shopping_list.execute.call_args
+        assert call_args is not None
+        assert call_args[0][2] == {0, 2}
+
+    def test_generate_filtered_shopping_list_not_found(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.generate_filtered_shopping_list.execute.side_effect = (
+            EntityNotFoundError("Меню 999 не найдено")
+        )
+        resp = client.post(
+            "/api/menus/999/shopping-list/filtered",
+            json={"slot_indices": [0]},
+        )
+        assert resp.status_code == 404
+        assert "не найдено" in resp.json()["detail"]
+
+    def test_generate_filtered_shopping_list_empty_indices(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.generate_filtered_shopping_list.execute.return_value = _saved_list(
+            items=[],
+        )
+        resp = client.post(
+            "/api/menus/1/shopping-list/filtered",
+            json={"slot_indices": []},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["items"] == []
+        call_args = container.generate_filtered_shopping_list.execute.call_args
+        assert call_args is not None
+        assert call_args[0][2] == set()
+
+    def test_generate_filtered_shopping_list_with_exclusions(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.generate_filtered_shopping_list.execute.return_value = _saved_list(
+            items=[_saved_item()],
+        )
+        resp = client.post(
+            "/api/menus/1/shopping-list/filtered",
+            json={"slot_indices": [0], "excluded_sub_recipe_ids": [5, 6]},
+        )
+        assert resp.status_code == 200
+        call_args = container.generate_filtered_shopping_list.execute.call_args
+        assert call_args is not None
+        # slot_indices at positional index 2, excluded_sub_recipe_ids at index 3
+        assert call_args[0][2] == {0}
+        assert call_args[0][3] == {5, 6}

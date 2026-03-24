@@ -4,8 +4,15 @@ from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
+from backend.application.use_cases.generate_meal_summary import (
+    MealOccurrence,
+    MealSummaryProduct,
+    MealSummaryRecipe,
+    MealSummaryResponse,
+)
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.exceptions import EntityNotFoundError
+from backend.domain.services.shopping_list_builder import IngredientNode
 from backend.domain.value_objects.types import MenuId, ProductId, RecipeId
 
 
@@ -319,3 +326,110 @@ class TestExportMenuPdf:
         cd = resp.headers["content-disposition"]
         assert 'filename="' in cd
         assert "filename*=UTF-8''" in cd
+
+
+# ---- GET /api/menus/{menu_id}/summary ----
+
+
+def _meal_summary(
+    menu_id: int = 1,
+    with_ingredients: bool = False,
+) -> MealSummaryResponse:
+    ingredients = []
+    if with_ingredients:
+        child = IngredientNode(
+            product_id=ProductId(10),
+            product_name="Молоко",
+            quantity_amount=200.0,
+            quantity_unit="ml",
+        )
+        ingredients = [
+            IngredientNode(
+                product_id=None,
+                product_name="",
+                quantity_amount=1.0,
+                quantity_unit="serv",
+                sub_recipe_id=RecipeId(5),
+                sub_recipe_name="Соус",
+                children=[child],
+            )
+        ]
+    return MealSummaryResponse(
+        menu_id=MenuId(menu_id),
+        menu_name="Неделя 1",
+        recipes=[
+            MealSummaryRecipe(
+                recipe_id=RecipeId(1),
+                recipe_name="Блины",
+                occurrences=[
+                    MealOccurrence(
+                        day=0,
+                        meal_type="Завтрак",
+                        servings=4.0,
+                        pieces_override=None,
+                        slot_index=0,
+                    )
+                ],
+                total_servings=4.0,
+                pieces_info=None,
+                ingredients=ingredients,
+            )
+        ],
+        products=[
+            MealSummaryProduct(
+                product_id=ProductId(2),
+                product_name="Молоко",
+                occurrences=[{"day": 1, "meal_type": "Перекус", "quantity": 0.5, "unit": "l", "slot_index": 1}],
+                total_quantity=0.5,
+                unit="l",
+            )
+        ],
+    )
+
+
+class TestGetMealSummary:
+    def test_get_meal_summary_success(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.generate_meal_summary.execute.return_value = _meal_summary()
+        resp = client.get("/api/menus/1/summary")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["menu_id"] == 1
+        assert data["menu_name"] == "Неделя 1"
+        assert isinstance(data["recipes"], list)
+        assert len(data["recipes"]) == 1
+        assert data["recipes"][0]["recipe_name"] == "Блины"
+        assert data["recipes"][0]["total_servings"] == 4.0
+        assert isinstance(data["products"], list)
+        assert len(data["products"]) == 1
+        assert data["products"][0]["product_name"] == "Молоко"
+
+    def test_get_meal_summary_not_found(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.generate_meal_summary.execute.side_effect = EntityNotFoundError(
+            "Меню 999 не найдено"
+        )
+        resp = client.get("/api/menus/999/summary")
+        assert resp.status_code == 404
+        assert "не найдено" in resp.json()["detail"]
+
+    def test_get_meal_summary_includes_ingredients_tree(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.generate_meal_summary.execute.return_value = _meal_summary(
+            with_ingredients=True
+        )
+        resp = client.get("/api/menus/1/summary")
+        assert resp.status_code == 200
+        data = resp.json()
+        recipe = data["recipes"][0]
+        assert len(recipe["ingredients"]) == 1
+        ing = recipe["ingredients"][0]
+        assert ing["sub_recipe_id"] == 5
+        assert ing["sub_recipe_name"] == "Соус"
+        assert len(ing["sub_ingredients"]) == 1
+        child = ing["sub_ingredients"][0]
+        assert child["product_id"] == 10
+        assert child["product_name"] == "Молоко"

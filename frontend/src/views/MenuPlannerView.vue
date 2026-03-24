@@ -412,6 +412,16 @@ async function onGenerateShoppingList() {
 
           <div class="flex-1" />
 
+          <!-- Meal Summary button -->
+          <button
+            class="px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            :disabled="!menuStore.current"
+            @click="router.push(`/menus/${menuStore.current?.id}/summary`)"
+          >
+            <span class="hidden sm:inline">Обзор блюд</span>
+            <span class="sm:hidden">Обзор</span>
+          </button>
+
           <!-- Call-to-action -->
           <button
             class="px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors flex-shrink-0"

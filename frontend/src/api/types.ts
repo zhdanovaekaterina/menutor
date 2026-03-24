@@ -276,3 +276,64 @@ export interface ImportResult {
   updated: number
   errors: string[]
 }
+
+/* Meal Summary */
+export interface MealOccurrence {
+  day: number
+  meal_type: string
+  servings: number
+  pieces_override?: number | null
+  slot_index: number
+}
+
+export interface MealIngredient {
+  product_id: number | null
+  product_name: string
+  quantity_amount: number
+  quantity_unit: string
+  sub_recipe_id?: number | null
+  sub_recipe_name?: string | null
+  sub_ingredients?: MealIngredient[]
+}
+
+export interface PiecesInfo {
+  total_pieces: number
+  pieces_per_portion: number
+}
+
+export interface MealSummaryRecipe {
+  recipe_id: number
+  recipe_name: string
+  occurrences: MealOccurrence[]
+  total_servings: number
+  pieces_info?: PiecesInfo | null
+  ingredients: MealIngredient[]
+}
+
+export interface MealSummaryProductOccurrence {
+  day: number
+  meal_type: string
+  quantity: number
+  unit: string
+  slot_index: number
+}
+
+export interface MealSummaryProduct {
+  product_id: number
+  product_name: string
+  occurrences: MealSummaryProductOccurrence[]
+  total_quantity: number
+  unit: string
+}
+
+export interface MealSummaryResponse {
+  menu_id: number
+  menu_name: string
+  recipes: MealSummaryRecipe[]
+  products: MealSummaryProduct[]
+}
+
+export interface GenerateFilteredShoppingListRequest {
+  slot_indices: number[]
+  excluded_sub_recipe_ids: number[]
+}

@@ -987,3 +987,314 @@ def test_nested_pieces_recipe_in_normal_parent() -> None:
     # flour: 500g * 0.6 = 300g
     assert len(result.items) == 1
     assert result.items[0].quantity == Quantity(300.0, "g")
+
+
+# ---- build_filtered ----
+
+def test_build_filtered_uses_only_selected_slots() -> None:
+    product1 = _product(1)
+    product2 = _product(2)
+    recipe1 = _recipe(1, 1, amount=200.0, base_servings=2)
+    recipe2 = _recipe(2, 2, amount=300.0, base_servings=3)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = lambda rid: {RecipeId(1): recipe1, RecipeId(2): recipe2}.get(rid)
+    product_repo = MagicMock()
+    product_repo.get_by_id.side_effect = lambda pid: {ProductId(1): product1, ProductId(2): product2}.get(pid)
+
+    builder_obj = _builder(recipe_repo, product_repo)
+    menu = WeeklyMenu(MenuId(1), "Test", [
+        MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),   # index 0
+        MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(2)),   # index 1
+        MenuSlot(day=2, meal_type="dinner", recipe_id=RecipeId(1)),  # index 2
+    ])
+
+    result = builder_obj.build_filtered(menu, {0, 2})
+    product_ids = {item.product_id for item in result.items}
+    assert ProductId(1) in product_ids
+    assert ProductId(2) not in product_ids
+
+
+def test_build_filtered_empty_indices_returns_empty_list() -> None:
+    recipe1 = _recipe(1, 1, amount=200.0, base_servings=2)
+    product1 = _product(1)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = recipe1
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = product1
+
+    builder_obj = _builder(recipe_repo, product_repo)
+    menu = WeeklyMenu(MenuId(1), "Test", [
+        MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),
+    ])
+
+    result = builder_obj.build_filtered(menu, set())
+    assert result.items == []
+
+
+def test_build_filtered_all_indices_matches_build() -> None:
+    recipe1 = _recipe(1, 1, amount=200.0, base_servings=2)
+    recipe2 = _recipe(2, 2, amount=400.0, base_servings=2)
+    product1 = _product(1)
+    product2 = _product(2)
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = lambda rid: {RecipeId(1): recipe1, RecipeId(2): recipe2}.get(rid)
+    product_repo = MagicMock()
+    product_repo.get_by_id.side_effect = lambda pid: {ProductId(1): product1, ProductId(2): product2}.get(pid)
+
+    builder_obj = _builder(recipe_repo, product_repo)
+    menu = WeeklyMenu(MenuId(1), "Test", [
+        MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),
+        MenuSlot(day=1, meal_type="dinner", recipe_id=RecipeId(2)),
+    ])
+
+    full_result = builder_obj.build(menu)
+    filtered_result = builder_obj.build_filtered(menu, {0, 1})
+
+    full_ids = {item.product_id for item in full_result.items}
+    filtered_ids = {item.product_id for item in filtered_result.items}
+    assert full_ids == filtered_ids
+
+
+# ---- resolve_recipe_ingredients_tree ----
+
+from backend.domain.services.shopping_list_builder import IngredientNode  # noqa: E402
+
+
+def test_resolve_recipe_ingredients_tree_simple() -> None:
+    """2 product ingredients, scale_factor=2.0 → doubled amounts."""
+    pid1, pid2 = ProductId(1), ProductId(2)
+    p1 = _product(1, "g", "g", 1.0, 5.0)
+    p2 = _product(2, "ml", "ml", 1.0, 3.0)
+
+    recipe = Recipe(
+        id=RecipeId(1), name="R", servings=2,
+        ingredients=[
+            RecipeIngredient(product_id=pid1, quantity=Quantity(100.0, "g")),
+            RecipeIngredient(product_id=pid2, quantity=Quantity(50.0, "ml")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    product_repo = MagicMock()
+    product_repo.get_by_id.side_effect = lambda pid: p1 if pid == pid1 else p2
+
+    builder_obj = _builder(recipe_repo, product_repo)
+    nodes = builder_obj.resolve_recipe_ingredients_tree(recipe, 2.0)
+
+    assert len(nodes) == 2
+    node_by_pid = {n.product_id: n for n in nodes}
+    assert node_by_pid[pid1].quantity_amount == 200.0
+    assert node_by_pid[pid1].quantity_unit == "g"
+    assert node_by_pid[pid2].quantity_amount == 100.0
+    assert node_by_pid[pid2].quantity_unit == "ml"
+
+
+def test_resolve_recipe_ingredients_tree_with_sub_recipe() -> None:
+    """1 product + 1 sub-recipe ingredient → product node + sub-recipe node with children."""
+    flour = _product(1, "g", "g", 1.0, 5.0)
+
+    sub_recipe = Recipe(
+        id=RecipeId(2), name="Соус", servings=2,
+        ingredients=[RecipeIngredient(product_id=ProductId(1), quantity=Quantity(200.0, "g"))],
+    )
+    parent_recipe = Recipe(
+        id=RecipeId(1), name="Паста", servings=1,
+        ingredients=[
+            RecipeIngredient(product_id=ProductId(1), quantity=Quantity(50.0, "g")),
+            RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(1.0, "serv")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = (
+        lambda rid: parent_recipe if rid == RecipeId(1) else sub_recipe
+    )
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = flour
+
+    builder_obj = _builder(recipe_repo, product_repo)
+    nodes = builder_obj.resolve_recipe_ingredients_tree(parent_recipe, 1.0)
+
+    assert len(nodes) == 2
+    product_nodes = [n for n in nodes if n.product_id is not None]
+    sub_nodes = [n for n in nodes if n.sub_recipe_id is not None]
+
+    assert len(product_nodes) == 1
+    assert product_nodes[0].quantity_amount == 50.0
+
+    assert len(sub_nodes) == 1
+    assert sub_nodes[0].sub_recipe_name == "Соус"
+    assert len(sub_nodes[0].children) == 1
+    assert sub_nodes[0].children[0].product_id == ProductId(1)
+
+
+def test_resolve_recipe_ingredients_tree_missing_product() -> None:
+    """Product not in repo → 'Продукт не найден' fallback in product_name."""
+    recipe = Recipe(
+        id=RecipeId(1), name="R", servings=1,
+        ingredients=[RecipeIngredient(product_id=ProductId(99), quantity=Quantity(100.0, "g"))],
+    )
+
+    recipe_repo = MagicMock()
+    product_repo = MagicMock()
+    product_repo.get_by_id.return_value = None  # product not found
+
+    builder_obj = _builder(recipe_repo, product_repo)
+    nodes = builder_obj.resolve_recipe_ingredients_tree(recipe, 1.0)
+
+    assert len(nodes) == 1
+    assert "Продукт не найден" in nodes[0].product_name
+    assert "99" in nodes[0].product_name
+
+
+def test_resolve_recipe_ingredients_tree_missing_sub_recipe() -> None:
+    """Sub-recipe not in repo → node with sub_recipe_id set and no children."""
+    recipe = Recipe(
+        id=RecipeId(1), name="R", servings=1,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(99), quantity=Quantity(1.0, "serv"))],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = None  # sub-recipe not found
+    product_repo = MagicMock()
+
+    builder_obj = _builder(recipe_repo, product_repo)
+    nodes = builder_obj.resolve_recipe_ingredients_tree(recipe, 1.0)
+
+    assert len(nodes) == 1
+    node = nodes[0]
+    assert node.sub_recipe_id == RecipeId(99)
+    assert node.children == []
+
+
+def test_resolve_recipe_ingredients_tree_cycle_guard() -> None:
+    """Recipe referencing itself produces empty result without infinite recursion."""
+    recipe = Recipe(
+        id=RecipeId(1), name="Self-ref", servings=1,
+        ingredients=[RecipeIngredient(sub_recipe_id=RecipeId(1), quantity=Quantity(1.0, "serv"))],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.return_value = recipe
+    product_repo = MagicMock()
+
+    builder_obj = _builder(recipe_repo, product_repo)
+    nodes = builder_obj.resolve_recipe_ingredients_tree(recipe, 1.0)
+
+    # The sub-recipe ingredient resolves to empty (cycle guard) → one sub-recipe node with no children
+    assert len(nodes) == 1
+    assert nodes[0].sub_recipe_id == RecipeId(1)
+    assert nodes[0].children == []
+
+
+def test_resolve_recipe_ingredients_tree_zero_weight_sub_recipe() -> None:
+    """Sub-recipe with weight=0 referenced by weight → node with empty children list."""
+    sub_recipe = Recipe(
+        id=RecipeId(2), name="Начинка", servings=2, weight=0,
+        ingredients=[
+            RecipeIngredient(product_id=ProductId(1), quantity=Quantity(100.0, "g")),
+        ],
+    )
+    parent_recipe = Recipe(
+        id=RecipeId(1), name="Пирог", servings=1,
+        ingredients=[
+            RecipeIngredient(sub_recipe_id=RecipeId(2), quantity=Quantity(300.0, "g")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = (
+        lambda rid: parent_recipe if rid == RecipeId(1) else sub_recipe
+    )
+    product_repo = MagicMock()
+
+    builder_obj = _builder(recipe_repo, product_repo)
+    nodes = builder_obj.resolve_recipe_ingredients_tree(parent_recipe, 1.0)
+
+    assert len(nodes) == 1
+    node = nodes[0]
+    assert node.sub_recipe_id == RecipeId(2)
+    assert node.sub_recipe_name == "Начинка"
+    assert node.children == []
+
+
+# ---- build_filtered with excluded_sub_recipe_ids ----
+
+
+def test_build_filtered_excludes_sub_recipe_ids() -> None:
+    """Sub-recipe whose ID is in excluded_sub_recipe_ids should not contribute products."""
+    sub_product = _product(2)  # only in sub-recipe
+    top_product = _product(1)  # only in top-level recipe
+
+    sub_recipe = Recipe(
+        id=RecipeId(10),
+        name="Соус",
+        servings=1,
+        ingredients=[RecipeIngredient(product_id=ProductId(2), quantity=Quantity(100.0, "g"))],
+    )
+    parent_recipe = Recipe(
+        id=RecipeId(1),
+        name="Паста",
+        servings=1,
+        ingredients=[
+            RecipeIngredient(product_id=ProductId(1), quantity=Quantity(200.0, "g")),
+            RecipeIngredient(sub_recipe_id=RecipeId(10), quantity=Quantity(1.0, "serv")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = lambda rid: parent_recipe if rid == RecipeId(1) else sub_recipe
+    product_repo = MagicMock()
+    product_repo.get_by_id.side_effect = lambda pid: {ProductId(1): top_product, ProductId(2): sub_product}.get(pid)
+
+    builder_obj = _builder(recipe_repo, product_repo)
+    menu = WeeklyMenu(MenuId(1), "Test", [
+        MenuSlot(day=0, meal_type="обед", recipe_id=RecipeId(1)),
+    ])
+
+    result = builder_obj.build_filtered(menu, {0}, excluded_sub_recipe_ids={RecipeId(10)})
+
+    product_ids = {item.product_id for item in result.items}
+    assert ProductId(1) in product_ids       # top-level ingredient present
+    assert ProductId(2) not in product_ids   # sub-recipe ingredient excluded
+
+
+def test_build_filtered_excluded_sub_recipe_ids_empty_set_includes_all() -> None:
+    """Passing an empty excluded_sub_recipe_ids set should include all products."""
+    sub_product = _product(2)
+    top_product = _product(1)
+
+    sub_recipe = Recipe(
+        id=RecipeId(10),
+        name="Соус",
+        servings=1,
+        ingredients=[RecipeIngredient(product_id=ProductId(2), quantity=Quantity(100.0, "g"))],
+    )
+    parent_recipe = Recipe(
+        id=RecipeId(1),
+        name="Паста",
+        servings=1,
+        ingredients=[
+            RecipeIngredient(product_id=ProductId(1), quantity=Quantity(200.0, "g")),
+            RecipeIngredient(sub_recipe_id=RecipeId(10), quantity=Quantity(1.0, "serv")),
+        ],
+    )
+
+    recipe_repo = MagicMock()
+    recipe_repo.get_by_id.side_effect = lambda rid: parent_recipe if rid == RecipeId(1) else sub_recipe
+    product_repo = MagicMock()
+    product_repo.get_by_id.side_effect = lambda pid: {ProductId(1): top_product, ProductId(2): sub_product}.get(pid)
+
+    builder_obj = _builder(recipe_repo, product_repo)
+    menu = WeeklyMenu(MenuId(1), "Test", [
+        MenuSlot(day=0, meal_type="обед", recipe_id=RecipeId(1)),
+    ])
+
+    result = builder_obj.build_filtered(menu, {0}, excluded_sub_recipe_ids=set())
+
+    product_ids = {item.product_id for item in result.items}
+    assert ProductId(1) in product_ids   # top-level ingredient present
+    assert ProductId(2) in product_ids   # sub-recipe ingredient also present
