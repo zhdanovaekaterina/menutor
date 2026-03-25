@@ -380,6 +380,7 @@ async function onGenerateShoppingList() {
             :product-names="productNames"
             :picker-day="pickerOpen ? pickerDay : null"
             :picker-meal-type="pickerOpen ? pickerMealType : null"
+            :menu-id="selectedId"
             @add-item="onAddItem"
             @remove-item="onRemoveItem"
             @edit-item="onEditItem"

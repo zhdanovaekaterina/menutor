@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import type { MenuSlot } from '@/api/types'
 import GridCell from './GridCell.vue'
+import MobileGridNavigator from './MobileGridNavigator.vue'
 
 defineProps<{
   slots: MenuSlot[]
@@ -9,6 +9,7 @@ defineProps<{
   productNames: Record<number, string>
   pickerDay?: number | null
   pickerMealType?: string | null
+  menuId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -21,60 +22,28 @@ const emit = defineEmits<{
   dayScrolled: []
 }>()
 
-const scrollRef = ref<HTMLElement | null>(null)
-
 const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const meals = ['Завтрак', 'Обед', 'Ужин']
 </script>
 
 <template>
-  <!-- Mobile: snap-scroll one-day-at-a-time layout (hidden on lg+) -->
-  <div class="lg:hidden h-full flex gap-px bg-gray-200 rounded-lg overflow-hidden text-sm">
-    <!-- Fixed left column: meal-type labels -->
-    <div class="w-[60px] shrink-0 flex flex-col bg-gray-100 gap-px">
-      <!-- Spacer matching day-header height -->
-      <div class="h-9 shrink-0 bg-gray-100" />
-      <div
-        v-for="meal in meals"
-        :key="'label-' + meal"
-        class="flex-1 bg-gray-100 font-semibold text-xs px-2 py-2 flex items-center"
-      >
-        {{ meal }}
-      </div>
-    </div>
-
-    <!-- Swipeable day columns -->
-    <div ref="scrollRef" class="flex-1 flex overflow-x-auto snap-x snap-mandatory scroll-smooth" @scroll="emit('dayScrolled')">
-      <div
-        v-for="(day, i) in days"
-        :key="'day-' + day"
-        class="min-w-full h-full flex flex-col gap-px snap-start"
-      >
-        <!-- Day header (stays at top, does not scroll) -->
-        <div class="h-9 shrink-0 bg-gray-100 font-semibold text-center flex items-center justify-center">
-          {{ day }}
-        </div>
-        <!-- Meal cells — flex-1 so they share height equally -->
-        <GridCell
-          v-for="meal in meals"
-          :key="'cell-' + i + '-' + meal"
-          class="flex-1"
-          :day="i"
-          :meal-type="meal"
-          :slots="slots"
-          :recipe-names="recipeNames"
-          :product-names="productNames"
-          :picker-active="pickerDay === i && pickerMealType === meal"
-          @add-item="(data) => emit('addItem', i, meal, data)"
-          @remove-item="(data) => emit('removeItem', i, meal, data)"
-          @edit-item="(slot) => emit('editItem', slot)"
-          @move-item="(slot, toDay, toMeal, toIdx) => emit('moveItem', slot, toDay, toMeal, toIdx)"
-          @reorder-items="(d, m, ordered) => emit('reorderItems', d, m, ordered)"
-          @open-picker="emit('openPicker', i, meal)"
-        />
-      </div>
-    </div>
-  </div>
+  <!-- Mobile: three-mode navigation (hidden on lg+) -->
+  <MobileGridNavigator
+    class="lg:hidden h-full"
+    :slots="slots"
+    :recipe-names="recipeNames"
+    :product-names="productNames"
+    :picker-day="pickerDay"
+    :picker-meal-type="pickerMealType"
+    :menu-id="menuId"
+    @add-item="(d, m, data) => emit('addItem', d, m, data)"
+    @remove-item="(d, m, data) => emit('removeItem', d, m, data)"
+    @edit-item="(slot) => emit('editItem', slot)"
+    @move-item="(slot, d, m, idx) => emit('moveItem', slot, d, m, idx)"
+    @reorder-items="(d, m, ordered) => emit('reorderItems', d, m, ordered)"
+    @open-picker="(d, m) => emit('openPicker', d, m)"
+    @day-scrolled="emit('dayScrolled')"
+  />
 
   <!-- Desktop: original CSS grid layout (hidden below lg) -->
   <div class="hidden lg:grid h-full min-w-[700px] grid-cols-[60px_repeat(7,1fr)] grid-rows-[auto_repeat(3,1fr)] gap-px bg-gray-200 rounded-lg overflow-hidden text-sm">
