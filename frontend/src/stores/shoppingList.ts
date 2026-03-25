@@ -12,6 +12,7 @@ import {
   updateSavedShoppingList,
 } from '@/api/client'
 import type { SavedShoppingList, SavedShoppingListItem, SavedShoppingListMeta } from '@/api/types'
+import { useShoppingListSettingsStore } from './shoppingListSettings'
 import { useToastStore } from './toast'
 
 // Build a comparable snapshot of items, excluding the `purchased` field so that
@@ -43,6 +44,10 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
 
   // ----- Computed -----
 
+  const sortedLists = computed(() =>
+    [...savedLists.value].sort((a, b) => b.created_at.localeCompare(a.created_at)),
+  )
+
   const isDirty = computed(() => {
     if (!data.value || !snapshot.value) return false
     return buildComparableSnapshot(data.value.items) !== snapshot.value
@@ -61,10 +66,21 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     items.value.length ? Math.round((purchasedCount.value / items.value.length) * 100) : 0,
   )
 
+  const PURCHASED_CATEGORY = 'Куплено'
+
   const itemsByCategory = computed(() => {
+    const settings = useShoppingListSettingsStore()
     const grouped: Record<string, SavedShoppingListItem[]> = {}
+    const purchased: SavedShoppingListItem[] = []
     for (const item of items.value) {
-      ;(grouped[item.category] ??= []).push(item)
+      if (item.purchased) {
+        if (!settings.hidePurchased) purchased.push(item)
+      } else {
+        ;(grouped[item.category] ??= []).push(item)
+      }
+    }
+    if (purchased.length) {
+      grouped[PURCHASED_CATEGORY] = purchased
     }
     return grouped
   })
@@ -287,6 +303,7 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
 
   return {
     savedLists,
+    sortedLists,
     currentListId,
     data,
     isDirty,

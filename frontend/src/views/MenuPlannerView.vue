@@ -53,6 +53,7 @@ function doAutoSwitch() {
 }
 
 const mobileLeftOpen = ref(false)
+const mobileMenuOpen = ref(false)
 
 const pickerOpen = ref(false)
 const pickerDay = ref(0)
@@ -305,6 +306,46 @@ async function onGenerateShoppingList() {
         <h1 class="text-lg sm:text-xl font-bold lg:hidden">{{ pageTitle }}</h1>
         <h1 class="text-lg sm:text-xl font-bold hidden lg:block">Планировщик меню</h1>
       </div>
+
+      <!-- Mobile: kebab menu (right side of header) -->
+      <div class="lg:hidden relative">
+        <button
+          class="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+          @click="mobileMenuOpen = !mobileMenuOpen"
+          aria-label="Действия"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
+          </svg>
+        </button>
+        <div v-if="mobileMenuOpen" class="fixed inset-0 z-40" @click="mobileMenuOpen = false" />
+        <div v-if="mobileMenuOpen" class="absolute right-0 top-full mt-1 bg-white border rounded-xl shadow-xl z-50 min-w-[220px] py-1 overflow-hidden">
+          <button
+            class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="!menuStore.current"
+            @click="router.push(`/menus/${menuStore.current?.id}/summary`); mobileMenuOpen = false"
+          >Обзор блюд</button>
+          <button
+            class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 font-medium text-green-700"
+            @click="onGenerateShoppingList(); mobileMenuOpen = false"
+          >Сформировать список покупок</button>
+          <div class="border-t mx-3 my-1" />
+          <button
+            class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="!menuStore.current"
+            @click="confirmClearOpen = true; mobileMenuOpen = false"
+          >Очистить меню</button>
+          <button
+            class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50"
+            @click="importOpen = true; mobileMenuOpen = false"
+          >Импорт</button>
+          <button
+            class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="!menuStore.current"
+            @click="exportOpen = true; mobileMenuOpen = false"
+          >Экспорт</button>
+        </div>
+      </div>
     </div>
 
     <div class="flex-1 flex gap-4 min-h-0">
@@ -320,7 +361,7 @@ async function onGenerateShoppingList() {
         </button>
         <div v-show="leftPanelOpen" class="flex-1 min-h-0">
           <SavedMenuList
-            :menus="menuStore.menus"
+            :menus="menuStore.sortedMenus"
             :selected-id="selectedId"
             @select="onSelectMenu"
             @create="nameDialogOpen = true"
@@ -348,7 +389,7 @@ async function onGenerateShoppingList() {
             @day-scrolled="pickerOpen = false"
           />
         </div>
-        <div class="flex items-center gap-3 pt-3 border-t flex-wrap">
+        <div class="hidden lg:flex items-center gap-3 pt-3 border-t flex-wrap">
           <button
             class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!menuStore.current"
@@ -548,7 +589,7 @@ async function onGenerateShoppingList() {
             </button>
           </div>
           <SavedMenuList
-            :menus="menuStore.menus"
+            :menus="menuStore.sortedMenus"
             :selected-id="selectedId"
             @select="(id) => { onSelectMenu(id); mobileLeftOpen = false }"
             @create="nameDialogOpen = true; mobileLeftOpen = false"

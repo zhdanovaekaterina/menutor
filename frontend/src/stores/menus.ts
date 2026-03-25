@@ -23,6 +23,8 @@ export const useMenuStore = defineStore('menus', () => {
     menus.value.find((m) => m.id === selectedId.value) ?? null,
   )
 
+  const sortedMenus = computed(() => [...menus.value].sort((a, b) => b.id - a.id))
+
   function _updateMenu(menu: Menu) {
     const idx = menus.value.findIndex((m) => m.id === menu.id)
     if (idx !== -1) menus.value[idx] = menu
@@ -149,5 +151,5 @@ export const useMenuStore = defineStore('menus', () => {
     await create(_autoMenuName())
   }
 
-  return { menus, current, selectedId, loading, load, select, create, remove, copy, addSlotToMenu, removeSlotFromMenu, moveSlot, reorderSlots, mergeItemsIntoSlot, clear, ensureMenuSelected }
+  return { menus, sortedMenus, current, selectedId, loading, load, select, create, remove, copy, addSlotToMenu, removeSlotFromMenu, moveSlot, reorderSlots, mergeItemsIntoSlot, clear, ensureMenuSelected }
 })

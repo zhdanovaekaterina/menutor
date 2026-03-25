@@ -58,6 +58,10 @@ const router = createRouter({
           path: 'about',
           component: () => import('@/components/settings/AboutPanel.vue'),
         },
+        {
+          path: 'shopping-list',
+          component: () => import('@/components/settings/ShoppingListSettingsPanel.vue'),
+        },
       ],
     },
   ],

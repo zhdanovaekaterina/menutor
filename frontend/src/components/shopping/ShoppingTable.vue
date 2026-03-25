@@ -65,9 +65,13 @@ const allChecked = computed(() =>
     </thead>
     <tbody>
       <template v-for="(items, category) in itemsByCategory" :key="category">
-        <tr class="bg-slate-200">
-          <td :colspan="selectMode ? 6 : 5" class="px-4 py-2 font-semibold text-slate-700 text-sm">
-            {{ category }}
+        <tr :class="category === 'Куплено' ? 'bg-slate-100' : 'bg-slate-200'">
+          <td
+            :colspan="selectMode ? 6 : 5"
+            :class="category === 'Куплено' ? 'text-slate-400' : 'text-slate-700'"
+            class="px-4 py-2 font-semibold text-sm"
+          >
+            <span v-if="category === 'Куплено'" class="mr-1.5">&#10003;</span>{{ category }}
           </td>
         </tr>
         <tr

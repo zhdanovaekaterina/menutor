@@ -29,6 +29,7 @@ class UserRow(Base):
     nickname = Column(String, nullable=False, default="", server_default="")
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False)
+    last_login_at = Column(DateTime, nullable=True)
 
     refresh_tokens = relationship(
         "RefreshTokenRow",

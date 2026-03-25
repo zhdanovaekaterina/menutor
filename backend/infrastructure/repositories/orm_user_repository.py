@@ -30,12 +30,14 @@ class OrmUserRepository(
             nickname=entity.nickname,
             hashed_password=entity.hashed_password,
             created_at=entity.created_at,
+            last_login_at=entity.last_login_at,
         )
 
     def _update_row(self, row: Any, entity: User) -> None:
         row.email = entity.email
         row.nickname = entity.nickname
         row.hashed_password = entity.hashed_password
+        row.last_login_at = entity.last_login_at
 
     def _row_to_entity(self, row: Any) -> User:
         return User(
@@ -44,6 +46,7 @@ class OrmUserRepository(
             nickname=row.nickname,
             hashed_password=row.hashed_password,
             created_at=row.created_at,
+            last_login_at=row.last_login_at,
         )
 
     def get_by_email(self, email: str) -> User | None:
