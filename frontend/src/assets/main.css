@@ -61,3 +61,67 @@
 .slide-left-leave-to {
   transform: translateX(-100%);
 }
+
+/* === Мобильные режимы навигации планировщика === */
+
+/* Переход Неделя <-> День (zoom) */
+.mode-zoom-enter-active,
+.mode-zoom-leave-active {
+  transition: transform 200ms ease-out, opacity 200ms ease-out;
+}
+.mode-zoom-enter-from {
+  transform: scale(0.95);
+  opacity: 0;
+}
+.mode-zoom-leave-to {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+/* Переход День <-> Прием пищи (drill) */
+.mode-drill-enter-active,
+.mode-drill-leave-active {
+  transition: transform 200ms ease-out, opacity 200ms ease-out;
+}
+.mode-drill-enter-from {
+  transform: translateY(8px);
+  opacity: 0;
+}
+.mode-drill-leave-to {
+  transform: translateY(8px);
+  opacity: 0;
+}
+
+/* Bounce-анимации на границах */
+.bounce-left  { animation: bounceH 300ms ease-out; }
+.bounce-right { animation: bounceH 300ms ease-out; }
+.bounce-up    { animation: bounceV 300ms ease-out; }
+.bounce-down  { animation: bounceV 300ms ease-out; }
+
+@keyframes bounceH {
+  0%   { transform: translateX(0); }
+  40%  { transform: translateX(-12px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes bounceV {
+  0%   { transform: translateY(0); }
+  40%  { transform: translateY(-12px); }
+  100% { transform: translateY(0); }
+}
+
+/* Отключение анимаций при prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .mode-zoom-enter-active,
+  .mode-zoom-leave-active,
+  .mode-drill-enter-active,
+  .mode-drill-leave-active {
+    transition: none !important;
+  }
+  .bounce-left,
+  .bounce-right,
+  .bounce-up,
+  .bounce-down {
+    animation: none !important;
+  }
+}

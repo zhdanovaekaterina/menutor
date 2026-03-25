@@ -17,6 +17,7 @@ const props = defineProps<{
   recipeNames: Record<number, string>
   productNames: Record<number, string>
   pickerActive?: boolean
+  size?: 'medium' | 'full'
 }>()
 
 const emit = defineEmits<{
@@ -229,7 +230,9 @@ watch(
     @dragleave="dragOver = false"
     @drop="onDrop"
   >
-    <div ref="listRef" :data-day="day" :data-meal-type="mealType" class="flex flex-col gap-1 min-h-[8px] flex-1 max-h-40 overflow-y-auto">
+    <div ref="listRef" :data-day="day" :data-meal-type="mealType"
+         class="flex flex-col gap-1 min-h-[8px] flex-1 overflow-y-auto"
+         :class="props.size === 'full' ? '' : 'max-h-40'">
       <ItemRow
         v-for="(slot, i) in cellSlots"
         :key="`${slot.recipe_id ?? ''}-${slot.product_id ?? ''}`"
@@ -243,11 +246,12 @@ watch(
     </div>
     <!-- Mobile add button -->
     <button
-      class="lg:hidden absolute bottom-1.5 right-1.5 w-9 h-9 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-md active:bg-blue-600 transition-colors"
+      class="lg:hidden absolute bottom-1.5 right-1.5 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-md active:bg-blue-600 transition-colors"
+      :class="props.size === 'full' ? 'w-12 h-12' : 'w-9 h-9'"
       aria-label="Добавить"
       @click.stop="emit('openPicker')"
     >
-      <IconPlus class="w-5 h-5" />
+      <IconPlus :class="props.size === 'full' ? 'w-6 h-6' : 'w-5 h-5'" />
     </button>
   </div>
 </template>
