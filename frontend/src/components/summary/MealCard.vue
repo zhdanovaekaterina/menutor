@@ -4,6 +4,16 @@ import type { MealIngredient, MealOccurrence, MealSummaryRecipe } from '@/api/ty
 import { formatUnit } from '@/utils/units'
 
 const DAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+const MEAL_TYPE_ORDER = ['Завтрак', 'Обед', 'Ужин']
+
+function mealTypeRank(mt: string): number {
+  const i = MEAL_TYPE_ORDER.indexOf(mt)
+  return i === -1 ? MEAL_TYPE_ORDER.length : i
+}
+
+function sortOccurrences<T extends { day: number; meal_type: string }>(occs: T[]): T[] {
+  return [...occs].sort((a, b) => a.day - b.day || mealTypeRank(a.meal_type) - mealTypeRank(b.meal_type))
+}
 
 const props = defineProps<{
   recipe: MealSummaryRecipe
@@ -143,7 +153,7 @@ function formatServings(n: number): string {
           <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Приёмы пищи</p>
           <div class="flex flex-wrap gap-2">
             <button
-              v-for="occ in recipe.occurrences"
+              v-for="occ in sortOccurrences(recipe.occurrences)"
               :key="occ.slot_index"
               class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs transition-colors"
               :class="
