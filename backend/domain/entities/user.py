@@ -11,3 +11,4 @@ class User:
     nickname: str
     hashed_password: str
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_login_at: datetime | None = None

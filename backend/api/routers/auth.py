@@ -43,6 +43,7 @@ def register(
         email=user.email,
         nickname=user.nickname,
         created_at=user.created_at,
+        last_login_at=user.last_login_at,
     )
 
 
@@ -87,6 +88,7 @@ def get_me(user: User = Depends(get_current_user)) -> UserResponse:
         email=user.email,
         nickname=user.nickname,
         created_at=user.created_at,
+        last_login_at=user.last_login_at,
     )
 
 
@@ -123,4 +125,5 @@ def update_me(
         email=updated.email,
         nickname=updated.nickname,
         created_at=updated.created_at,
+        last_login_at=updated.last_login_at,
     )

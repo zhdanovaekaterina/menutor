@@ -85,6 +85,9 @@ class LoginUser:
         if user is None or not self._hasher.verify(data.password, user.hashed_password):
             raise AuthenticationError("Неверный email или пароль")
 
+        user.last_login_at = datetime.now(UTC)
+        self._user_repo.save(user)
+
         access_token = self._token_service.create_access_token(user.id)
         raw_refresh = self._token_service.create_refresh_token(user.id)
 
