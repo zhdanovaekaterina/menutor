@@ -7,6 +7,7 @@ const links = [
   { to: '/settings/product-categories', label: 'Категории продуктов', mobileLabel: 'Кат. продуктов' },
   { to: '/settings/recipe-categories', label: 'Категории рецептов', mobileLabel: 'Кат. рецептов' },
   { to: '/settings/password', label: 'Настройки аккаунта', mobileLabel: 'Аккаунт' },
+  { to: '/settings/shopping-list', label: 'Список покупок', mobileLabel: 'Список покупок' },
   { to: '/settings/about', label: 'О программе', mobileLabel: 'О прогр.' },
 ]
 

@@ -12,6 +12,7 @@ import {
   updateSavedShoppingList,
 } from '@/api/client'
 import type { SavedShoppingList, SavedShoppingListItem, SavedShoppingListMeta } from '@/api/types'
+import { useShoppingListSettingsStore } from './shoppingListSettings'
 import { useToastStore } from './toast'
 
 // Build a comparable snapshot of items, excluding the `purchased` field so that
@@ -68,11 +69,12 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
   const PURCHASED_CATEGORY = 'Куплено'
 
   const itemsByCategory = computed(() => {
+    const settings = useShoppingListSettingsStore()
     const grouped: Record<string, SavedShoppingListItem[]> = {}
     const purchased: SavedShoppingListItem[] = []
     for (const item of items.value) {
       if (item.purchased) {
-        purchased.push(item)
+        if (!settings.hidePurchased) purchased.push(item)
       } else {
         ;(grouped[item.category] ??= []).push(item)
       }
