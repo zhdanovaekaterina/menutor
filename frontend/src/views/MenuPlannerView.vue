@@ -320,7 +320,7 @@ async function onGenerateShoppingList() {
         </button>
         <div v-show="leftPanelOpen" class="flex-1 min-h-0">
           <SavedMenuList
-            :menus="menuStore.menus"
+            :menus="menuStore.sortedMenus"
             :selected-id="selectedId"
             @select="onSelectMenu"
             @create="nameDialogOpen = true"
@@ -548,7 +548,7 @@ async function onGenerateShoppingList() {
             </button>
           </div>
           <SavedMenuList
-            :menus="menuStore.menus"
+            :menus="menuStore.sortedMenus"
             :selected-id="selectedId"
             @select="(id) => { onSelectMenu(id); mobileLeftOpen = false }"
             @create="nameDialogOpen = true; mobileLeftOpen = false"

@@ -43,6 +43,10 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
 
   // ----- Computed -----
 
+  const sortedLists = computed(() =>
+    [...savedLists.value].sort((a, b) => b.created_at.localeCompare(a.created_at)),
+  )
+
   const isDirty = computed(() => {
     if (!data.value || !snapshot.value) return false
     return buildComparableSnapshot(data.value.items) !== snapshot.value
@@ -297,6 +301,7 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
 
   return {
     savedLists,
+    sortedLists,
     currentListId,
     data,
     isDirty,

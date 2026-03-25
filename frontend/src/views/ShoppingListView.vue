@@ -368,7 +368,7 @@ function onConfirmDeleteAll() {
 
         <div v-show="sidebarOpen" class="flex-1 min-h-0 overflow-hidden">
           <SavedShoppingLists
-            :lists="store.savedLists"
+            :lists="store.sortedLists"
             :selected-id="store.currentListId"
             @select="onSelectList"
             @create="onCreateList"
@@ -586,7 +586,7 @@ function onConfirmDeleteAll() {
           <!-- List content -->
           <div class="flex-1 overflow-y-auto">
             <SavedShoppingLists
-              :lists="store.savedLists"
+              :lists="store.sortedLists"
               :selected-id="store.currentListId"
               @select="onSelectList"
               @create="onCreateList"
