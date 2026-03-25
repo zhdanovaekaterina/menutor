@@ -72,7 +72,7 @@ function onNavigateMealType(delta: number) {
   const idx = meals.indexOf(currentMealType.value)
   const next = idx + delta
   if (next < 0 || next >= meals.length) return
-  currentMealType.value = meals[next]
+  currentMealType.value = meals[next]!
 }
 
 const dayLabelsFull = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']

@@ -23,7 +23,7 @@ const summaryText = computed(() => {
   for (const meal of props.mealTypes) {
     const mealSlots = daySlots.value.filter(s => s.meal_type === meal)
     if (mealSlots.length === 0) continue
-    const first = mealSlots[0]
+    const first = mealSlots[0]!  // safe: checked mealSlots.length > 0 above
     const name = first.recipe_id != null
       ? (props.recipeNames[first.recipe_id] ?? '?')
       : (props.productNames[first.product_id!] ?? '?')

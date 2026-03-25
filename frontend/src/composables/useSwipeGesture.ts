@@ -38,6 +38,7 @@ export function useSwipeGesture(options: SwipeGestureOptions): SwipeGestureRetur
 
   function onTouchstart(e: TouchEvent) {
     const touch = e.touches[0]
+    if (!touch) return
     if (touch.clientX < edgeGuard) return
     startX = touch.clientX
     startY = touch.clientY
@@ -46,6 +47,7 @@ export function useSwipeGesture(options: SwipeGestureOptions): SwipeGestureRetur
 
   function onTouchmove(e: TouchEvent) {
     const touch = e.touches[0]
+    if (!touch) return
     const dx = touch.clientX - startX
     const dy = touch.clientY - startY
     if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
@@ -55,6 +57,7 @@ export function useSwipeGesture(options: SwipeGestureOptions): SwipeGestureRetur
 
   function onTouchend(e: TouchEvent) {
     const touch = e.changedTouches[0]
+    if (!touch) { isSwiping.value = false; return }
     const dx = touch.clientX - startX
     const dy = touch.clientY - startY
     const dist = Math.sqrt(dx * dx + dy * dy)
