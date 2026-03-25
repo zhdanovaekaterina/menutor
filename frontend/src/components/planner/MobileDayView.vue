@@ -68,11 +68,11 @@ const { swipeHandlers } = useSwipeGesture({
     </div>
 
     <!-- Swipe area -->
-    <div class="flex-1 overflow-y-auto" v-bind="swipeHandlers" style="touch-action: pan-y;">
-      <div v-for="meal in mealTypes" :key="meal" class="border-b border-gray-100 last:border-b-0">
+    <div class="flex-1 flex flex-col min-h-0" v-bind="swipeHandlers" style="touch-action: pan-y;">
+      <div v-for="meal in mealTypes" :key="meal" class="flex-1 flex flex-col min-h-0 border-b border-gray-100 last:border-b-0">
         <!-- Meal type header — tap to drill in -->
         <button
-          class="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 active:bg-gray-100 transition-colors"
+          class="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 active:bg-gray-100 transition-colors shrink-0"
           @click="emit('navigate-to-meal', meal)"
         >
           <span class="text-sm font-semibold text-gray-700">{{ meal }}</span>
@@ -80,6 +80,7 @@ const { swipeHandlers } = useSwipeGesture({
         </button>
         <!-- Cell with items -->
         <GridCell
+          class="flex-1"
           :day="currentDay"
           :meal-type="meal"
           :slots="slots"
