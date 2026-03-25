@@ -28,6 +28,26 @@ const shoppingSettings = useShoppingListSettingsStore()
 const toast = useToastStore()
 const selection = useSelection()
 
+const PURCHASED_CATEGORY = 'Куплено'
+
+const groupedItems = computed((): Record<string, SavedShoppingListItem[]> => {
+  if (shoppingSettings.groupBy === 'category') return store.itemsByCategory
+  // Group by supplier
+  const grouped: Record<string, SavedShoppingListItem[]> = {}
+  const purchased: SavedShoppingListItem[] = []
+  for (const item of store.items) {
+    if (item.purchased) {
+      if (!shoppingSettings.hidePurchased) purchased.push(item)
+    } else {
+      const product = productStore.items.find((p) => p.id === item.product_id)
+      const key = product?.supplier?.trim() || 'Без поставщика'
+      ;(grouped[key] ??= []).push(item)
+    }
+  }
+  if (purchased.length) grouped[PURCHASED_CATEGORY] = purchased
+  return grouped
+})
+
 // ---- Sidebar state ----
 const sidebarOpen = ref(true)
 const mobileSavedListsOpen = ref(false)
@@ -119,7 +139,7 @@ function fmtBuyAmt(amount: number, unit: string) { return unit === 'kg' ? fmtRou
 
 function buildTextExport(): string {
   const lines: string[] = ['Список покупок', '']
-  for (const [category, items] of Object.entries(store.itemsByCategory).sort()) {
+  for (const [category, items] of Object.entries(groupedItems.value).sort()) {
     lines.push(`${category}:`)
     for (const item of items) {
       const rq = item.recipe_quantity
@@ -426,7 +446,7 @@ function onConfirmDeleteAll() {
           <!-- Table (full width on mobile) -->
           <div class="flex-1 overflow-y-auto border rounded-lg">
             <ShoppingTable
-              :items-by-category="store.itemsByCategory"
+              :items-by-category="groupedItems"
               :select-mode="selection.active.value"
               :selected-ids="selection.selected.value"
               :selected-id="selectedProductId"
