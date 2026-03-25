@@ -49,7 +49,7 @@ onMounted(async () => {
   sidebarOpen.value = !fromPlanner
   store.setSidebarOpen(!fromPlanner)
 
-  await store.loadLists()
+  await Promise.all([store.loadLists(), productStore.load()])
 })
 
 // ---- Sidebar actions ----

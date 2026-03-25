@@ -19,6 +19,10 @@ const selectedProduct = computed(() =>
   props.products.find((p) => p.id === selectedId.value),
 )
 
+const sortedProducts = computed(() =>
+  [...props.products].sort((a, b) => a.name.localeCompare(b.name, 'ru')),
+)
+
 const unitLabel = computed(() => {
   const u = selectedProduct.value?.purchase_unit
   return u ? (UNIT_MAP[u] ?? u) : ''
@@ -44,7 +48,7 @@ function onAdd() {
         class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
       >
         <option :value="null">Выберите продукт...</option>
-        <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
+        <option v-for="p in sortedProducts" :key="p.id" :value="p.id">{{ p.name }}</option>
       </select>
       <input
         v-model.number="quantity"
