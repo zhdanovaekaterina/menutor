@@ -266,6 +266,7 @@ function onAddProduct(productId: number, quantity: number) {
 }
 
 // ---- Batch select / delete ----
+const mobileActionsOpen = ref(false)
 const confirmBatchDeleteOpen = ref(false)
 const confirmDeleteAllOpen = ref(false)
 
@@ -306,25 +307,25 @@ function onConfirmDeleteAll() {
       </div>
 
       <div class="flex items-center gap-2">
-        <!-- Save button (shown when there are unsaved changes) -->
-        <Transition name="fade">
-          <button
-            v-if="store.isDirty"
-            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
-            :class="saving ? 'opacity-75 cursor-wait' : ''"
-            :disabled="saving"
-            @click="onSave"
-          >
-            <span v-if="saving" class="flex items-center gap-1.5">
-              <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Сохранение...
-            </span>
-            <span v-else>Сохранить</span>
-          </button>
-        </Transition>
+        <!-- Save button (always visible when a list is loaded) -->
+        <button
+          v-if="store.data"
+          class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          :class="store.isDirty
+            ? (saving ? 'bg-blue-600 text-white opacity-75 cursor-wait shadow-sm' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm')
+            : 'bg-gray-100 text-gray-400 cursor-default'"
+          :disabled="saving || !store.isDirty"
+          @click="onSave"
+        >
+          <span v-if="saving" class="flex items-center gap-1.5">
+            <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Сохранение...
+          </span>
+          <span v-else>Сохранить</span>
+        </button>
 
         <!-- Selection / delete actions -->
         <template v-if="store.data">
@@ -345,41 +346,93 @@ function onConfirmDeleteAll() {
             </button>
           </template>
           <template v-else>
-            <!-- Hide/show purchased toggle -->
-            <button
-              :title="shoppingSettings.hidePurchased ? 'Показать купленные' : 'Скрыть купленные'"
-              :class="shoppingSettings.hidePurchased ? 'border-blue-300 text-blue-600 bg-blue-50 hover:bg-blue-100' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
-              class="p-2 rounded-lg border text-sm transition-colors"
-              @click="shoppingSettings.toggleHidePurchased()"
-            >
-              <!-- eye-slash when hiding, eye when showing -->
-              <svg v-if="shoppingSettings.hidePurchased" class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-              </svg>
-              <svg v-else class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-              </svg>
-            </button>
-            <button
-              class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
-              @click="toggleSelectMode"
-            >
-              Выбрать
-            </button>
-            <button
-              v-if="selectedProductId !== null"
-              class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 transition-colors"
-              @click="confirmRemoveOpen = true"
-            >
-              Удалить выбранный
-            </button>
-            <button
-              v-if="store.items.length > 0"
-              class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
-              @click="confirmDeleteAllOpen = true"
-            >
-              Удалить все
-            </button>
+            <!-- Desktop: all action buttons visible -->
+            <div class="hidden lg:flex items-center gap-2">
+              <!-- Hide/show purchased toggle -->
+              <button
+                :title="shoppingSettings.hidePurchased ? 'Показать купленные' : 'Скрыть купленные'"
+                :class="shoppingSettings.hidePurchased ? 'border-blue-300 text-blue-600 bg-blue-50 hover:bg-blue-100' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+                class="p-2 rounded-lg border text-sm transition-colors"
+                @click="shoppingSettings.toggleHidePurchased()"
+              >
+                <svg v-if="shoppingSettings.hidePurchased" class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+                <svg v-else class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+              </button>
+              <button
+                class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+                @click="toggleSelectMode"
+              >
+                Выбрать
+              </button>
+              <button
+                v-if="selectedProductId !== null"
+                class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 transition-colors"
+                @click="confirmRemoveOpen = true"
+              >
+                Удалить выбранный
+              </button>
+              <button
+                v-if="store.items.length > 0"
+                class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50"
+                @click="confirmDeleteAllOpen = true"
+              >
+                Удалить все
+              </button>
+            </div>
+
+            <!-- Mobile: kebab menu -->
+            <div class="lg:hidden relative">
+              <button
+                class="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                aria-label="Действия"
+                @click="mobileActionsOpen = !mobileActionsOpen"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
+                </svg>
+              </button>
+              <div v-if="mobileActionsOpen" class="fixed inset-0 z-40" @click="mobileActionsOpen = false" />
+              <div v-if="mobileActionsOpen" class="absolute right-0 top-full mt-1 bg-white border rounded-xl shadow-xl z-50 min-w-[200px] py-1 overflow-hidden">
+                <button
+                  class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-3"
+                  :class="shoppingSettings.hidePurchased ? 'text-blue-600' : 'text-gray-700'"
+                  @click="shoppingSettings.toggleHidePurchased(); mobileActionsOpen = false"
+                >
+                  <svg v-if="shoppingSettings.hidePurchased" class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                  </svg>
+                  <svg v-else class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                  {{ shoppingSettings.hidePurchased ? 'Показать купленные' : 'Скрыть купленные' }}
+                </button>
+                <div class="border-t mx-3 my-1" />
+                <button
+                  class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50"
+                  @click="toggleSelectMode(); mobileActionsOpen = false"
+                >
+                  Выбрать
+                </button>
+                <button
+                  v-if="selectedProductId !== null"
+                  class="w-full text-left px-4 py-3 text-sm hover:bg-red-50 text-red-600"
+                  @click="confirmRemoveOpen = true; mobileActionsOpen = false"
+                >
+                  Удалить выбранный
+                </button>
+                <button
+                  v-if="store.items.length > 0"
+                  class="w-full text-left px-4 py-3 text-sm hover:bg-red-50 text-red-600"
+                  @click="confirmDeleteAllOpen = true; mobileActionsOpen = false"
+                >
+                  Удалить все
+                </button>
+              </div>
+            </div>
           </template>
         </template>
       </div>
@@ -529,9 +582,9 @@ function onConfirmDeleteAll() {
         <div class="flex items-center gap-2">
           <!-- Save button in mobile bar -->
           <button
-            v-if="store.isDirty"
-            class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
-            :disabled="saving"
+            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            :class="store.isDirty ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-400 cursor-default'"
+            :disabled="saving || !store.isDirty"
             @click="onSave"
           >
             Сохранить
