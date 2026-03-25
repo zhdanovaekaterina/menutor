@@ -3,7 +3,8 @@ FROM node:25.8-alpine AS build
 WORKDIR /app
 
 COPY frontend/package*.json ./
-RUN npm ci
+RUN npm install -g npm@11.12.0 && \
+    npm ci
 
 COPY frontend/ ./
 RUN npm run build
