@@ -61,10 +61,20 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     items.value.length ? Math.round((purchasedCount.value / items.value.length) * 100) : 0,
   )
 
+  const PURCHASED_CATEGORY = 'Куплено'
+
   const itemsByCategory = computed(() => {
     const grouped: Record<string, SavedShoppingListItem[]> = {}
+    const purchased: SavedShoppingListItem[] = []
     for (const item of items.value) {
-      ;(grouped[item.category] ??= []).push(item)
+      if (item.purchased) {
+        purchased.push(item)
+      } else {
+        ;(grouped[item.category] ??= []).push(item)
+      }
+    }
+    if (purchased.length) {
+      grouped[PURCHASED_CATEGORY] = purchased
     }
     return grouped
   })
