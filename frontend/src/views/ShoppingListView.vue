@@ -225,11 +225,12 @@ function onAddProduct(productId: number, quantity: number) {
   const product = productStore.items.find((p) => p.id === productId)
   if (!product) return
   const nextOrder = store.items.length
+  const category = productStore.categories.find((c) => c.id === product.category_id)?.name ?? ''
   const item: SavedShoppingListItem = {
     id: 0,
     product_id: product.id,
     product_name: product.name,
-    category: '',
+    category,
     quantity: { amount: quantity, unit: product.purchase_unit },
     buy_quantity: { amount: product.purchase_unit === 'kg' ? quantity : Math.ceil(quantity), unit: product.purchase_unit },
     buy_quantity_overridden: false,
