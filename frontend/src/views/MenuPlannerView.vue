@@ -24,6 +24,7 @@ import { exportEntities, exportMenuPdf } from '@/api/client'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { formatUnit } from '@/utils/units'
 import { downloadBlob } from '@/composables/useFileDownload'
+import { useCategoryStore } from '@/stores/categories'
 import { useFamilyStore } from '@/stores/family'
 import { useMenuStore } from '@/stores/menus'
 import { useProductStore } from '@/stores/products'
@@ -37,6 +38,7 @@ const menuStore = useMenuStore()
 const recipeStore = useRecipeStore()
 const productStore = useProductStore()
 const familyStore = useFamilyStore()
+const categoryStore = useCategoryStore()
 const shoppingStore = useShoppingListStore()
 const toast = useToastStore()
 
@@ -78,6 +80,8 @@ onMounted(async () => {
     recipeStore.load(),
     productStore.load(),
     familyStore.load(),
+    categoryStore.load('product'),
+    categoryStore.load('recipe'),
   ])
   if (previousId !== null) {
     await menuStore.select(previousId)

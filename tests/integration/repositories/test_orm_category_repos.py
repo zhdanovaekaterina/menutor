@@ -11,7 +11,7 @@ from backend.infrastructure.repositories.orm_recipe_category_repository import (
 def test_product_category_repo_returns_active(conn) -> None:
     repo = OrmProductCategoryRepository(conn)
     categories = repo.find_active()
-    names = [name for _, name in categories]
+    names = [c.name for c in categories]
     assert "Сыпучие" in names
     assert "Молочные" in names
     assert "Мясо" in names
@@ -20,9 +20,9 @@ def test_product_category_repo_returns_active(conn) -> None:
 def test_product_category_repo_returns_id_name_tuples(conn) -> None:
     repo = OrmProductCategoryRepository(conn)
     categories = repo.find_active()
-    for cat_id, cat_name in categories:
-        assert isinstance(cat_id, int)
-        assert isinstance(cat_name, str)
+    for cat in categories:
+        assert isinstance(cat.id, int)
+        assert isinstance(cat.name, str)
 
 
 def test_product_category_repo_excludes_inactive(conn) -> None:
@@ -33,7 +33,7 @@ def test_product_category_repo_excludes_inactive(conn) -> None:
 
     repo = OrmProductCategoryRepository(conn)
     categories = repo.find_active()
-    names = [name for _, name in categories]
+    names = [c.name for c in categories]
 
     assert "Архив" not in names
 
@@ -41,14 +41,14 @@ def test_product_category_repo_excludes_inactive(conn) -> None:
 def test_product_category_repo_sorted(conn) -> None:
     repo = OrmProductCategoryRepository(conn)
     categories = repo.find_active()
-    names = [name for _, name in categories]
+    names = [c.name for c in categories]
     assert names == sorted(names)
 
 
 def test_recipe_category_repo_returns_active(conn) -> None:
     repo = OrmRecipeCategoryRepository(conn)
     categories = repo.find_active()
-    names = [name for _, name in categories]
+    names = [c.name for c in categories]
     assert "Завтраки" in names
     assert "Основные" in names
     assert "Салаты" in names
@@ -57,9 +57,9 @@ def test_recipe_category_repo_returns_active(conn) -> None:
 def test_recipe_category_repo_returns_id_name_tuples(conn) -> None:
     repo = OrmRecipeCategoryRepository(conn)
     categories = repo.find_active()
-    for cat_id, cat_name in categories:
-        assert isinstance(cat_id, int)
-        assert isinstance(cat_name, str)
+    for cat in categories:
+        assert isinstance(cat.id, int)
+        assert isinstance(cat.name, str)
 
 
 def test_recipe_category_repo_excludes_inactive(conn) -> None:
@@ -70,7 +70,7 @@ def test_recipe_category_repo_excludes_inactive(conn) -> None:
 
     repo = OrmRecipeCategoryRepository(conn)
     categories = repo.find_active()
-    names = [name for _, name in categories]
+    names = [c.name for c in categories]
 
     assert "Старые" not in names
 
@@ -78,7 +78,7 @@ def test_recipe_category_repo_excludes_inactive(conn) -> None:
 def test_recipe_category_repo_sorted(conn) -> None:
     repo = OrmRecipeCategoryRepository(conn)
     categories = repo.find_active()
-    names = [name for _, name in categories]
+    names = [c.name for c in categories]
     assert names == sorted(names)
 
 
@@ -93,18 +93,18 @@ def test_product_category_find_all_includes_inactive(conn) -> None:
 
     repo = OrmProductCategoryRepository(conn)
     categories = repo.find_all()
-    names = [name for _, name, _ in categories]
+    names = [c.name for c in categories]
     assert "Архив" in names
 
-    archived = [(cid, n, a) for cid, n, a in categories if n == "Архив"]
-    assert archived[0][2] is False
+    archived = [c for c in categories if c.name == "Архив"]
+    assert archived[0].active is False
 
 
 def test_product_category_save_creates_new(conn) -> None:
     repo = OrmProductCategoryRepository(conn)
     new_id = repo.save("Замороженные")
     assert isinstance(new_id, int)
-    names = [name for _, name in repo.find_active()]
+    names = [c.name for c in repo.find_active()]
     assert "Замороженные" in names
 
 
@@ -112,7 +112,7 @@ def test_product_category_save_updates_existing(conn) -> None:
     repo = OrmProductCategoryRepository(conn)
     new_id = repo.save("Тестовая")
     repo.save("Тестовая (изм.)", new_id)
-    names = [name for _, name in repo.find_active()]
+    names = [c.name for c in repo.find_active()]
     assert "Тестовая (изм.)" in names
     assert "Тестовая" not in names
 
@@ -121,10 +121,10 @@ def test_product_category_delete_makes_inactive(conn) -> None:
     repo = OrmProductCategoryRepository(conn)
     new_id = repo.save("Удаляемая")
     repo.delete(new_id)
-    active_names = [name for _, name in repo.find_active()]
+    active_names = [c.name for c in repo.find_active()]
     assert "Удаляемая" not in active_names
 
-    all_names = [name for _, name, _ in repo.find_all()]
+    all_names = [c.name for c in repo.find_all()]
     assert "Удаляемая" in all_names
 
 
@@ -132,7 +132,7 @@ def test_product_category_hard_delete_removes_row(conn) -> None:
     repo = OrmProductCategoryRepository(conn)
     new_id = repo.save("Удаляемая навсегда")
     repo.hard_delete(new_id)
-    all_names = [name for _, name, _ in repo.find_all()]
+    all_names = [c.name for c in repo.find_all()]
     assert "Удаляемая навсегда" not in all_names
 
 
@@ -146,7 +146,7 @@ def test_product_category_hard_delete_removes_linked_products(conn) -> None:
     )
     conn.commit()
     repo.hard_delete(new_id)
-    all_names = [name for _, name, _ in repo.find_all()]
+    all_names = [c.name for c in repo.find_all()]
     assert "С продуктами" not in all_names
     count = conn.execute(
         text("SELECT COUNT(*) FROM products WHERE category_id = :cat_id"),
@@ -237,18 +237,18 @@ def test_recipe_category_find_all_includes_inactive(conn) -> None:
 
     repo = OrmRecipeCategoryRepository(conn)
     categories = repo.find_all()
-    names = [name for _, name, _ in categories]
+    names = [c.name for c in categories]
     assert "Старые" in names
 
-    archived = [(cid, n, a) for cid, n, a in categories if n == "Старые"]
-    assert archived[0][2] is False
+    archived = [c for c in categories if c.name == "Старые"]
+    assert archived[0].active is False
 
 
 def test_recipe_category_save_creates_new(conn) -> None:
     repo = OrmRecipeCategoryRepository(conn)
     new_id = repo.save("Выпечка")
     assert isinstance(new_id, int)
-    names = [name for _, name in repo.find_active()]
+    names = [c.name for c in repo.find_active()]
     assert "Выпечка" in names
 
 
@@ -256,7 +256,7 @@ def test_recipe_category_save_updates_existing(conn) -> None:
     repo = OrmRecipeCategoryRepository(conn)
     new_id = repo.save("Тестовая")
     repo.save("Тестовая (изм.)", new_id)
-    names = [name for _, name in repo.find_active()]
+    names = [c.name for c in repo.find_active()]
     assert "Тестовая (изм.)" in names
     assert "Тестовая" not in names
 
@@ -265,10 +265,10 @@ def test_recipe_category_delete_makes_inactive(conn) -> None:
     repo = OrmRecipeCategoryRepository(conn)
     new_id = repo.save("Удаляемая")
     repo.delete(new_id)
-    active_names = [name for _, name in repo.find_active()]
+    active_names = [c.name for c in repo.find_active()]
     assert "Удаляемая" not in active_names
 
-    all_names = [name for _, name, _ in repo.find_all()]
+    all_names = [c.name for c in repo.find_all()]
     assert "Удаляемая" in all_names
 
 
@@ -276,7 +276,7 @@ def test_recipe_category_hard_delete_removes_row(conn) -> None:
     repo = OrmRecipeCategoryRepository(conn)
     new_id = repo.save("Удаляемая навсегда")
     repo.hard_delete(new_id)
-    all_names = [name for _, name, _ in repo.find_all()]
+    all_names = [c.name for c in repo.find_all()]
     assert "Удаляемая навсегда" not in all_names
 
 
@@ -289,7 +289,7 @@ def test_recipe_category_hard_delete_removes_linked_recipes(conn) -> None:
     )
     conn.commit()
     repo.hard_delete(new_id)
-    all_names = [name for _, name, _ in repo.find_all()]
+    all_names = [c.name for c in repo.find_all()]
     assert "С рецептами" not in all_names
     count = conn.execute(
         text("SELECT COUNT(*) FROM recipes WHERE category_id = :cat_id"),
@@ -382,10 +382,10 @@ def test_product_category_activate_restores_hidden(conn) -> None:
     repo = OrmProductCategoryRepository(conn)
     new_id = repo.save("Скрытая")
     repo.delete(new_id)
-    assert "Скрытая" not in [name for _, name in repo.find_active()]
+    assert "Скрытая" not in [c.name for c in repo.find_active()]
 
     repo.activate(new_id)
-    active_names = [name for _, name in repo.find_active()]
+    active_names = [c.name for c in repo.find_active()]
     assert "Скрытая" in active_names
 
 
@@ -393,10 +393,10 @@ def test_recipe_category_activate_restores_hidden(conn) -> None:
     repo = OrmRecipeCategoryRepository(conn)
     new_id = repo.save("Скрытая")
     repo.delete(new_id)
-    assert "Скрытая" not in [name for _, name in repo.find_active()]
+    assert "Скрытая" not in [c.name for c in repo.find_active()]
 
     repo.activate(new_id)
-    active_names = [name for _, name in repo.find_active()]
+    active_names = [c.name for c in repo.find_active()]
     assert "Скрытая" in active_names
 
 
@@ -428,7 +428,7 @@ def test_product_category_move_and_delete(conn) -> None:
     repo.move_and_delete(from_id, to_id)
 
     # Source category must be gone
-    all_names = [name for _, name, _ in repo.find_all()]
+    all_names = [c.name for c in repo.find_all()]
     assert "Переносимая" not in all_names
 
     # Both products are now in the target category
@@ -461,7 +461,7 @@ def test_product_category_move_and_delete_rollback_on_invalid_target(conn) -> No
         repo.move_and_delete(from_id, non_existent_to_id)
 
     # Source category must still exist
-    all_names = [name for _, name, _ in repo.find_all()]
+    all_names = [c.name for c in repo.find_all()]
     assert "Источник" in all_names
 
 
@@ -490,7 +490,7 @@ def test_recipe_category_move_and_delete(conn) -> None:
     repo.move_and_delete(from_id, to_id)
 
     # Source category must be gone
-    all_names = [name for _, name, _ in repo.find_all()]
+    all_names = [c.name for c in repo.find_all()]
     assert "Источник рецептов" not in all_names
 
     # Both recipes are now in the target category
@@ -523,7 +523,7 @@ def test_recipe_category_move_and_delete_rollback_on_invalid_target(conn) -> Non
         repo.move_and_delete(from_id, non_existent_to_id)
 
     # Source category must still exist
-    all_names = [name for _, name, _ in repo.find_all()]
+    all_names = [c.name for c in repo.find_all()]
     assert "Источник рец." in all_names
 
 
@@ -532,10 +532,10 @@ def test_product_category_save_reactivates_on_edit(conn) -> None:
     repo = OrmProductCategoryRepository(conn)
     new_id = repo.save("Скрытая")
     repo.delete(new_id)
-    assert "Скрытая" not in [name for _, name in repo.find_active()]
+    assert "Скрытая" not in [c.name for c in repo.find_active()]
 
     repo.save("Скрытая (восст.)", new_id)
-    active_names = [name for _, name in repo.find_active()]
+    active_names = [c.name for c in repo.find_active()]
     assert "Скрытая (восст.)" in active_names
 
 
@@ -544,8 +544,8 @@ def test_recipe_category_save_reactivates_on_edit(conn) -> None:
     repo = OrmRecipeCategoryRepository(conn)
     new_id = repo.save("Скрытая")
     repo.delete(new_id)
-    assert "Скрытая" not in [name for _, name in repo.find_active()]
+    assert "Скрытая" not in [c.name for c in repo.find_active()]
 
     repo.save("Скрытая (восст.)", new_id)
-    active_names = [name for _, name in repo.find_active()]
+    active_names = [c.name for c in repo.find_active()]
     assert "Скрытая (восст.)" in active_names

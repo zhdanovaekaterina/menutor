@@ -49,7 +49,7 @@ def create_product_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> dict[str, int]:
-    return {"id": _bundle(container, "product").create.execute(body.name)}
+    return {"id": _bundle(container, "product").create.execute(body.name, body.color)}
 
 
 @router.put("/product-categories/{category_id}", response_model=dict[str, int])
@@ -59,7 +59,7 @@ def edit_product_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> dict[str, int]:
-    return {"id": _bundle(container, "product").edit.execute(category_id, body.name)}
+    return {"id": _bundle(container, "product").edit.execute(category_id, body.name, body.color)}
 
 
 @router.delete(
@@ -135,7 +135,7 @@ def create_recipe_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> dict[str, int]:
-    return {"id": _bundle(container, "recipe").create.execute(body.name)}
+    return {"id": _bundle(container, "recipe").create.execute(body.name, body.color)}
 
 
 @router.put("/recipe-categories/{category_id}", response_model=dict[str, int])
@@ -145,7 +145,7 @@ def edit_recipe_category(
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
 ) -> dict[str, int]:
-    return {"id": _bundle(container, "recipe").edit.execute(category_id, body.name)}
+    return {"id": _bundle(container, "recipe").edit.execute(category_id, body.name, body.color)}
 
 
 @router.delete(

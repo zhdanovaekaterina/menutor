@@ -62,12 +62,18 @@ def _register_fonts() -> tuple[str, str]:
     return regular, bold
 
 
+_RECIPE_DEFAULT_COLOR = "#3B82F6"
+_PRODUCT_DEFAULT_COLOR = "#10B981"
+
+
 def _cell_text(
     menu: WeeklyMenu,
     day: int,
     meal_type: str,
     recipe_names: dict[int, str],
     product_names: dict[int, str],
+    recipe_colors: dict[int, str] | None = None,
+    product_colors: dict[int, str] | None = None,
 ) -> str:
     """Build the text content for a single grid cell."""
     slots = [
@@ -78,22 +84,28 @@ def _cell_text(
     lines: list[str] = []
     for slot in slots:
         if slot.recipe_id is not None:
-            name = recipe_names.get(int(slot.recipe_id), f"Рецепт #{slot.recipe_id}")
+            rid = int(slot.recipe_id)
+            name = recipe_names.get(rid, f"Рецепт #{slot.recipe_id}")
+            color = (recipe_colors or {}).get(rid, _RECIPE_DEFAULT_COLOR)
             if slot.servings_override is not None:
                 servings = slot.servings_override
                 # Format as integer when whole number
                 if servings == int(servings):
-                    lines.append(f"{name} ({int(servings)}п)")
+                    label = f"{name} ({int(servings)}п)"
                 else:
-                    lines.append(f"{name} ({servings:g}п)")
+                    label = f"{name} ({servings:g}п)"
             else:
-                lines.append(name)
+                label = name
+            lines.append(f'<font color="{color}">&#9632;</font> {label}')
         elif slot.product_id is not None:
-            name = product_names.get(int(slot.product_id), f"Продукт #{slot.product_id}")
+            pid = int(slot.product_id)
+            name = product_names.get(pid, f"Продукт #{slot.product_id}")
+            color = (product_colors or {}).get(pid, _PRODUCT_DEFAULT_COLOR)
             if slot.quantity is not None and slot.unit is not None:
-                lines.append(f"{name} {slot.quantity:g} {_unit_label(slot.unit)}")
+                label = f"{name} {slot.quantity:g} {_unit_label(slot.unit)}"
             else:
-                lines.append(name)
+                label = name
+            lines.append(f'<font color="{color}">&#9632;</font> {label}')
 
     return "<br/>".join(lines)
 
@@ -103,6 +115,8 @@ def _build_pdf(
     recipe_names: dict[int, str],
     product_names: dict[int, str],
     paper: str = "a4",
+    recipe_colors: dict[int, str] | None = None,
+    product_colors: dict[int, str] | None = None,
 ) -> bytes:
     """Render the weekly menu as a PDF planning grid."""
     from reportlab.lib import colors  # type: ignore[import-untyped]
@@ -183,7 +197,7 @@ def _build_pdf(
     for meal_type in meal_types_present:
         row: list[Any] = [Paragraph(meal_type, meal_label_style)]
         for day_idx in range(7):
-            text = _cell_text(menu, day_idx, meal_type, recipe_names, product_names)
+            text = _cell_text(menu, day_idx, meal_type, recipe_names, product_names, recipe_colors, product_colors)
             row.append(Paragraph(text, cell_style))
         table_data.append(row)
 
@@ -234,5 +248,7 @@ class MenuPdfExporter:
         recipe_names: dict[int, str],
         product_names: dict[int, str],
         paper: str = "a4",
+        recipe_colors: dict[int, str] | None = None,
+        product_colors: dict[int, str] | None = None,
     ) -> bytes:
-        return _build_pdf(menu, recipe_names, product_names, paper)
+        return _build_pdf(menu, recipe_names, product_names, paper, recipe_colors, product_colors)

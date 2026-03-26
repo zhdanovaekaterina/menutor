@@ -173,10 +173,10 @@ export const deleteFamilyMember = (id: number) => api.delete(`/family-members/${
 /* Categories */
 export const fetchAllCategories = (type: 'product' | 'recipe') =>
   api.get<Category[]>(`/${type}-categories`).then((r) => r.data)
-export const createCategory = (type: 'product' | 'recipe', name: string) =>
-  api.post<{ id: number }>(`/${type}-categories`, { name }).then((r) => r.data)
-export const editCategory = (type: 'product' | 'recipe', id: number, name: string) =>
-  api.put<{ id: number }>(`/${type}-categories/${id}`, { name }).then((r) => r.data)
+export const createCategory = (type: 'product' | 'recipe', name: string, color: string | null = null) =>
+  api.post<{ id: number }>(`/${type}-categories`, { name, color }).then((r) => r.data)
+export const editCategory = (type: 'product' | 'recipe', id: number, name: string, color: string | null = null) =>
+  api.put<{ id: number }>(`/${type}-categories/${id}`, { name, color }).then((r) => r.data)
 export const deleteCategoryApi = (type: 'product' | 'recipe', id: number, hard = false) =>
   api.delete(`/${type}-categories/${id}`, { params: hard ? { hard: true } : {} })
 export const activateCategory = (type: 'product' | 'recipe', id: number) =>

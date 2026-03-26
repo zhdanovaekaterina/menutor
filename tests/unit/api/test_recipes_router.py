@@ -64,7 +64,7 @@ class TestListRecipeCategories:
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) == 2
-        assert data[0] == {"id": 1, "name": "Завтраки"}
+        assert data[0] == {"id": 1, "name": "Завтраки", "color": None}
 
 
 # ---- GET /api/recipes/{recipe_id} ----

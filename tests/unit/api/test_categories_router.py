@@ -28,8 +28,28 @@ class TestProductCategories:
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) == 3
-        assert data[0] == {"id": 1, "name": "Сыпучие", "active": True}
+        assert data[0] == {"id": 1, "name": "Сыпучие", "active": True, "color": None}
         assert data[2]["active"] is False
+
+    def test_list_returns_color_when_set(self, client: TestClient, container: MagicMock) -> None:
+        from backend.domain.value_objects.category import Category
+        container.product_categories.list_all.execute.return_value = [
+            Category(1, "Сыпучие", True, "#FF5733"),
+        ]
+        resp = client.get("/api/product-categories")
+        assert resp.status_code == 200
+        assert resp.json()[0]["color"] == "#FF5733"
+
+    def test_create_with_color(self, client: TestClient, container: MagicMock) -> None:
+        container.product_categories.create.execute.return_value = 5
+        resp = client.post("/api/product-categories", json={"name": "Напитки", "color": "#3B82F6"})
+        assert resp.status_code == 201
+        assert resp.json() == {"id": 5}
+        container.product_categories.create.execute.assert_called_once_with("Напитки", "#3B82F6")
+
+    def test_create_invalid_color_returns_422(self, client: TestClient, container: MagicMock) -> None:
+        resp = client.post("/api/product-categories", json={"name": "Напитки", "color": "invalid"})
+        assert resp.status_code == 422
 
     # ---- POST ----
 

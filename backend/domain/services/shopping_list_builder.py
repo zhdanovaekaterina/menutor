@@ -101,7 +101,7 @@ class ShoppingListBuilder:
         self, aggregated: dict[ProductId, Quantity]
     ) -> ShoppingList:
         """Convert an aggregated product→quantity map into a ShoppingList."""
-        category_map = dict(self._product_category_repo.find_active())
+        category_map = {c.id: c.name for c in self._product_category_repo.find_active()}
 
         items: list[ShoppingListItem] = []
         for product_id, qty in aggregated.items():

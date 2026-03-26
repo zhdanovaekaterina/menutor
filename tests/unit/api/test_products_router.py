@@ -55,7 +55,7 @@ class TestListProductCategories:
         ]
         resp = client.get("/api/products/categories")
         assert resp.status_code == 200
-        assert resp.json() == [{"id": 1, "name": "Сыпучие"}]
+        assert resp.json() == [{"id": 1, "name": "Сыпучие", "color": None}]
 
 
 # ---- POST /api/products ----

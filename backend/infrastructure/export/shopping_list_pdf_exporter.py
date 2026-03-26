@@ -14,7 +14,13 @@ def _to_display(code: str) -> str:
     return _UNIT_RU.get(code, code)
 
 
-def _build_pdf(shopping_list: ShoppingList) -> bytes:
+_CATEGORY_DEFAULT_COLOR = "#10B981"
+
+
+def _build_pdf(
+    shopping_list: ShoppingList,
+    category_colors: dict[str, str] | None = None,
+) -> bytes:
     """Render a shopping list as a PDF using reportlab."""
     import pathlib
 
@@ -123,7 +129,14 @@ def _build_pdf(shopping_list: ShoppingList) -> bytes:
     story.append(Spacer(1, 0.3 * cm))
 
     for category, items in sorted(shopping_list.items_by_category().items()):
-        story.append(Paragraph(category, heading_style))
+        cat_color_hex = (category_colors or {}).get(category, _CATEGORY_DEFAULT_COLOR)
+        cat_color = colors.HexColor(cat_color_hex)
+        colored_heading_style = ParagraphStyle(
+            f"HeadingRu_{category}",
+            parent=heading_style,
+            textColor=cat_color,
+        )
+        story.append(Paragraph(category, colored_heading_style))
 
         table_data = [
             [
@@ -150,7 +163,7 @@ def _build_pdf(shopping_list: ShoppingList) -> bytes:
         table = Table(table_data, colWidths=col_widths)
         table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#ebf4ff")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#2c5282")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), cat_color),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f7fafc")]),
             ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e0")),
             ("TOPPADDING", (0, 0), (-1, -1), 4),
@@ -174,9 +187,13 @@ def _build_pdf(shopping_list: ShoppingList) -> bytes:
 class ShoppingListPdfExporter:
     """Exports a shopping list to PDF using reportlab."""
 
-    def export_bytes(self, entities: list[Any]) -> bytes:
+    def export_bytes(
+        self,
+        entities: list[Any],
+        category_colors: dict[str, str] | None = None,
+    ) -> bytes:
         shopping_list: ShoppingList = entities[0]
-        return _build_pdf(shopping_list)
+        return _build_pdf(shopping_list, category_colors)
 
     def example_bytes(self) -> bytes:
         from decimal import Decimal

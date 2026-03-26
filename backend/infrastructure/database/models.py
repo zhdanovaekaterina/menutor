@@ -65,6 +65,7 @@ class RecipeCategoryRow(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
     active = Column(Integer, nullable=False, default=1, server_default="1")
+    color = Column(String(7), nullable=True)
 
 
 class ProductCategoryRow(Base):
@@ -73,6 +74,7 @@ class ProductCategoryRow(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
     active = Column(Integer, nullable=False, default=1, server_default="1")
+    color = Column(String(7), nullable=True)
 
 
 class ProductRow(Base):

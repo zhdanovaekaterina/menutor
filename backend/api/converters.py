@@ -154,11 +154,11 @@ def family_member_to_response(member: FamilyMember) -> FamilyMemberResponse:
 # ── Category ───────────────────────────────────────────────────────
 
 def category_to_response(cat: Category) -> CategoryResponse:
-    return CategoryResponse(id=cat.id, name=cat.name, active=cat.active)
+    return CategoryResponse(id=cat.id, name=cat.name, active=cat.active, color=cat.color)
 
 
 def active_category_to_response(cat: ActiveCategory) -> ActiveCategoryResponse:
-    return ActiveCategoryResponse(id=cat.id, name=cat.name)
+    return ActiveCategoryResponse(id=cat.id, name=cat.name, color=cat.color)
 
 
 # ── Shopping List ──────────────────────────────────────────────────

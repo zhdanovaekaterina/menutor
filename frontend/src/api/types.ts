@@ -144,12 +144,14 @@ export interface FamilyMember {
 export interface ActiveCategory {
   id: number
   name: string
+  color: string | null
 }
 
 export interface Category {
   id: number
   name: string
   active: boolean
+  color: string | null
 }
 
 export interface Quantity {

@@ -34,7 +34,7 @@ class BaseOrmCategoryRepository:
             .order_by(self._cat_class.name)
             .all()
         )
-        return [ActiveCategory(r.id, r.name) for r in rows]
+        return [ActiveCategory(r.id, r.name, r.color) for r in rows]
 
     def find_all(self) -> list[Category]:
         rows: list[Any] = (
@@ -42,11 +42,11 @@ class BaseOrmCategoryRepository:
             .order_by(self._cat_class.name)
             .all()
         )
-        return [Category(r.id, r.name, bool(r.active)) for r in rows]
+        return [Category(r.id, r.name, bool(r.active), r.color) for r in rows]
 
-    def save(self, name: str, category_id: int | None = None) -> int:
+    def save(self, name: str, category_id: int | None = None, *, color: str | None = None) -> int:
         if category_id is None:
-            row = self._cat_class(name=name)
+            row = self._cat_class(name=name, color=color)
             self._session.add(row)
             self._session.flush()
             new_id: int = row.id
@@ -56,6 +56,7 @@ class BaseOrmCategoryRepository:
         if row is not None:
             row.name = name
             row.active = 1
+            row.color = color
         self._session.commit()
         return category_id
 

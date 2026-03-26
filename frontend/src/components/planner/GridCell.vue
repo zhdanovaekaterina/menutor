@@ -5,7 +5,9 @@ import type { MenuSlot } from '@/api/types'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { usePlannerClipboard } from '@/composables/usePlannerClipboard'
 import { useMenuStore } from '@/stores/menus'
+import { useProductStore } from '@/stores/products'
 import { useRecipeStore } from '@/stores/recipes'
+import { useCategoryStore } from '@/stores/categories'
 import { formatUnit } from '@/utils/units'
 import ItemRow from './ItemRow.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
@@ -33,6 +35,22 @@ const dragOver = ref(false)
 const listRef = ref<HTMLElement>()
 
 const recipeStore = useRecipeStore()
+const productStore = useProductStore()
+const categoryStore = useCategoryStore()
+
+function categoryColor(slot: MenuSlot): string | null {
+  if (slot.recipe_id != null) {
+    const recipe = recipeStore.items.find((r) => r.id === slot.recipe_id)
+    if (!recipe) return null
+    return categoryStore.findById('recipe', recipe.category_id)?.color ?? null
+  }
+  if (slot.product_id != null) {
+    const product = productStore.items.find((p) => p.id === slot.product_id)
+    if (!product) return null
+    return categoryStore.findById('product', product.category_id)?.color ?? null
+  }
+  return null
+}
 
 // Context menu
 const { open: openContextMenu, close: closeContextMenu } = useContextMenu()
@@ -240,6 +258,7 @@ watch(
         :detail="itemDetail(slot).text"
         :pieces-detail="itemDetail(slot).piecesDetail"
         :variant="slot.recipe_id != null ? 'recipe' : 'product'"
+        :category-color="categoryColor(slot)"
         @remove="emit('removeItem', { recipe_id: slot.recipe_id, product_id: slot.product_id })"
         @click="emit('editItem', slot)"
       />
