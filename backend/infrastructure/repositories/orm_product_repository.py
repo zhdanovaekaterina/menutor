@@ -64,6 +64,44 @@ class OrmProductRepository(
             user_id=UserId(row.user_id),
         )
 
+    def _filtered_query(
+        self,
+        user_id: UserId,
+        search: str,
+        category_id: ProductCategoryId | None,
+    ):  # type: ignore[return]
+        q = self._session.query(ProductRow).filter(ProductRow.user_id == int(user_id))
+        if category_id is not None:
+            q = q.filter(ProductRow.category_id == int(category_id))
+        if search:
+            q = q.filter(ProductRow.name.ilike(f"%{search}%"))
+        return q
+
+    def count(
+        self,
+        user_id: UserId,
+        search: str = "",
+        category_id: ProductCategoryId | None = None,
+    ) -> int:
+        return self._filtered_query(user_id, search, category_id).count()
+
+    def find_page(
+        self,
+        user_id: UserId,
+        search: str,
+        limit: int,
+        offset: int,
+        category_id: ProductCategoryId | None = None,
+    ) -> list[Product]:
+        rows = (
+            self._filtered_query(user_id, search, category_id)
+            .order_by(ProductRow.name)
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+        return [self._row_to_entity(r) for r in rows]
+
     def find_all(self, user_id: UserId) -> list[Product]:
         return self.find_all_by_user(int(user_id))
 

@@ -5,6 +5,8 @@ import { useToastStore } from '@/stores/toast'
 
 interface CrudStore<T extends { id: number }, C> {
   items: T[]
+  allItems?: T[]
+  removeAll?: () => Promise<void>
   load: () => Promise<void>
   create: (data: C) => Promise<T>
   update: (id: number, data: C) => Promise<T>
@@ -24,9 +26,10 @@ export function useCrudView<T extends { id: number }, C>(store: CrudStore<T, C>)
   const confirmBatchDeleteOpen = ref(false)
   const confirmDeleteAllOpen = ref(false)
 
-  const selectedItem = computed(() =>
-    store.items.find((item) => item.id === selectedId.value) ?? null,
-  )
+  const selectedItem = computed(() => {
+    const source = store.allItems ?? store.items
+    return source.find((item) => item.id === selectedId.value) ?? null
+  })
 
   function onSelect(id: number) {
     selectedId.value = id
@@ -92,9 +95,13 @@ export function useCrudView<T extends { id: number }, C>(store: CrudStore<T, C>)
 
   async function onConfirmDeleteAll() {
     confirmDeleteAllOpen.value = false
-    const ids = store.items.map((item) => item.id)
     try {
-      await store.removeMany(ids)
+      if (store.removeAll) {
+        await store.removeAll()
+      } else {
+        const ids = store.items.map((item) => item.id)
+        await store.removeMany(ids)
+      }
       selection.exit()
     } catch (e: any) {
       toast.show(e?.response?.data?.detail ?? 'Ошибка удаления', 'error')

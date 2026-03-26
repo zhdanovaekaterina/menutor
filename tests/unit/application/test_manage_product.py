@@ -136,4 +136,6 @@ def test_get_product_returns_entity() -> None:
 def test_list_products_returns_all() -> None:
     repo = MagicMock()
     repo.find_all.return_value = [_saved_product(1), _saved_product(2)]
-    assert len(ListProducts(repo).execute(UID)) == 2
+    result = ListProducts(repo).execute(UID)
+    assert result.total == 2
+    assert len(result.items) == 2

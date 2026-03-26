@@ -105,6 +105,44 @@ class OrmRecipeRepository(
             pieces_per_portion=row.pieces_per_portion,
         )
 
+    def _filtered_query(
+        self,
+        user_id: UserId,
+        search: str,
+        category_id: RecipeCategoryId | None,
+    ):  # type: ignore[return]
+        q = self._session.query(RecipeRow).filter(RecipeRow.user_id == int(user_id))
+        if category_id is not None:
+            q = q.filter(RecipeRow.category_id == int(category_id))
+        if search:
+            q = q.filter(RecipeRow.name.ilike(f"%{search}%"))
+        return q
+
+    def count(
+        self,
+        user_id: UserId,
+        search: str = "",
+        category_id: RecipeCategoryId | None = None,
+    ) -> int:
+        return self._filtered_query(user_id, search, category_id).count()
+
+    def find_page(
+        self,
+        user_id: UserId,
+        search: str,
+        limit: int,
+        offset: int,
+        category_id: RecipeCategoryId | None = None,
+    ) -> list[Recipe]:
+        rows = (
+            self._filtered_query(user_id, search, category_id)
+            .order_by(RecipeRow.name)
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+        return [self._row_to_entity(r) for r in rows]
+
     def find_all(self, user_id: UserId) -> list[Recipe]:
         return self.find_all_by_user(int(user_id))
 

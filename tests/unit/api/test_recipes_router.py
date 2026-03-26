@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
+from backend.application.paginated_result import PAGE_SIZE, PaginatedResult
 from backend.application.use_cases.flatten_recipe_products import FlattenedProduct
 from backend.application.use_cases.preview_flattened_products import IngredientData
 from backend.application.use_cases.validate_sub_recipe import ValidationResult
@@ -34,19 +35,36 @@ def _recipe(id: int = 1, total_pieces: int | None = None, pieces_per_portion: in
 
 
 class TestListRecipes:
-    def test_returns_list(self, client: TestClient, container: MagicMock) -> None:
-        container.list_recipes.execute.return_value = [_recipe(1), _recipe(2)]
+    def test_returns_paginated_list(self, client: TestClient, container: MagicMock) -> None:
+        container.list_recipes.execute.return_value = PaginatedResult(
+            items=[_recipe(1), _recipe(2)], total=2, page=1, page_size=PAGE_SIZE
+        )
+        resp = client.get("/api/recipes", params={"page": 1})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["items"]) == 2
+        assert data["items"][0]["name"] == "Блины"
+        assert data["total"] == 2
+        assert data["page"] == 1
+
+    def test_returns_all_items_without_page(self, client: TestClient, container: MagicMock) -> None:
+        container.list_recipes.execute.return_value = PaginatedResult(
+            items=[_recipe(1), _recipe(2)], total=2, page=1, page_size=2
+        )
         resp = client.get("/api/recipes")
         assert resp.status_code == 200
         data = resp.json()
-        assert len(data) == 2
-        assert data[0]["name"] == "Блины"
+        assert len(data["items"]) == 2
 
     def test_returns_empty_list(self, client: TestClient, container: MagicMock) -> None:
-        container.list_recipes.execute.return_value = []
-        resp = client.get("/api/recipes")
+        container.list_recipes.execute.return_value = PaginatedResult(
+            items=[], total=0, page=1, page_size=PAGE_SIZE
+        )
+        resp = client.get("/api/recipes", params={"page": 1})
         assert resp.status_code == 200
-        assert resp.json() == []
+        data = resp.json()
+        assert data["items"] == []
+        assert data["total"] == 0
 
 
 # ---- GET /api/recipes/categories ----
@@ -556,12 +574,12 @@ class TestPiecesMode:
 
     def test_list_recipes_includes_pieces_fields(self, client: TestClient, container: MagicMock) -> None:
         """GET /recipes включает штучные поля."""
-        container.list_recipes.execute.return_value = [
-            _recipe(1, total_pieces=10, pieces_per_portion=2),
-            _recipe(2),
-        ]
-        resp = client.get("/api/recipes")
+        container.list_recipes.execute.return_value = PaginatedResult(
+            items=[_recipe(1, total_pieces=10, pieces_per_portion=2), _recipe(2)],
+            total=2, page=1, page_size=PAGE_SIZE,
+        )
+        resp = client.get("/api/recipes", params={"page": 1})
         assert resp.status_code == 200
         data = resp.json()
-        assert data[0]["total_pieces"] == 10
-        assert data[1]["total_pieces"] is None
+        assert data["items"][0]["total_pieces"] == 10
+        assert data["items"][1]["total_pieces"] is None
