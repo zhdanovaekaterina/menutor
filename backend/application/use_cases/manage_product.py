@@ -6,7 +6,7 @@ from backend.application.use_cases.crud_base import (
     DeleteEntity,
     EditEntity,
     GetEntity,
-    ListEntities,
+    PaginatedListEntities,
     load_owned,
 )
 from backend.domain.entities.product import Product
@@ -70,7 +70,7 @@ class EditProduct(EditEntity):
 
 DeleteProduct = DeleteEntity
 GetProduct = GetEntity
-ListProducts = ListEntities
+ListProducts = PaginatedListEntities
 
 
 class UpdateProductPrice:

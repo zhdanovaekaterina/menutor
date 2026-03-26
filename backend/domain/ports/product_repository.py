@@ -17,6 +17,24 @@ class ProductRepository(ABC):
     def find_all(self, user_id: UserId) -> list[Product]: ...
 
     @abstractmethod
+    def count(
+        self,
+        user_id: UserId,
+        search: str = "",
+        category_id: ProductCategoryId | None = None,
+    ) -> int: ...
+
+    @abstractmethod
+    def find_page(
+        self,
+        user_id: UserId,
+        search: str,
+        limit: int,
+        offset: int,
+        category_id: ProductCategoryId | None = None,
+    ) -> list[Product]: ...
+
+    @abstractmethod
     def save(self, product: Product) -> Product: ...
 
     @abstractmethod

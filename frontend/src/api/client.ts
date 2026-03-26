@@ -12,6 +12,7 @@ import type {
   Menu,
   MenuSlot,
   MoveSlotRequest,
+  PaginatedResponse,
   Product,
   ProductCreate,
   Recipe,
@@ -103,7 +104,19 @@ export const changePassword = (current_password: string, new_password: string) =
   api.post('/auth/me/password', { current_password, new_password })
 
 /* Recipes */
-export const fetchRecipes = () => api.get<Recipe[]>('/recipes').then((r) => r.data)
+export interface RecipeListParams {
+  page?: number
+  search?: string
+  categoryId?: number
+}
+
+export const fetchRecipes = (params?: RecipeListParams) => {
+  const p: Record<string, unknown> = {}
+  if (params?.page !== undefined) p.page = params.page
+  if (params?.search) p.search = params.search
+  if (params?.categoryId !== undefined) p.category_id = params.categoryId
+  return api.get<PaginatedResponse<Recipe>>('/recipes', { params: p }).then((r) => r.data)
+}
 export const fetchRecipe = (id: number) => api.get<Recipe>(`/recipes/${id}`).then((r) => r.data)
 export const fetchRecipeCategories = () =>
   api.get<ActiveCategory[]>('/recipes/categories').then((r) => r.data)
@@ -133,7 +146,19 @@ export const deleteRecipeWithCheck = (id: number) =>
   api.delete(`/recipes/${id}`, { params: { check_dependents: true } })
 
 /* Products */
-export const fetchProducts = () => api.get<Product[]>('/products').then((r) => r.data)
+export interface ProductListParams {
+  page?: number
+  search?: string
+  categoryId?: number
+}
+
+export const fetchProducts = (params?: ProductListParams) => {
+  const p: Record<string, unknown> = {}
+  if (params?.page !== undefined) p.page = params.page
+  if (params?.search) p.search = params.search
+  if (params?.categoryId !== undefined) p.category_id = params.categoryId
+  return api.get<PaginatedResponse<Product>>('/products', { params: p }).then((r) => r.data)
+}
 export const fetchProductCategories = () =>
   api.get<ActiveCategory[]>('/products/categories').then((r) => r.data)
 export const createProduct = (data: ProductCreate) =>
@@ -173,10 +198,10 @@ export const deleteFamilyMember = (id: number) => api.delete(`/family-members/${
 /* Categories */
 export const fetchAllCategories = (type: 'product' | 'recipe') =>
   api.get<Category[]>(`/${type}-categories`).then((r) => r.data)
-export const createCategory = (type: 'product' | 'recipe', name: string) =>
-  api.post<{ id: number }>(`/${type}-categories`, { name }).then((r) => r.data)
-export const editCategory = (type: 'product' | 'recipe', id: number, name: string) =>
-  api.put<{ id: number }>(`/${type}-categories/${id}`, { name }).then((r) => r.data)
+export const createCategory = (type: 'product' | 'recipe', name: string, color: string | null = null) =>
+  api.post<{ id: number }>(`/${type}-categories`, { name, color }).then((r) => r.data)
+export const editCategory = (type: 'product' | 'recipe', id: number, name: string, color: string | null = null) =>
+  api.put<{ id: number }>(`/${type}-categories/${id}`, { name, color }).then((r) => r.data)
 export const deleteCategoryApi = (type: 'product' | 'recipe', id: number, hard = false) =>
   api.delete(`/${type}-categories/${id}`, { params: hard ? { hard: true } : {} })
 export const activateCategory = (type: 'product' | 'recipe', id: number) =>

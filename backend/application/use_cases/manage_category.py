@@ -14,16 +14,16 @@ class CreateCategory:
     def __init__(self, repo: CategoryRepository) -> None:
         self._repo = repo
 
-    def execute(self, name: str) -> int:
-        return self._repo.save(name)
+    def execute(self, name: str, color: str | None = None) -> int:
+        return self._repo.save(name, color=color)
 
 
 class EditCategory:
     def __init__(self, repo: CategoryRepository) -> None:
         self._repo = repo
 
-    def execute(self, category_id: int, name: str) -> int:
-        return self._repo.save(name, category_id)
+    def execute(self, category_id: int, name: str, color: str | None = None) -> int:
+        return self._repo.save(name, category_id, color=color)
 
 
 class DeleteCategory:

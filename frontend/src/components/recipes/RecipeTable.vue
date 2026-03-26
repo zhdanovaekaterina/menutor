@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import type { ActiveCategory, Recipe } from '@/api/types'
-import SearchInput from '@/components/ui/SearchInput.vue'
-import { useCategoryFilter } from '@/composables/useCategoryFilter'
 import { useSortableTable } from '@/composables/useSortableTable'
 
 const props = defineProps<{
@@ -19,15 +17,12 @@ const emit = defineEmits<{
   toggleSelectAll: [ids: number[]]
 }>()
 
-const search = ref('')
-const { categoryFilter, applyFilter } = useCategoryFilter<Recipe>()
 const { sortKey, sortAsc, toggleSort, sortIcon } = useSortableTable<'name' | 'category' | 'servings' | 'weight'>('name')
 
 const catMap = computed(() => Object.fromEntries(props.categories.map((c) => [c.id, c.name])))
 
-const filtered = computed(() => {
-  let list = applyFilter(props.recipes, search.value)
-
+const sorted = computed(() => {
+  const list = [...props.recipes]
   list.sort((a, b) => {
     let cmp = 0
     if (sortKey.value === 'name') cmp = a.name.localeCompare(b.name)
@@ -40,9 +35,9 @@ const filtered = computed(() => {
   return list
 })
 
-const filteredIds = computed(() => filtered.value.map((r) => r.id))
+const sortedIds = computed(() => sorted.value.map((r) => r.id))
 const allChecked = computed(() =>
-  filteredIds.value.length > 0 && filteredIds.value.every((id) => props.selectedIds?.has(id)),
+  sortedIds.value.length > 0 && sortedIds.value.every((id) => props.selectedIds?.has(id)),
 )
 
 function onRowClick(id: number) {
@@ -52,85 +47,73 @@ function onRowClick(id: number) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 h-full">
-    <div class="flex flex-col sm:flex-row gap-2">
-      <SearchInput v-model="search" class="flex-1" />
-      <select
-        v-model="categoryFilter"
-        class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-      >
-        <option :value="null">Все категории</option>
-        <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-      </select>
-    </div>
-    <div class="flex-1 overflow-y-auto border rounded-lg">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50 sticky top-0">
-          <tr>
-            <th v-if="selectMode" class="w-10 px-2 py-2">
-              <input
-                type="checkbox"
-                :checked="allChecked"
-                class="rounded border-gray-300"
-                @change="emit('toggleSelectAll', filteredIds)"
-              />
-            </th>
-            <th class="text-left px-4 py-2 cursor-pointer select-none hover:bg-gray-100"
-                @click="toggleSort('name')">
-              Название {{ sortIcon('name') }}
-            </th>
-            <th class="text-left px-4 py-2 cursor-pointer select-none hover:bg-gray-100"
-                @click="toggleSort('category')">
-              Категория {{ sortIcon('category') }}
-            </th>
-            <th class="text-center px-4 py-2 cursor-pointer select-none hover:bg-gray-100 w-20"
-                @click="toggleSort('servings')">
-              Порций {{ sortIcon('servings') }}
-            </th>
-            <th class="hidden sm:table-cell text-right px-4 py-2 cursor-pointer select-none hover:bg-gray-100 w-24"
-                @click="toggleSort('weight')">
-              Вес {{ sortIcon('weight') }}
-            </th>
-          </tr>
-        </thead>
-        <tbody class="divide-y">
-          <tr
-            v-for="r in filtered"
-            :key="r.id"
-            :class="[
-              selectMode && selectedIds?.has(r.id) ? 'bg-blue-50' :
-              !selectMode && r.id === selectedId ? 'bg-blue-50' : 'hover:bg-gray-50',
-            ]"
-            class="cursor-pointer"
-            @click="onRowClick(r.id)"
-          >
-            <td v-if="selectMode" class="text-center px-2" @click.stop>
-              <input
-                type="checkbox"
-                :checked="selectedIds?.has(r.id)"
-                class="rounded border-gray-300"
-                @change="emit('toggleSelect', r.id)"
-              />
-            </td>
-            <td class="px-4 py-2">
-              {{ r.name }}
-              <svg
-                v-if="r.ingredients.some((i) => i.sub_recipe_id != null)"
-                class="inline-block w-3.5 h-3.5 text-amber-500 ml-1 align-text-bottom"
-                title="Содержит вложенные рецепты"
-                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                stroke-width="2" stroke="currentColor"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-              </svg>
-            </td>
-            <td class="px-4 py-2 text-gray-600">{{ catMap[r.category_id] ?? '—' }}</td>
-            <td class="px-4 py-2 text-center">{{ r.servings }}</td>
-            <td class="hidden sm:table-cell px-4 py-2 text-right">{{ r.weight ? r.weight + ' г' : '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  <div class="flex-1 overflow-y-auto border rounded-lg">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 sticky top-0">
+        <tr>
+          <th v-if="selectMode" class="w-10 px-2 py-2">
+            <input
+              type="checkbox"
+              :checked="allChecked"
+              class="rounded border-gray-300"
+              @change="emit('toggleSelectAll', sortedIds)"
+            />
+          </th>
+          <th class="text-left px-4 py-2 cursor-pointer select-none hover:bg-gray-100"
+              @click="toggleSort('name')">
+            Название {{ sortIcon('name') }}
+          </th>
+          <th class="text-left px-4 py-2 cursor-pointer select-none hover:bg-gray-100"
+              @click="toggleSort('category')">
+            Категория {{ sortIcon('category') }}
+          </th>
+          <th class="text-center px-4 py-2 cursor-pointer select-none hover:bg-gray-100 w-20"
+              @click="toggleSort('servings')">
+            Порций {{ sortIcon('servings') }}
+          </th>
+          <th class="hidden sm:table-cell text-right px-4 py-2 cursor-pointer select-none hover:bg-gray-100 w-24"
+              @click="toggleSort('weight')">
+            Вес {{ sortIcon('weight') }}
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        <tr
+          v-for="r in sorted"
+          :key="r.id"
+          :class="[
+            selectMode && selectedIds?.has(r.id) ? 'bg-blue-50' :
+            !selectMode && r.id === selectedId ? 'bg-blue-50' : 'hover:bg-gray-50',
+          ]"
+          class="cursor-pointer"
+          @click="onRowClick(r.id)"
+        >
+          <td v-if="selectMode" class="text-center px-2" @click.stop>
+            <input
+              type="checkbox"
+              :checked="selectedIds?.has(r.id)"
+              class="rounded border-gray-300"
+              @change="emit('toggleSelect', r.id)"
+            />
+          </td>
+          <td class="px-4 py-2">
+            {{ r.name }}
+            <svg
+              v-if="r.ingredients.some((i) => i.sub_recipe_id != null)"
+              class="inline-block w-3.5 h-3.5 text-amber-500 ml-1 align-text-bottom"
+              title="Содержит вложенные рецепты"
+              xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              stroke-width="2" stroke="currentColor"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+            </svg>
+          </td>
+          <td class="px-4 py-2 text-gray-600">{{ catMap[r.category_id] ?? '—' }}</td>
+          <td class="px-4 py-2 text-center">{{ r.servings }}</td>
+          <td class="hidden sm:table-cell px-4 py-2 text-right">{{ r.weight ? r.weight + ' г' : '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>

@@ -3,18 +3,26 @@ import { watch, ref, computed } from 'vue'
 import type { Category } from '@/api/types'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import SlidePanel from '@/components/ui/SlidePanel.vue'
+import ColorPicker from '@/components/ui/ColorPicker.vue'
 import { useCategoryStore } from '@/stores/categories'
 import { useToastStore } from '@/stores/toast'
+import { useAuthStore } from '@/stores/auth'
+import { useRecentColors } from '@/composables/useRecentColors'
 
 const props = defineProps<{ type: 'product' | 'recipe' }>()
 
 const store = useCategoryStore()
 const toast = useToastStore()
+const authStore = useAuthStore()
 
 const categories = computed(() => store.list(props.type).value)
 
+const userId = computed(() => authStore.user?.id ?? null)
+const { recentColors, addColor: addRecentColor } = useRecentColors(userId)
+
 const selectedId = ref<number | null>(null)
 const name = ref('')
+const color = ref<string | null>(null)
 const confirmOpen = ref(false)
 const confirmDeleteOpen = ref(false)
 const formOpen = ref(false)
@@ -39,6 +47,7 @@ const canMoveAndDelete = computed(() => moveTargetOptions.value.length > 0)
 function selectCategory(c: Category) {
   selectedId.value = c.id
   name.value = c.name
+  color.value = c.color ?? null
   formOpen.value = true
 }
 
@@ -50,6 +59,7 @@ function openNew() {
 function clearForm() {
   selectedId.value = null
   name.value = ''
+  color.value = null
   formOpen.value = false
 }
 
@@ -62,8 +72,9 @@ function closeUsedDialog() {
 async function onSave() {
   if (!name.value.trim()) { toast.show('Введите название', 'error'); return }
   try {
-    if (selectedId.value) await store.edit(props.type, selectedId.value, name.value.trim())
-    else await store.create(props.type, name.value.trim())
+    if (selectedId.value) await store.edit(props.type, selectedId.value, name.value.trim(), color.value)
+    else await store.create(props.type, name.value.trim(), color.value)
+    if (color.value) addRecentColor(color.value)
     clearForm()
   } catch { /* handled */ }
 }
@@ -173,7 +184,20 @@ const title = computed(() =>
             class="cursor-pointer"
             @click="selectCategory(c)"
           >
-            <td class="px-4 py-2">{{ c.name }}</td>
+            <td class="px-4 py-2">
+              <div class="flex items-center gap-2">
+                <span
+                  v-if="c.color"
+                  class="inline-block w-3 h-3 rounded-full shrink-0 border border-black/10"
+                  :style="{ backgroundColor: c.color }"
+                />
+                <span
+                  v-else
+                  class="inline-block w-3 h-3 rounded-full shrink-0 border border-dashed border-gray-300"
+                />
+                {{ c.name }}
+              </div>
+            </td>
             <td class="px-4 py-2">
               <span v-if="c.active"
                 class="inline-flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
@@ -198,7 +222,18 @@ const title = computed(() =>
         class="border rounded-lg p-3 cursor-pointer flex items-center justify-between hover:bg-gray-50 active:bg-gray-100"
         @click="selectCategory(c)"
       >
-        <span class="text-sm">{{ c.name }}</span>
+        <div class="flex items-center gap-2">
+          <span
+            v-if="c.color"
+            class="inline-block w-3 h-3 rounded-full shrink-0 border border-black/10"
+            :style="{ backgroundColor: c.color }"
+          />
+          <span
+            v-else
+            class="inline-block w-3 h-3 rounded-full shrink-0 border border-dashed border-gray-300"
+          />
+          <span class="text-sm">{{ c.name }}</span>
+        </div>
         <span v-if="c.active" class="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Активна</span>
         <span v-else class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Скрыта</span>
       </div>
@@ -220,6 +255,12 @@ const title = computed(() =>
           <input v-model="name"
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
         </div>
+
+        <ColorPicker
+          v-model="color"
+          :recent-colors="recentColors"
+          @use-color="addRecentColor"
+        />
 
         <div class="flex flex-col gap-2 pt-4 border-t">
           <button class="w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" @click="onSave">

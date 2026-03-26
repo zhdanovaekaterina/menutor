@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
+from backend.application.paginated_result import PAGE_SIZE, PaginatedResult
 from backend.domain.entities.product import Product
 from backend.domain.exceptions import DomainError, DuplicateNameError, EntityNotFoundError
 from backend.domain.value_objects.category import ActiveCategory
@@ -30,17 +31,35 @@ def _product(id: int = 1) -> Product:
 
 
 class TestListProducts:
-    def test_returns_list(self, client: TestClient, container: MagicMock) -> None:
-        container.list_products.execute.return_value = [_product(1), _product(2)]
+    def test_returns_paginated_list(self, client: TestClient, container: MagicMock) -> None:
+        container.list_products.execute.return_value = PaginatedResult(
+            items=[_product(1), _product(2)], total=2, page=1, page_size=PAGE_SIZE
+        )
+        resp = client.get("/api/products", params={"page": 1})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["items"]) == 2
+        assert data["total"] == 2
+        assert data["page"] == 1
+
+    def test_returns_all_items_without_page(self, client: TestClient, container: MagicMock) -> None:
+        container.list_products.execute.return_value = PaginatedResult(
+            items=[_product(1), _product(2)], total=2, page=1, page_size=2
+        )
         resp = client.get("/api/products")
         assert resp.status_code == 200
-        assert len(resp.json()) == 2
+        data = resp.json()
+        assert len(data["items"]) == 2
 
     def test_returns_empty_list(self, client: TestClient, container: MagicMock) -> None:
-        container.list_products.execute.return_value = []
-        resp = client.get("/api/products")
+        container.list_products.execute.return_value = PaginatedResult(
+            items=[], total=0, page=1, page_size=PAGE_SIZE
+        )
+        resp = client.get("/api/products", params={"page": 1})
         assert resp.status_code == 200
-        assert resp.json() == []
+        data = resp.json()
+        assert data["items"] == []
+        assert data["total"] == 0
 
 
 # ---- GET /api/products/categories ----
@@ -55,7 +74,7 @@ class TestListProductCategories:
         ]
         resp = client.get("/api/products/categories")
         assert resp.status_code == 200
-        assert resp.json() == [{"id": 1, "name": "Сыпучие"}]
+        assert resp.json() == [{"id": 1, "name": "Сыпучие", "color": None}]
 
 
 # ---- POST /api/products ----

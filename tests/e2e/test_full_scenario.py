@@ -261,11 +261,11 @@ class TestFullUserScenario:
         ), uid)
         assert edited.name == "Сахар-песок"
 
-        products = list_prod.execute(uid)
+        products = list_prod.execute(uid).items
         assert any(p.name == "Сахар-песок" for p in products)
 
         delete_prod.execute(product.id, uid)
-        products = list_prod.execute(uid)
+        products = list_prod.execute(uid).items
         assert not any(p.id == product.id for p in products)
 
         # --- Recipe CRUD ---
@@ -286,5 +286,5 @@ class TestFullUserScenario:
         assert edited_r.servings == 3
 
         delete_rec.execute(recipe.id, uid)
-        recipes = list_rec.execute(uid)
+        recipes = list_rec.execute(uid).items
         assert not any(r.id == recipe.id for r in recipes)

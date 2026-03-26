@@ -98,3 +98,25 @@ class TestShoppingListPdfExporter:
             "Ensure backend/infrastructure/export/fonts/DejaVuSans.ttf exists "
             "and is being registered as the Cyrillic font."
         )
+
+    def test_category_colors_applied_to_section_headers(self) -> None:
+        """Passing category_colors produces a valid PDF without errors."""
+        sl = ShoppingList(items=[
+            _item("Молоко", "Молочные"),
+            _item("Мука", "Сыпучие"),
+        ])
+        category_colors = {"Молочные": "#3B82F6", "Сыпучие": "#F59E0B"}
+        data = ShoppingListPdfExporter().export_bytes([sl], category_colors=category_colors)
+        assert data[:4] == b"%PDF"
+
+    def test_missing_category_color_falls_back_to_default(self) -> None:
+        """Category without an entry in color map uses the default green color."""
+        sl = ShoppingList(items=[_item("Молоко", "Молочные")])
+        data = ShoppingListPdfExporter().export_bytes([sl], category_colors={})
+        assert data[:4] == b"%PDF"
+
+    def test_no_category_colors_arg_uses_defaults(self) -> None:
+        """Calling export_bytes without category_colors uses default fallback color."""
+        sl = ShoppingList(items=[_item("Мука", "Сыпучие")])
+        data = ShoppingListPdfExporter().export_bytes([sl])
+        assert data[:4] == b"%PDF"

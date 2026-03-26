@@ -12,6 +12,7 @@ from backend.domain.services.shopping_list_builder import ShoppingListBuilder
 from backend.domain.services.unit_converter import UnitConverter
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.quantity import Quantity
+from backend.domain.value_objects.category import ActiveCategory
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
 from backend.domain.value_objects.types import (
     MenuId,
@@ -282,7 +283,8 @@ def test_items_by_category() -> None:
     product_repo.get_by_id.side_effect = lambda pid: p1 if pid == ProductId(1) else p2
     product_category_repo = MagicMock()
     product_category_repo.find_active.return_value = [
-        (ProductCategoryId(1), "dry"), (ProductCategoryId(2), "dairy"),
+        ActiveCategory(ProductCategoryId(1), "dry"),
+        ActiveCategory(ProductCategoryId(2), "dairy"),
     ]
 
     menu = WeeklyMenu(

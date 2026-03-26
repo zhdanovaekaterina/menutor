@@ -32,16 +32,19 @@ export const useCategoryStore = defineStore('categories', () => {
     }
   }
 
-  async function create(type: 'product' | 'recipe', name: string) {
-    const result = await createCategory(type, name)
-    list(type).value.push({ id: result.id, name, active: true })
+  async function create(type: 'product' | 'recipe', name: string, color: string | null = null) {
+    const result = await createCategory(type, name, color)
+    list(type).value.push({ id: result.id, name, active: true, color })
     useToastStore().show('Категория создана', 'success')
   }
 
-  async function edit(type: 'product' | 'recipe', id: number, name: string) {
-    await editCategory(type, id, name)
+  async function edit(type: 'product' | 'recipe', id: number, name: string, color: string | null = null) {
+    await editCategory(type, id, name, color)
     const cat = list(type).value.find((c) => c.id === id)
-    if (cat) cat.name = name
+    if (cat) {
+      cat.name = name
+      cat.color = color
+    }
     useToastStore().show('Категория обновлена', 'success')
   }
 
@@ -72,5 +75,9 @@ export const useCategoryStore = defineStore('categories', () => {
     list(type).value = list(type).value.filter((c) => c.id !== fromId)
   }
 
-  return { productCategories, recipeCategories, loading, list, load, create, edit, remove, activate, isUsed, moveAndDelete }
+  function findById(type: 'product' | 'recipe', id: number): Category | undefined {
+    return list(type).value.find((c) => c.id === id)
+  }
+
+  return { productCategories, recipeCategories, loading, list, load, create, edit, remove, activate, isUsed, moveAndDelete, findById }
 })

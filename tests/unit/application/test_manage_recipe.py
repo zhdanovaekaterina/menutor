@@ -127,7 +127,8 @@ def test_list_recipes_returns_all() -> None:
 
     result = ListRecipes(repo).execute(UID)
 
-    assert len(result) == 2
+    assert result.total == 2
+    assert len(result.items) == 2
 
 
 # ---- CreateRecipe with sub-recipe validation (Task 2.2) ----

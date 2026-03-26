@@ -6,7 +6,7 @@ from backend.application.use_cases.crud_base import (
     CreateEntity,
     EditEntity,
     GetEntity,
-    ListEntities,
+    PaginatedListEntities,
 )
 from backend.domain.entities.recipe import Recipe
 from backend.domain.exceptions import DuplicateNameError, EntityNotFoundError
@@ -158,7 +158,7 @@ class DeleteRecipeWithDependents:
 # Keep alias for backward compatibility
 DeleteRecipe = DeleteRecipeWithDependents
 GetRecipe = GetEntity
-ListRecipes = ListEntities
+ListRecipes = PaginatedListEntities
 
 
 class ListRecipeCategories:

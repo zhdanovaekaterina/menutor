@@ -17,6 +17,24 @@ class RecipeRepository(ABC):
     def find_all(self, user_id: UserId) -> list[Recipe]: ...
 
     @abstractmethod
+    def count(
+        self,
+        user_id: UserId,
+        search: str = "",
+        category_id: RecipeCategoryId | None = None,
+    ) -> int: ...
+
+    @abstractmethod
+    def find_page(
+        self,
+        user_id: UserId,
+        search: str,
+        limit: int,
+        offset: int,
+        category_id: RecipeCategoryId | None = None,
+    ) -> list[Recipe]: ...
+
+    @abstractmethod
     def save(self, recipe: Recipe) -> Recipe: ...
 
     @abstractmethod

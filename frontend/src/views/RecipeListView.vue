@@ -7,6 +7,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import ExportModal from '@/components/ui/ExportModal.vue'
 import ImportModal from '@/components/ui/ImportModal.vue'
 import MoreActionsDropdown from '@/components/ui/MoreActionsDropdown.vue'
+import SearchInput from '@/components/ui/SearchInput.vue'
 import SlidePanel from '@/components/ui/SlidePanel.vue'
 import { useCrudView } from '@/composables/useCrudView'
 import { useProductStore } from '@/stores/products'
@@ -44,7 +45,7 @@ const dependentRecipes = ref<{ id: number; name: string }[]>([])
 const parentRecipeName = computed(() => {
   if (recipeStack.value.length === 0) return undefined
   const parentId = recipeStack.value[recipeStack.value.length - 1]
-  return store.items.find((r) => r.id === parentId)?.name
+  return store.allItems.find((r) => r.id === parentId)?.name
 })
 
 const ancestorIds = computed(() => {
@@ -99,6 +100,21 @@ function onNavigateBack() {
   }
 }
 
+const search = ref('')
+const categoryId = ref<number | null>(null)
+
+let searchTimer: ReturnType<typeof setTimeout>
+function onSearchInput(value: string) {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    store.setFilters(value, categoryId.value)
+  }, 300)
+}
+
+function onCategoryChange() {
+  store.setFilters(search.value, categoryId.value)
+}
+
 onMounted(async () => {
   await Promise.all([store.load(), productStore.load()])
 })
@@ -135,7 +151,7 @@ onMounted(async () => {
 
           <!-- More actions dropdown -->
           <MoreActionsDropdown
-            :show-delete-all="store.items.length > 0"
+            :show-delete-all="store.total > 0"
             @select-mode="toggleSelectMode"
             @import="importOpen = true"
             @export="exportOpen = true"
@@ -153,7 +169,20 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div class="flex-1 min-h-0">
+    <!-- Search and filter controls -->
+    <div class="flex flex-col sm:flex-row gap-2">
+      <SearchInput v-model="search" class="flex-1" @update:model-value="onSearchInput" />
+      <select
+        v-model="categoryId"
+        class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        @change="onCategoryChange"
+      >
+        <option :value="null">Все категории</option>
+        <option v-for="c in store.categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+      </select>
+    </div>
+
+    <div class="flex-1 min-h-0 flex flex-col gap-2">
       <RecipeTable
         :recipes="store.items"
         :categories="store.categories"
@@ -164,6 +193,33 @@ onMounted(async () => {
         @toggle-select="selection.toggle"
         @toggle-select-all="selection.toggleAll"
       />
+
+      <!-- Pagination controls -->
+      <div
+        v-if="store.totalPages > 1"
+        class="flex items-center justify-between gap-2 py-1 text-sm"
+      >
+        <span class="text-gray-500">
+          {{ store.items.length > 0 ? (store.page - 1) * store.pageSize + 1 : 0 }}–{{ Math.min(store.page * store.pageSize, store.total) }} из {{ store.total }}
+        </span>
+        <div class="flex items-center gap-1">
+          <button
+            :disabled="store.page <= 1"
+            class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            @click="store.setPage(store.page - 1)"
+          >
+            ←
+          </button>
+          <span class="px-2">{{ store.page }} / {{ store.totalPages }}</span>
+          <button
+            :disabled="store.page >= store.totalPages"
+            class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            @click="store.setPage(store.page + 1)"
+          >
+            →
+          </button>
+        </div>
+      </div>
     </div>
 
     <SlidePanel
@@ -174,8 +230,8 @@ onMounted(async () => {
       <RecipeForm
         :recipe="selectedRecipe"
         :categories="store.categories"
-        :products="productStore.items"
-        :recipes="store.items"
+        :products="productStore.allItems"
+        :recipes="store.allItems"
         :parent-recipe-name="parentRecipeName"
         :ancestor-ids="ancestorIds"
         @save="onSave"
@@ -211,7 +267,7 @@ onMounted(async () => {
 
     <ConfirmDialog
       :open="confirmDeleteAllOpen"
-      :message="`Удалить все рецепты (${store.items.length})?`"
+      :message="`Удалить все рецепты (${store.total})?`"
       danger
       @confirm="onConfirmDeleteAll"
       @cancel="confirmDeleteAllOpen = false"

@@ -8,6 +8,7 @@ from backend.api.converters import (
 )
 from backend.api.deps import get_container
 from backend.api.schemas.category import ActiveCategoryResponse
+from backend.api.schemas.pagination import PaginatedResponse
 from backend.api.schemas.product import (
     PriceUpdate,
     ProductCreate,
@@ -23,16 +24,26 @@ from backend.domain.value_objects.types import ProductCategoryId, ProductId
 router = APIRouter(prefix="/products", tags=["products"])
 
 
-@router.get("", response_model=list[ProductResponse])
+@router.get("", response_model=PaginatedResponse[ProductResponse])
 def list_products(
+    page: int | None = Query(None, ge=1),
+    search: str = Query(""),
     category_id: int | None = Query(None),
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
-) -> list[ProductResponse]:
-    products = container.list_products.execute(
-        user.id, ProductCategoryId(category_id) if category_id is not None else None
+) -> PaginatedResponse[ProductResponse]:
+    result = container.list_products.execute(
+        user.id,
+        ProductCategoryId(category_id) if category_id is not None else None,
+        page=page,
+        search=search,
     )
-    return [product_to_response(p) for p in products]
+    return PaginatedResponse[ProductResponse](
+        items=[product_to_response(p) for p in result.items],
+        total=result.total,
+        page=result.page,
+        page_size=result.page_size,
+    )
 
 
 @router.get("/categories", response_model=list[ActiveCategoryResponse])

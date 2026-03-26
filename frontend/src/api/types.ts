@@ -1,5 +1,12 @@
 /* TypeScript interfaces matching backend Pydantic schemas */
 
+export interface PaginatedResponse<T> {
+  items: T[]
+  total: number
+  page: number
+  page_size: number
+}
+
 export interface RecipeIngredient {
   product_id: number | null
   sub_recipe_id: number | null
@@ -144,12 +151,14 @@ export interface FamilyMember {
 export interface ActiveCategory {
   id: number
   name: string
+  color: string | null
 }
 
 export interface Category {
   id: number
   name: string
   active: boolean
+  color: string | null
 }
 
 export interface Quantity {

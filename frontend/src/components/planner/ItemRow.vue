@@ -1,20 +1,29 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+import { hexToRgba } from '@/utils/color'
+import { FALLBACK_RECIPE_COLOR, FALLBACK_PRODUCT_COLOR } from '@/constants/colors'
+
+const props = defineProps<{
   name: string
   detail: string
   piecesDetail?: { portions: string; pieces: number } | null
   variant: 'recipe' | 'product'
+  categoryColor?: string | null
 }>()
 
 const emit = defineEmits<{ remove: []; click: [] }>()
+
+const effectiveColor = computed(() =>
+  props.categoryColor ?? (props.variant === 'recipe' ? FALLBACK_RECIPE_COLOR : FALLBACK_PRODUCT_COLOR)
+)
+
+const bgTint = computed(() => hexToRgba(effectiveColor.value, 0.08))
 </script>
 
 <template>
   <div
-    :class="variant === 'recipe'
-      ? 'bg-blue-50 border-l-2 border-blue-400'
-      : 'bg-orange-50 border-l-2 border-orange-400'"
-    class="flex items-center gap-1 px-2 py-2 lg:py-1 rounded text-sm lg:text-xs group cursor-pointer"
+    class="flex items-center gap-1 px-2 py-2 lg:py-1 rounded text-sm lg:text-xs group cursor-pointer border-l-[3px]"
+    :style="{ borderLeftColor: effectiveColor, backgroundColor: bgTint }"
     @click="emit('click')"
   >
     <span class="truncate flex-1">{{ name }}</span>

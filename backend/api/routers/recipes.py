@@ -9,6 +9,7 @@ from backend.api.converters import (
 )
 from backend.api.deps import get_container
 from backend.api.schemas.category import ActiveCategoryResponse
+from backend.api.schemas.pagination import PaginatedResponse
 from backend.api.schemas.recipe import (
     FlattenedProductResponse,
     FlattenedProductsPreviewRequest,
@@ -34,17 +35,27 @@ def _make_name_lookup(container: ApplicationContainer, user_id: UserId):  # type
     return lookup
 
 
-@router.get("", response_model=list[RecipeResponse])
+@router.get("", response_model=PaginatedResponse[RecipeResponse])
 def list_recipes(
+    page: int | None = Query(None, ge=1),
+    search: str = Query(""),
     category_id: int | None = Query(None),
     container: ApplicationContainer = Depends(get_container),
     user: User = Depends(get_current_user),
-) -> list[RecipeResponse]:
-    recipes = container.list_recipes.execute(
-        user.id, RecipeCategoryId(category_id) if category_id is not None else None
+) -> PaginatedResponse[RecipeResponse]:
+    result = container.list_recipes.execute(
+        user.id,
+        RecipeCategoryId(category_id) if category_id is not None else None,
+        page=page,
+        search=search,
     )
     lookup = _make_name_lookup(container, user.id)
-    return [recipe_to_response(r, lookup) for r in recipes]
+    return PaginatedResponse[RecipeResponse](
+        items=[recipe_to_response(r, lookup) for r in result.items],
+        total=result.total,
+        page=result.page,
+        page_size=result.page_size,
+    )
 
 
 @router.get("/categories", response_model=list[ActiveCategoryResponse])

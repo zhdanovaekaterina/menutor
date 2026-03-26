@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import type { ProductCreate } from '@/api/types'
 import ProductForm from '@/components/products/ProductForm.vue'
 import ProductTable from '@/components/products/ProductTable.vue'
@@ -7,6 +7,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import ExportModal from '@/components/ui/ExportModal.vue'
 import ImportModal from '@/components/ui/ImportModal.vue'
 import MoreActionsDropdown from '@/components/ui/MoreActionsDropdown.vue'
+import SearchInput from '@/components/ui/SearchInput.vue'
 import SlidePanel from '@/components/ui/SlidePanel.vue'
 import { useCrudView } from '@/composables/useCrudView'
 import { useProductStore } from '@/stores/products'
@@ -33,6 +34,21 @@ const {
   onConfirmBatchDelete,
   onConfirmDeleteAll,
 } = useCrudView<(typeof store.items)[number], ProductCreate>(store)
+
+const search = ref('')
+const categoryId = ref<number | null>(null)
+
+let searchTimer: ReturnType<typeof setTimeout>
+function onSearchInput(value: string) {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    store.setFilters(value, categoryId.value)
+  }, 300)
+}
+
+function onCategoryChange() {
+  store.setFilters(search.value, categoryId.value)
+}
 
 onMounted(() => {
   store.load()
@@ -68,9 +84,8 @@ onMounted(() => {
             Выбрать
           </button>
 
-          <!-- More actions dropdown -->
           <MoreActionsDropdown
-            :show-delete-all="store.items.length > 0"
+            :show-delete-all="store.total > 0"
             @select-mode="toggleSelectMode"
             @import="importOpen = true"
             @export="exportOpen = true"
@@ -88,7 +103,20 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="flex-1 min-h-0">
+    <!-- Search and filter controls -->
+    <div class="flex flex-col sm:flex-row gap-2">
+      <SearchInput v-model="search" class="flex-1" @update:model-value="onSearchInput" />
+      <select
+        v-model="categoryId"
+        class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        @change="onCategoryChange"
+      >
+        <option :value="null">Все категории</option>
+        <option v-for="c in store.categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+      </select>
+    </div>
+
+    <div class="flex-1 min-h-0 flex flex-col gap-2">
       <ProductTable
         :products="store.items"
         :categories="store.categories"
@@ -99,6 +127,33 @@ onMounted(() => {
         @toggle-select="selection.toggle"
         @toggle-select-all="selection.toggleAll"
       />
+
+      <!-- Pagination controls -->
+      <div
+        v-if="store.totalPages > 1"
+        class="flex items-center justify-between gap-2 py-1 text-sm"
+      >
+        <span class="text-gray-500">
+          {{ store.items.length > 0 ? (store.page - 1) * store.pageSize + 1 : 0 }}–{{ Math.min(store.page * store.pageSize, store.total) }} из {{ store.total }}
+        </span>
+        <div class="flex items-center gap-1">
+          <button
+            :disabled="store.page <= 1"
+            class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            @click="store.setPage(store.page - 1)"
+          >
+            ←
+          </button>
+          <span class="px-2">{{ store.page }} / {{ store.totalPages }}</span>
+          <button
+            :disabled="store.page >= store.totalPages"
+            class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            @click="store.setPage(store.page + 1)"
+          >
+            →
+          </button>
+        </div>
+      </div>
     </div>
 
     <SlidePanel
@@ -133,7 +188,7 @@ onMounted(() => {
 
     <ConfirmDialog
       :open="confirmDeleteAllOpen"
-      :message="`Удалить все продукты (${store.items.length})?`"
+      :message="`Удалить все продукты (${store.total})?`"
       danger
       @confirm="onConfirmDeleteAll"
       @cancel="confirmDeleteAllOpen = false"
