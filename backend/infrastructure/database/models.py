@@ -108,6 +108,8 @@ class RecipeRow(Base):
     weight = Column(Integer, nullable=False, default=0, server_default="0")
     total_pieces = Column(Integer, nullable=True)
     pieces_per_portion = Column(Integer, nullable=True)
+    link = Column(String, nullable=True)
+    comment = Column(String, nullable=True)
 
     ingredients = relationship(
         "RecipeIngredientRow",

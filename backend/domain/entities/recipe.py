@@ -19,6 +19,8 @@ class Recipe:
     user_id: UserId = field(default=UserId(0))
     total_pieces: int | None = None
     pieces_per_portion: int | None = None
+    link: str | None = None
+    comment: str | None = None
 
     def __post_init__(self) -> None:
         has_total = self.total_pieces is not None

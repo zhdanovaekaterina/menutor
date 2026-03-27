@@ -9,7 +9,7 @@ from backend.domain.entities.recipe import Recipe
 class RecipeCsvExporter:
     """Exports Recipe entities to CSV bytes (ingredients and steps as JSON columns)."""
 
-    _HEADERS = ["id", "name", "category_id", "servings", "weight", "total_pieces", "pieces_per_portion", "ingredients_json", "steps_json"]
+    _HEADERS = ["id", "name", "category_id", "servings", "weight", "total_pieces", "pieces_per_portion", "link", "comment", "ingredients_json", "steps_json"]
 
     def export_bytes(self, entities: list[Any]) -> bytes:
         buf = io.StringIO()
@@ -43,6 +43,8 @@ class RecipeCsvExporter:
                 recipe.weight,
                 recipe.total_pieces,
                 recipe.pieces_per_portion,
+                recipe.link,
+                recipe.comment,
                 json.dumps(ingredients, ensure_ascii=False),
                 json.dumps(steps, ensure_ascii=False),
             ])
@@ -53,7 +55,7 @@ class RecipeCsvExporter:
         writer = csv.writer(buf)
         writer.writerow(self._HEADERS)
         writer.writerow([
-            1, "Блины", 1, 4, 600, None, None,
+            1, "Блины", 1, 4, 600, None, None, None, None,
             json.dumps([{"product_id": 1, "quantity_amount": 200, "quantity_unit": "g", "order": 0}]),
             json.dumps([{"order": 1, "description": "Смешать ингредиенты"}]),
         ])
