@@ -29,7 +29,7 @@ def _parse_csv(data: bytes) -> list[list[str]]:
 
 def test_export_bytes_header() -> None:
     rows = _parse_csv(RecipeCsvExporter().export_bytes([]))
-    assert rows[0] == ["id", "name", "category_id", "servings", "weight", "total_pieces", "pieces_per_portion", "ingredients_json", "steps_json"]
+    assert rows[0] == ["id", "name", "category_id", "servings", "weight", "total_pieces", "pieces_per_portion", "link", "comment", "ingredients_json", "steps_json"]
 
 
 def test_export_bytes_single_recipe() -> None:

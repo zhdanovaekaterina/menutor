@@ -59,6 +59,8 @@ export interface RecipeCreate {
   weight?: number
   total_pieces?: number | null
   pieces_per_portion?: number | null
+  link?: string | null
+  comment?: string | null
 }
 
 export interface Recipe {
@@ -71,6 +73,8 @@ export interface Recipe {
   weight: number
   total_pieces: number | null
   pieces_per_portion: number | null
+  link: string | null
+  comment: string | null
 }
 
 export interface ProductCreate {

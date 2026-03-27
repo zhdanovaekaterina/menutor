@@ -95,6 +95,8 @@ def recipe_to_response(
         weight=recipe.weight,
         total_pieces=recipe.total_pieces,
         pieces_per_portion=recipe.pieces_per_portion,
+        link=recipe.link,
+        comment=recipe.comment,
     )
 
 
@@ -281,6 +283,8 @@ def schema_to_recipe_data(body: RecipeCreate) -> RecipeData:
         weight=body.weight,
         total_pieces=body.total_pieces,
         pieces_per_portion=body.pieces_per_portion,
+        link=body.link,
+        comment=body.comment,
     )
 
 

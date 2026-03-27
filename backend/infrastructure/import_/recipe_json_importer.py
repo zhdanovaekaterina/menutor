@@ -102,6 +102,8 @@ class RecipeJsonImporter:
                 entity_id = RecipeId(0)
                 created += 1
 
+            raw_link = row.get("link")
+            raw_comment = row.get("comment")
             recipe = Recipe(
                 id=entity_id,
                 name=str(row["name"]).strip(),
@@ -113,6 +115,8 @@ class RecipeJsonImporter:
                 user_id=user_id,
                 total_pieces=int(row["total_pieces"]) if row.get("total_pieces") is not None else None,
                 pieces_per_portion=int(row["pieces_per_portion"]) if row.get("pieces_per_portion") is not None else None,
+                link=str(raw_link) if raw_link is not None else None,
+                comment=str(raw_comment) if raw_comment is not None else None,
             )
             self._repo.save(recipe)
 

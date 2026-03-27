@@ -59,6 +59,8 @@ class RecipeJsonExporter:
             "weight": recipe.weight,
             "total_pieces": recipe.total_pieces,
             "pieces_per_portion": recipe.pieces_per_portion,
+            "link": recipe.link,
+            "comment": recipe.comment,
             "ingredients": ingredients,
             "steps": [
                 {"order": s.order, "description": s.description}

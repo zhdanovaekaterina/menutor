@@ -65,6 +65,8 @@ class OrmRecipeRepository(
             weight=entity.weight,
             total_pieces=entity.total_pieces,
             pieces_per_portion=entity.pieces_per_portion,
+            link=entity.link,
+            comment=entity.comment,
         )
         row.ingredients = self._ingredients_to_rows(entity.ingredients)
         row.steps = self._steps_to_rows(entity.steps)
@@ -77,6 +79,8 @@ class OrmRecipeRepository(
         row.weight = entity.weight
         row.total_pieces = entity.total_pieces
         row.pieces_per_portion = entity.pieces_per_portion
+        row.link = entity.link
+        row.comment = entity.comment
         row.ingredients = self._ingredients_to_rows(entity.ingredients)
         row.steps = self._steps_to_rows(entity.steps)
 
@@ -103,6 +107,8 @@ class OrmRecipeRepository(
             user_id=UserId(row.user_id),
             total_pieces=row.total_pieces,
             pieces_per_portion=row.pieces_per_portion,
+            link=row.link,
+            comment=row.comment,
         )
 
     def _filtered_query(

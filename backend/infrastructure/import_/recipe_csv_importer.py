@@ -108,6 +108,8 @@ class RecipeCsvImporter:
                 entity_id = RecipeId(0)
                 created += 1
 
+            raw_link = row.get("link") or None
+            raw_comment = row.get("comment") or None
             recipe = Recipe(
                 id=entity_id,
                 name=row["name"].strip(),
@@ -119,6 +121,8 @@ class RecipeCsvImporter:
                 user_id=user_id,
                 total_pieces=int(row["total_pieces"]) if row.get("total_pieces") else None,
                 pieces_per_portion=int(row["pieces_per_portion"]) if row.get("pieces_per_portion") else None,
+                link=raw_link,
+                comment=raw_comment,
             )
             self._repo.save(recipe)
 

@@ -34,6 +34,8 @@ class RecipeCreate(BaseModel):
     weight: int = 0
     total_pieces: int | None = None
     pieces_per_portion: int | None = None
+    link: str | None = None
+    comment: str | None = None
 
 
 RecipeUpdate = RecipeCreate
@@ -49,6 +51,8 @@ class RecipeResponse(BaseModel):
     weight: int
     total_pieces: int | None = None
     pieces_per_portion: int | None = None
+    link: str | None = None
+    comment: str | None = None
 
 
 class ValidateSubRecipeRequest(BaseModel):

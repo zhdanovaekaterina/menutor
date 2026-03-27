@@ -2,6 +2,7 @@
 import { nextTick, ref } from 'vue'
 import type { SavedShoppingListMeta } from '@/api/types'
 import IconDotsVertical from '@/components/ui/icons/IconDotsVertical.vue'
+import { useClickOutside } from '@/composables/useClickOutside'
 
 const props = defineProps<{
   list: SavedShoppingListMeta
@@ -17,7 +18,13 @@ const emit = defineEmits<{
 
 // ---- Context menu ----
 const menuOpen = ref(false)
-const menuEl = ref<HTMLDivElement | null>(null)
+// We attach useClickOutside to the whole list-item so that the trigger button
+// (which is a sibling of the dropdown panel) is also treated as "inside".
+const listItemEl = ref<HTMLElement | null>(null)
+
+useClickOutside(listItemEl, () => {
+  menuOpen.value = false
+})
 
 function openMenu(event: MouseEvent) {
   event.stopPropagation()
@@ -83,6 +90,7 @@ function formatDate(iso: string): string {
 
 <template>
   <li
+    ref="listItemEl"
     class="group relative px-3 py-2.5 cursor-pointer text-sm transition-colors hover:bg-gray-50"
     :class="isActive ? 'bg-blue-50 border-l-2 border-blue-600' : ''"
     @click="emit('select')"
@@ -128,7 +136,6 @@ function formatDate(iso: string): string {
     <!-- Context dropdown -->
     <div
       v-if="menuOpen"
-      ref="menuEl"
       class="absolute right-8 top-1 w-44 bg-white border rounded-lg shadow-lg z-30 py-1"
     >
       <button
@@ -152,9 +159,4 @@ function formatDate(iso: string): string {
       </button>
     </div>
   </li>
-
-  <!-- Click outside to close menu -->
-  <Teleport v-if="menuOpen" to="body">
-    <div class="fixed inset-0 z-20" @click="closeMenu" @keydown.escape="closeMenu" />
-  </Teleport>
 </template>

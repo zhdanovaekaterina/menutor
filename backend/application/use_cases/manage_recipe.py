@@ -31,6 +31,8 @@ class RecipeData:
     weight: int = 0
     total_pieces: int | None = None
     pieces_per_portion: int | None = None
+    link: str | None = None
+    comment: str | None = None
 
 
 def _build_recipe(id: RecipeId, data: RecipeData, user_id: UserId) -> Recipe:
@@ -45,6 +47,8 @@ def _build_recipe(id: RecipeId, data: RecipeData, user_id: UserId) -> Recipe:
         user_id=user_id,
         total_pieces=data.total_pieces,
         pieces_per_portion=data.pieces_per_portion,
+        link=data.link,
+        comment=data.comment,
     )
 
 

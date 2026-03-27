@@ -42,6 +42,8 @@ const weight = ref(0)
 const isPiecesMode = ref(false)
 const totalPieces = ref<number | null>(null)
 const piecesPerPortion = ref<number | null>(null)
+const link = ref<string | null>(null)
+const comment = ref<string | null>(null)
 
 const autoServings = computed(() => {
   if (!isPiecesMode.value || !totalPieces.value || !piecesPerPortion.value) return null
@@ -88,6 +90,8 @@ watch(
       isPiecesMode.value = r.total_pieces != null && r.pieces_per_portion != null
       totalPieces.value = r.total_pieces ?? null
       piecesPerPortion.value = r.pieces_per_portion ?? null
+      link.value = r.link ?? null
+      comment.value = r.comment ?? null
       ingredients.value = [...r.ingredients].sort((a, b) => a.order - b.order).map((i) => ({
         product_id: i.product_id,
         sub_recipe_id: i.sub_recipe_id,
@@ -122,6 +126,8 @@ function clearForm() {
   isPiecesMode.value = false
   totalPieces.value = null
   piecesPerPortion.value = null
+  link.value = null
+  comment.value = null
   ingredients.value = []
   steps.value = []
   emit('clear')
@@ -160,6 +166,8 @@ function onSave() {
         order: idx,
       })),
     steps: steps.value,
+    link: link.value || null,
+    comment: comment.value || null,
   }
   emit('save', data, props.recipe?.id ?? null)
 }
@@ -258,6 +266,25 @@ function onSave() {
       <p v-if="autoServings != null" class="text-xs text-gray-500 mt-2 ml-0.5">
         Порций: {{ autoServings }} (авто)
       </p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Ссылка <span class="text-gray-400 font-normal">(необязательно)</span></label>
+      <input
+        v-model="link"
+        type="url"
+        placeholder="https://..."
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Комментарий <span class="text-gray-400 font-normal">(необязательно)</span></label>
+      <textarea
+        v-model="comment"
+        rows="3"
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-y"
+      />
     </div>
 
     <IngredientListEditor

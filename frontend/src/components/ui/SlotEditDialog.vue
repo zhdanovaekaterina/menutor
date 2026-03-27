@@ -53,7 +53,7 @@ function onBlur() {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50" @keydown.escape="emit('cancel')">
+    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50" @keydown.escape="emit('cancel')" @mousedown.self="emit('cancel')" @touchstart.self.passive="emit('cancel')">
       <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl max-w-md w-full sm:mx-4 p-6">
         <!-- Drag indicator (mobile) -->
         <div class="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4 sm:hidden" />
