@@ -98,10 +98,10 @@ const totalFamilyPortions = computed(() => {
 })
 
 const recipeNames = computed(() =>
-  Object.fromEntries(recipeStore.items.map((r) => [r.id, r.name])),
+  Object.fromEntries(recipeStore.allItems.map((r) => [r.id, r.name])),
 )
 const productNames = computed(() =>
-  Object.fromEntries(productStore.items.map((p) => [p.id, p.name])),
+  Object.fromEntries(productStore.allItems.map((p) => [p.id, p.name])),
 )
 
 const dayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
@@ -155,8 +155,8 @@ async function onAddItem(day: number, mealType: string, data: { type: 'recipe' |
     meal_type: mealType,
     recipe_id: data.type === 'recipe' ? data.id : null,
     product_id: data.type === 'product' ? data.id : null,
-    unit: data.type === 'product' ? (productStore.items.find((p) => p.id === data.id)?.recipe_unit ?? null) : null,
-    quantity: data.type === 'product' ? (productStore.items.find((p) => p.id === data.id)?.recipe_unit === 'g' ? 100 : 1) : null,
+    unit: data.type === 'product' ? (productStore.allItems.find((p) => p.id === data.id)?.recipe_unit ?? null) : null,
+    quantity: data.type === 'product' ? (productStore.allItems.find((p) => p.id === data.id)?.recipe_unit === 'g' ? 100 : 1) : null,
     servings_override: data.type === 'recipe' ? totalFamilyPortions.value : null,
   }
   await menuStore.addSlotToMenu(slot)
@@ -171,7 +171,7 @@ function onEditItem(slot: MenuSlot) {
   editSlot.value = slot
 
   if (slot.recipe_id != null) {
-    const recipe = recipeStore.items.find(r => r.id === slot.recipe_id)
+    const recipe = recipeStore.allItems.find(r => r.id === slot.recipe_id)
     if (recipe?.total_pieces != null && recipe?.pieces_per_portion != null) {
       editPiecesMode.value = true
       const portions = slot.servings_override ?? totalFamilyPortions.value
@@ -494,8 +494,8 @@ async function onGenerateShoppingList() {
         </button>
         <div v-show="rightPanelOpen" class="flex-1 min-h-0">
           <SourcePanel
-            :recipes="recipeStore.items"
-            :products="productStore.items"
+            :recipes="recipeStore.allItems"
+            :products="productStore.allItems"
             :family-members="familyStore.items"
             :recipe-categories="recipeStore.categories"
             :product-categories="productStore.categories"
@@ -570,8 +570,8 @@ async function onGenerateShoppingList() {
       :day="pickerDay"
       :meal-type="pickerMealType"
       :day-label="pickerDayLabel"
-      :recipes="recipeStore.items"
-      :products="productStore.items"
+      :recipes="recipeStore.allItems"
+      :products="productStore.allItems"
       :existing-slots="pickerExistingSlots"
       :recipe-categories="recipeStore.categories"
       :product-categories="productStore.categories"
