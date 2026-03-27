@@ -66,6 +66,7 @@ const confirmDeleteOpen = ref(false)
 const confirmClearOpen = ref(false)
 const exportOpen = ref(false)
 const importOpen = ref(false)
+const mobilePdfOpen = ref(false)
 const editSlot = ref<MenuSlot | null>(null)
 const editValue = ref('')
 const editPiecesMode = ref(false)
@@ -347,7 +348,12 @@ async function onGenerateShoppingList() {
             class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
             :disabled="!menuStore.current"
             @click="exportOpen = true; mobileMenuOpen = false"
-          >Экспорт</button>
+          >Экспорт (JSON)</button>
+          <button
+            class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="!menuStore.current"
+            @click="mobilePdfOpen = true; mobileMenuOpen = false"
+          >Экспорт PDF</button>
         </div>
       </div>
     </div>
@@ -612,6 +618,41 @@ async function onGenerateShoppingList() {
         :x="contextMenuState.x"
         :y="contextMenuState.y"
       />
+    </Teleport>
+
+    <!-- Mobile PDF export modal (paper size picker) -->
+    <Teleport to="body">
+      <div v-if="mobilePdfOpen" class="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+        <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl max-w-sm w-full sm:mx-4 p-6">
+          <h3 class="text-lg font-semibold mb-4">Экспорт PDF</h3>
+          <p class="text-sm text-gray-600 mb-4">Выберите формат бумаги:</p>
+          <div class="flex gap-3 mb-6">
+            <button
+              type="button"
+              class="flex-1 py-3 rounded-lg border-2 text-sm font-medium transition-colors"
+              :class="paperSize === 'a4' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+              @click="paperSize = 'a4'"
+            >A4</button>
+            <button
+              type="button"
+              class="flex-1 py-3 rounded-lg border-2 text-sm font-medium transition-colors"
+              :class="paperSize === 'a3' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+              @click="paperSize = 'a3'"
+            >A3</button>
+          </div>
+          <div class="flex gap-3">
+            <button
+              class="flex-1 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
+              @click="mobilePdfOpen = false"
+            >Отмена</button>
+            <button
+              class="flex-1 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="exportLoading"
+              @click="exportFormat = 'pdf'; onExportMenu(); mobilePdfOpen = false"
+            >{{ exportLoading ? 'Загрузка…' : 'Скачать' }}</button>
+          </div>
+        </div>
+      </div>
     </Teleport>
 
   </div>
