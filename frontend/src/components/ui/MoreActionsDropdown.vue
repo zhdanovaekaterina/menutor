@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useDropdown } from '@/composables/useDropdown'
 import IconDotsVertical from '@/components/ui/icons/IconDotsVertical.vue'
 
@@ -13,11 +14,12 @@ const emit = defineEmits<{
   selectMode: []
 }>()
 
-const { open, toggle, close } = useDropdown()
+const containerRef = ref<HTMLElement | null>(null)
+const { open, toggle, close } = useDropdown(containerRef)
 </script>
 
 <template>
-  <div class="relative" @click.stop>
+  <div ref="containerRef" class="relative">
     <button
       class="p-2 rounded-lg border border-gray-300 hover:bg-gray-50"
       title="Дополнительные действия"

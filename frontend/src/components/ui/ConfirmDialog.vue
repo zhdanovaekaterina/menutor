@@ -30,7 +30,7 @@ watch(
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50" @keydown.escape="emit('cancel')">
+    <div v-if="open" class="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50" @keydown.escape="emit('cancel')" @mousedown.self="emit('cancel')" @touchstart.self.passive="emit('cancel')">
       <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl max-w-md w-full sm:mx-4 p-6 pb-8 sm:pb-6">
         <h3 class="text-lg font-semibold mb-2">{{ title ?? 'Подтверждение' }}</h3>
         <p class="text-sm text-gray-600 mb-2">{{ message }}</p>

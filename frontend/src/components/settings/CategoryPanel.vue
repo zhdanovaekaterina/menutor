@@ -301,7 +301,7 @@ const title = computed(() =>
 
     <!-- Used category dialog: step 1 — choose action -->
     <Teleport to="body">
-      <div v-if="dialogStep === 'options'" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div v-if="dialogStep === 'options'" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @mousedown.self="closeUsedDialog" @touchstart.self.passive="closeUsedDialog">
         <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6">
           <h3 class="text-lg font-semibold mb-2">Категория используется</h3>
           <p class="text-sm text-gray-600 mb-6">Эта категория привязана к записям. Что сделать?</p>
@@ -331,7 +331,7 @@ const title = computed(() =>
 
     <!-- Used category dialog: step 2 — select target category -->
     <Teleport to="body">
-      <div v-if="dialogStep === 'select-target'" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div v-if="dialogStep === 'select-target'" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @mousedown.self="closeUsedDialog" @touchstart.self.passive="closeUsedDialog">
         <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
           <h3 class="text-lg font-semibold mb-2">Переместить записи в другую категорию</h3>
           <p class="text-sm text-gray-600 mb-4">
