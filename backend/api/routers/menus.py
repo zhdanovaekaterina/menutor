@@ -177,10 +177,10 @@ def export_menu_pdf(
     products = container.list_products.execute(user.id)
 
     recipe_names: dict[int, str] = {
-        int(r.id): r.name for r in recipes if int(r.id) in recipe_ids
+        int(r.id): r.name for r in recipes.items if int(r.id) in recipe_ids
     }
     product_names: dict[int, str] = {
-        int(p.id): p.name for p in products if int(p.id) in product_ids
+        int(p.id): p.name for p in products.items if int(p.id) in product_ids
     }
 
     pdf_bytes = MenuPdfExporter().export_bytes(menu, recipe_names, product_names, paper)
