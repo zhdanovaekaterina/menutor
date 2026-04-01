@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import Sortable from 'sortablejs'
-import type { MenuSlot } from '@/api/types'
+import type { CellItem, FamilyMember, MenuSlot, MergedSlotView } from '@/api/types'
+import { isMergedSlot } from '@/api/types'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { usePlannerClipboard } from '@/composables/usePlannerClipboard'
 import { useMenuStore } from '@/stores/menus'
@@ -9,7 +10,9 @@ import { useProductStore } from '@/stores/products'
 import { useRecipeStore } from '@/stores/recipes'
 import { useCategoryStore } from '@/stores/categories'
 import { formatUnit } from '@/utils/units'
+import { isSlotVisible, getMemberInitials } from '@/utils/slotVisibility'
 import ItemRow from './ItemRow.vue'
+import MergedSlotDialog from '@/components/ui/MergedSlotDialog.vue'
 import IconPlus from '@/components/ui/icons/IconPlus.vue'
 
 const props = defineProps<{
@@ -20,16 +23,66 @@ const props = defineProps<{
   productNames: Record<number, string>
   pickerActive?: boolean
   size?: 'medium' | 'full'
+  activeMemberIds?: Set<number>
+  allActive?: boolean
+  familyMembers?: FamilyMember[]
 }>()
 
 const emit = defineEmits<{
   addItem: [data: { type: 'recipe' | 'product'; id: number }]
-  removeItem: [data: { recipe_id?: number | null; product_id?: number | null }]
+  removeItem: [data: { recipe_id?: number | null; product_id?: number | null; position?: number | null }]
   editItem: [slot: MenuSlot]
   moveItem: [slot: MenuSlot, toDay: number, toMealType: string, toIndex: number]
   reorderItems: [day: number, mealType: string, orderedSlots: MenuSlot[]]
   openPicker: []
 }>()
+
+// Merged slot dialog state
+const mergedDialogSlot = ref<MergedSlotView | null>(null)
+const showMergedDialog = ref(false)
+
+function openMergedDialog(merged: MergedSlotView) {
+  mergedDialogSlot.value = merged
+  showMergedDialog.value = true
+}
+
+function onMergedEditSlot(slot: MenuSlot) {
+  showMergedDialog.value = false
+  emit('editItem', slot)
+}
+
+function onMergedRemoveSlot(slot: MenuSlot) {
+  showMergedDialog.value = false
+  emit('removeItem', { recipe_id: slot.recipe_id, product_id: slot.product_id, position: slot.position ?? null })
+}
+
+function mergeSameRecipeSlots(slots: MenuSlot[]): CellItem[] {
+  const groups = new Map<number, MenuSlot[]>()
+  const result: CellItem[] = []
+  for (const slot of slots) {
+    if (!slot.recipe_id || !slot.member_ids?.length) {
+      result.push(slot)
+      continue
+    }
+    const existing = groups.get(slot.recipe_id)
+    if (existing) existing.push(slot)
+    else groups.set(slot.recipe_id, [slot])
+  }
+  for (const [recipeId, group] of groups) {
+    if (group.length === 1) {
+      result.push(group[0]!)
+    } else {
+      result.push({
+        _merged: true,
+        recipe_id: recipeId,
+        slots: group,
+        totalServings: group.reduce((sum, s) => sum + (s.servings_override ?? 0), 0),
+        allMemberIds: [...new Set(group.flatMap(s => s.member_ids ?? []))],
+      } as MergedSlotView)
+    }
+  }
+  return result
+}
 
 const dragOver = ref(false)
 const listRef = ref<HTMLElement>()
@@ -38,14 +91,16 @@ const recipeStore = useRecipeStore()
 const productStore = useProductStore()
 const categoryStore = useCategoryStore()
 
-function categoryColor(slot: MenuSlot): string | null {
-  if (slot.recipe_id != null) {
-    const recipe = recipeStore.items.find((r) => r.id === slot.recipe_id)
+function categoryColor(item: CellItem): string | null {
+  const recipeId = isMergedSlot(item) ? item.recipe_id : item.recipe_id
+  const productId = isMergedSlot(item) ? null : item.product_id
+  if (recipeId != null) {
+    const recipe = recipeStore.items.find((r) => r.id === recipeId)
     if (!recipe) return null
     return categoryStore.findById('recipe', recipe.category_id)?.color ?? null
   }
-  if (slot.product_id != null) {
-    const product = productStore.items.find((p) => p.id === slot.product_id)
+  if (productId != null) {
+    const product = productStore.items.find((p) => p.id === productId)
     if (!product) return null
     return categoryStore.findById('product', product.category_id)?.color ?? null
   }
@@ -116,15 +171,26 @@ function onTouchEnd() {
 
 let sortable: Sortable | null = null
 
-const cellSlots = computed(() =>
+const rawCellSlots = computed(() =>
   props.slots
     .filter((s) => s.day === props.day && s.meal_type === props.mealType)
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
 )
 
-function itemName(slot: MenuSlot) {
-  if (slot.recipe_id != null) return props.recipeNames[slot.recipe_id] ?? `#${slot.recipe_id}`
-  if (slot.product_id != null) return props.productNames[slot.product_id] ?? `#${slot.product_id}`
+const cellSlots = computed((): CellItem[] => {
+  const activeIds = props.activeMemberIds
+  if (!activeIds || activeIds.size === 0) {
+    // No filter active — show all but still merge grouped slots
+    return mergeSameRecipeSlots(rawCellSlots.value)
+  }
+  const visible = rawCellSlots.value.filter(s => isSlotVisible(s, activeIds))
+  return mergeSameRecipeSlots(visible)
+})
+
+function itemName(item: CellItem) {
+  if (isMergedSlot(item)) return props.recipeNames[item.recipe_id] ?? `#${item.recipe_id}`
+  if (item.recipe_id != null) return props.recipeNames[item.recipe_id] ?? `#${item.recipe_id}`
+  if (item.product_id != null) return props.productNames[item.product_id] ?? `#${item.product_id}`
   return '?'
 }
 
@@ -132,24 +198,33 @@ function formatNumber(n: number): string {
   return n % 1 === 0 ? String(n) : n.toFixed(1)
 }
 
-function itemDetail(slot: MenuSlot) {
-  if (slot.recipe_id != null) {
-    const s = slot.servings_override ?? slot.quantity
-    const recipe = recipeStore.items.find(r => r.id === slot.recipe_id)
+function itemDetail(item: CellItem) {
+  if (isMergedSlot(item)) {
+    return { text: `${formatNumber(item.totalServings)} п.`, piecesDetail: null }
+  }
+  if (item.recipe_id != null) {
+    const s = item.servings_override ?? item.quantity
+    const recipe = recipeStore.items.find(r => r.id === item.recipe_id)
 
     if (recipe?.total_pieces != null && recipe?.pieces_per_portion != null) {
       const portions = s != null ? formatNumber(s) : '?'
-      const pcs = slot.pieces_override
+      const pcs = item.pieces_override
         ?? Math.max(1, Math.round((s ?? 1) * recipe.pieces_per_portion))
       return { text: '', piecesDetail: { portions, pieces: pcs } }
     }
 
     return { text: s != null ? `${formatNumber(s)} п.` : '', piecesDetail: null }
   }
-  if (slot.product_id != null && slot.quantity != null) {
-    return { text: `${slot.quantity} ${formatUnit(slot.unit ?? '')}`, piecesDetail: null }
+  if (item.product_id != null && item.quantity != null) {
+    return { text: `${item.quantity} ${formatUnit(item.unit ?? '')}`, piecesDetail: null }
   }
   return { text: '', piecesDetail: null }
+}
+
+function itemMemberInitials(item: CellItem): string[] {
+  const members = props.familyMembers ?? []
+  if (isMergedSlot(item)) return getMemberInitials(item.allMemberIds, members)
+  return getMemberInitials(item.member_ids ?? [], members)
 }
 
 /* Native drop from SourcePanel (not SortableJS) */
@@ -224,7 +299,7 @@ onMounted(initSortable)
 onUnmounted(() => sortable?.destroy())
 
 watch(
-  () => cellSlots.value.length,
+  () => rawCellSlots.value.length,
   () => {
     sortable?.destroy()
     initSortable()
@@ -252,15 +327,23 @@ watch(
          class="flex flex-col gap-1 min-h-[8px] flex-1 overflow-y-auto"
          :class="props.size === 'full' ? '' : 'max-h-40'">
       <ItemRow
-        v-for="(slot, i) in cellSlots"
-        :key="`${slot.recipe_id ?? ''}-${slot.product_id ?? ''}`"
-        :name="itemName(slot)"
-        :detail="itemDetail(slot).text"
-        :pieces-detail="itemDetail(slot).piecesDetail"
-        :variant="slot.recipe_id != null ? 'recipe' : 'product'"
-        :category-color="categoryColor(slot)"
-        @remove="emit('removeItem', { recipe_id: slot.recipe_id, product_id: slot.product_id })"
-        @click="emit('editItem', slot)"
+        v-for="(item, i) in cellSlots"
+        :key="isMergedSlot(item)
+          ? `merged-${item.recipe_id}`
+          : `${item.recipe_id ?? ''}-${item.product_id ?? ''}-${item.position ?? i}`"
+        :name="itemName(item)"
+        :detail="itemDetail(item).text"
+        :pieces-detail="itemDetail(item).piecesDetail"
+        :variant="isMergedSlot(item) ? 'recipe' : (item.recipe_id != null ? 'recipe' : 'product')"
+        :category-color="categoryColor(item)"
+        :member-initials="itemMemberInitials(item)"
+        :is-merged="isMergedSlot(item)"
+        @remove="isMergedSlot(item)
+          ? openMergedDialog(item)
+          : emit('removeItem', { recipe_id: item.recipe_id, product_id: item.product_id, position: item.position ?? null })"
+        @click="isMergedSlot(item)
+          ? openMergedDialog(item)
+          : emit('editItem', item)"
       />
     </div>
     <!-- Mobile add button -->
@@ -273,6 +356,17 @@ watch(
       <IconPlus :class="props.size === 'full' ? 'w-6 h-6' : 'w-5 h-5'" />
     </button>
   </div>
+
+  <MergedSlotDialog
+    v-if="showMergedDialog && mergedDialogSlot"
+    :recipe-name="mergedDialogSlot ? (recipeNames[mergedDialogSlot.recipe_id] ?? '') : ''"
+    :total-servings="mergedDialogSlot?.totalServings ?? 0"
+    :slots="mergedDialogSlot?.slots ?? []"
+    :family-members="familyMembers ?? []"
+    @close="showMergedDialog = false"
+    @edit-slot="onMergedEditSlot"
+    @remove-slot="onMergedRemoveSlot"
+  />
 </template>
 
 <style scoped>

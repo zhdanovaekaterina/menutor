@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MenuSlot } from '@/api/types'
+import type { FamilyMember, MenuSlot } from '@/api/types'
 import GridCell from './GridCell.vue'
 import MobileGridNavigator from './MobileGridNavigator.vue'
 
@@ -10,6 +10,9 @@ defineProps<{
   pickerDay?: number | null
   pickerMealType?: string | null
   menuId?: number | null
+  activeMemberIds?: Set<number>
+  allActive?: boolean
+  familyMembers?: FamilyMember[]
 }>()
 
 const emit = defineEmits<{
@@ -36,6 +39,9 @@ const meals = ['Завтрак', 'Обед', 'Ужин']
     :picker-day="pickerDay"
     :picker-meal-type="pickerMealType"
     :menu-id="menuId"
+    :active-member-ids="activeMemberIds"
+    :all-active="allActive"
+    :family-members="familyMembers"
     @add-item="(d, m, data) => emit('addItem', d, m, data)"
     @remove-item="(d, m, data) => emit('removeItem', d, m, data)"
     @edit-item="(slot) => emit('editItem', slot)"
@@ -68,6 +74,9 @@ const meals = ['Завтрак', 'Обед', 'Ужин']
         :slots="slots"
         :recipe-names="recipeNames"
         :product-names="productNames"
+        :active-member-ids="activeMemberIds"
+        :all-active="allActive"
+        :family-members="familyMembers"
         @add-item="(data) => emit('addItem', day - 1, meal, data)"
         @remove-item="(data) => emit('removeItem', day - 1, meal, data)"
         @edit-item="(slot) => emit('editItem', slot)"
