@@ -44,7 +44,7 @@ defineEmits<{
       {{ activePortionsLabel }}
     </span>
     <!-- Screen reader live region -->
-    <div class="sr-only" aria-live="polite" aria-atomic="true" />
+    <div class="sr-only" aria-live="polite" aria-atomic="true">{{ activePortionsLabel }}</div>
   </div>
 </template>
 
