@@ -117,7 +117,7 @@ function buildContextMenuItems() {
     {
       label: 'Копировать',
       action: () => {
-        copySlot(cellSlots.value)
+        copySlot(rawCellSlots.value)
         closeContextMenu()
       },
     },
