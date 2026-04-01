@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MenuSlot } from '@/api/types'
+import type { FamilyMember, MenuSlot } from '@/api/types'
 import { useSwipeGesture } from '@/composables/useSwipeGesture'
 import GridCell from './GridCell.vue'
 import ModeBackButton from './ModeBackButton.vue'
@@ -14,6 +14,9 @@ const props = defineProps<{
   productNames: Record<number, string>
   pickerDay?: number | null
   pickerMealType?: string | null
+  activeMemberIds?: Set<number>
+  allActive?: boolean
+  familyMembers?: FamilyMember[]
 }>()
 
 const emit = defineEmits<{
@@ -87,6 +90,9 @@ const { swipeHandlers } = useSwipeGesture({
           :recipe-names="recipeNames"
           :product-names="productNames"
           :picker-active="pickerDay === currentDay && pickerMealType === meal"
+          :active-member-ids="activeMemberIds"
+          :all-active="allActive"
+          :family-members="familyMembers"
           @add-item="(data) => emit('add-item', currentDay, meal, data)"
           @remove-item="(data) => emit('remove-item', currentDay, meal, data)"
           @edit-item="(slot) => emit('edit-item', slot)"

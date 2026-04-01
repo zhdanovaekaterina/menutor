@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
+from backend.application.paginated_result import PaginatedResult
 from backend.application.use_cases.generate_meal_summary import (
     MealOccurrence,
     MealSummaryProduct,
@@ -283,8 +284,8 @@ class TestExportMenuPdf:
         self, client: TestClient, container: MagicMock
     ) -> None:
         container.load_menu.execute.return_value = _menu(3)
-        container.list_recipes.execute.return_value = []
-        container.list_products.execute.return_value = []
+        container.list_recipes.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
+        container.list_products.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
         resp = client.post("/api/menus/3/export/pdf")
         assert resp.status_code == 200
         assert resp.headers["content-type"] == "application/pdf"
@@ -298,8 +299,8 @@ class TestExportMenuPdf:
 
         cyrillic_menu = WeeklyMenu(id=MenuId(3), name="Тест меню", slots=[_slot_recipe()])
         container.load_menu.execute.return_value = cyrillic_menu
-        container.list_recipes.execute.return_value = []
-        container.list_products.execute.return_value = []
+        container.list_recipes.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
+        container.list_products.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
         resp = client.post("/api/menus/3/export/pdf")
         assert resp.status_code == 200
         assert resp.content[:4] == b"%PDF"
@@ -319,8 +320,8 @@ class TestExportMenuPdf:
     ) -> None:
         """Content-Disposition must include a plain ASCII filename= fallback."""
         container.load_menu.execute.return_value = _menu(1)
-        container.list_recipes.execute.return_value = []
-        container.list_products.execute.return_value = []
+        container.list_recipes.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
+        container.list_products.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
         resp = client.post("/api/menus/1/export/pdf")
         assert resp.status_code == 200
         cd = resp.headers["content-disposition"]

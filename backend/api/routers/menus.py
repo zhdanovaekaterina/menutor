@@ -109,6 +109,7 @@ def move_slot(
         product_id=(
             ProductId(body.product_id) if body.product_id is not None else None
         ),
+        position=body.position,
     )
     return menu_to_response(menu)
 
@@ -129,6 +130,7 @@ def remove_slot(
         product_id=(
             ProductId(body.product_id) if body.product_id is not None else None
         ),
+        position=body.position,
     )
     return menu_to_response(menu)
 

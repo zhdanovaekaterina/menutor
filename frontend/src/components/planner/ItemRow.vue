@@ -9,6 +9,8 @@ const props = defineProps<{
   piecesDetail?: { portions: string; pieces: number } | null
   variant: 'recipe' | 'product'
   categoryColor?: string | null
+  memberInitials?: string[]
+  isMerged?: boolean
 }>()
 
 const emit = defineEmits<{ remove: []; click: [] }>()
@@ -26,7 +28,23 @@ const bgTint = computed(() => hexToRgba(effectiveColor.value, 0.08))
     :style="{ borderLeftColor: effectiveColor, backgroundColor: bgTint }"
     @click="emit('click')"
   >
-    <span class="truncate flex-1">{{ name }}</span>
+    <span class="truncate flex-1 flex items-center gap-1">
+      {{ name }}
+      <span v-if="isMerged"
+        class="shrink-0 w-4 h-4 rounded bg-amber-100 text-amber-700 text-[9px] font-bold flex items-center justify-center"
+        title="Объединённый слот">
+        &Sigma;
+      </span>
+    </span>
+    <!-- Member initials -->
+    <div v-if="memberInitials?.length" class="flex gap-0.5 shrink-0">
+      <span
+        v-for="(ini, idx) in memberInitials"
+        :key="idx"
+        class="w-4 h-4 rounded-full bg-blue-100 text-blue-700 text-[9px] font-bold flex items-center justify-center leading-none"
+        :title="`Для: ${ini}`"
+      >{{ ini }}</span>
+    </div>
     <!-- Standard detail (non-pieces recipes and products) -->
     <span v-if="!piecesDetail" class="text-gray-500 whitespace-nowrap">{{ detail }}</span>
     <!-- Pieces-mode detail -->

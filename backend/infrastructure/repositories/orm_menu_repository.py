@@ -1,10 +1,17 @@
+import json
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.ports.menu_repository import MenuRepository
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, UserId
+from backend.domain.value_objects.types import (
+    FamilyMemberId,
+    MenuId,
+    ProductId,
+    RecipeId,
+    UserId,
+)
 from backend.infrastructure.database.models import MenuRow, MenuSlotRow
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
@@ -48,6 +55,10 @@ class OrmMenuRepository(
                     servings_override=s.servings_override,
                     pieces_override=s.pieces_override,
                     position=s.slot_position,
+                    member_ids=[
+                        FamilyMemberId(mid)
+                        for mid in json.loads(s.member_ids or "[]")
+                    ],
                 )
                 for s in sorted(row.slots, key=lambda s: s.slot_position)
             ],
@@ -69,4 +80,5 @@ class OrmMenuRepository(
             servings_override=slot.servings_override,
             pieces_override=slot.pieces_override,
             slot_position=slot.position,
+            member_ids=json.dumps([int(mid) for mid in slot.member_ids]),
         )

@@ -112,6 +112,22 @@ export interface MenuSlot {
   servings_override?: number | null
   pieces_override?: number | null
   position?: number
+  member_ids?: number[]
+}
+
+export interface MergedSlotView {
+  _merged: true
+  recipe_id: number
+  slots: MenuSlot[]
+  totalServings: number
+  totalPieces?: number | null
+  allMemberIds: number[]
+}
+
+export type CellItem = MenuSlot | MergedSlotView
+
+export function isMergedSlot(item: CellItem): item is MergedSlotView {
+  return '_merged' in item && (item as MergedSlotView)._merged === true
 }
 
 export interface Menu {
@@ -125,6 +141,7 @@ export interface RemoveItemRequest {
   meal_type: string
   recipe_id?: number | null
   product_id?: number | null
+  position?: number | null
 }
 
 export interface MoveSlotRequest {
@@ -132,6 +149,7 @@ export interface MoveSlotRequest {
   meal_type: string
   recipe_id?: number | null
   product_id?: number | null
+  position?: number | null
   to_day: number
   to_meal_type: string
   to_position: number

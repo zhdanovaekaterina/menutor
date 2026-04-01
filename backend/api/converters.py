@@ -56,6 +56,7 @@ from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
 from backend.domain.value_objects.types import (
+    FamilyMemberId,
     ProductCategoryId,
     ProductId,
     RecipeCategoryId,
@@ -130,6 +131,7 @@ def menu_slot_to_schema(slot: MenuSlot) -> MenuSlotSchema:
         servings_override=slot.servings_override,
         pieces_override=slot.pieces_override,
         position=slot.position,
+        member_ids=[int(mid) for mid in slot.member_ids],
     )
 
 
@@ -321,6 +323,7 @@ def schema_to_menu_slot(s: MenuSlotSchema) -> MenuSlot:
         servings_override=s.servings_override,
         pieces_override=s.pieces_override,
         position=s.position,
+        member_ids=[FamilyMemberId(mid) for mid in s.member_ids],
     )
 
 

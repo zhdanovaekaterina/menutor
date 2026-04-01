@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { MenuSlot } from '@/api/types'
+import MemberTagBar from '@/components/planner/MemberTagBar.vue'
 import MobileItemPicker from '@/components/planner/MobileItemPicker.vue'
 import PlannerGrid from '@/components/planner/PlannerGrid.vue'
 import SavedMenuList from '@/components/planner/SavedMenuList.vue'
@@ -98,6 +99,60 @@ const totalFamilyPortions = computed(() => {
   return sum > 0 ? sum : 1
 })
 
+// Member filtering state
+const activeMemberIds = ref<Set<number>>(new Set())
+const allActive = computed(() =>
+  familyStore.items.length > 0 &&
+  familyStore.items.every(m => activeMemberIds.value.has(m.id))
+)
+const activePortions = computed(() => {
+  const active = familyStore.items.filter(m => activeMemberIds.value.has(m.id))
+  if (active.length === 0) return totalFamilyPortions.value
+  return active.reduce((sum, m) => sum + m.portion_multiplier, 0)
+})
+const activePortionsLabel = computed(() => {
+  const active = familyStore.items.filter(m => activeMemberIds.value.has(m.id))
+  if (active.length === 0) return '0 (никто не выбран)'
+  if (allActive.value) return `${activePortions.value.toFixed(1)} порции (все)`
+  const names = active.map(m => m.name).join(', ')
+  return `${activePortions.value.toFixed(1)} порции (${names})`
+})
+
+// Initialize activeMemberIds when family members load
+watch(
+  () => familyStore.items,
+  (members) => {
+    activeMemberIds.value = new Set(members.map(m => m.id))
+  },
+  { immediate: true }
+)
+
+// Reset member filter when switching menus
+watch(
+  () => menuStore.selectedId,
+  () => {
+    activeMemberIds.value = new Set(familyStore.items.map(m => m.id))
+  }
+)
+
+function toggleMember(id: number) {
+  const next = new Set(activeMemberIds.value)
+  if (next.has(id)) {
+    next.delete(id)
+  } else {
+    next.add(id)
+  }
+  activeMemberIds.value = next
+}
+
+function toggleAll() {
+  if (allActive.value) {
+    activeMemberIds.value = new Set()
+  } else {
+    activeMemberIds.value = new Set(familyStore.items.map(m => m.id))
+  }
+}
+
 const recipeNames = computed(() =>
   Object.fromEntries(recipeStore.allItems.map((r) => [r.id, r.name])),
 )
@@ -151,6 +206,17 @@ function onPickerRemove(data: { type: 'recipe' | 'product'; id: number }) {
 
 async function onAddItem(day: number, mealType: string, data: { type: 'recipe' | 'product'; id: number }) {
   await menuStore.ensureMenuSelected()
+
+  const isSubset = data.type === 'recipe' &&
+    activeMemberIds.value.size > 0 &&
+    !allActive.value &&
+    familyStore.items.length > 0
+
+  const memberIdsForSlot = isSubset ? [...activeMemberIds.value] : []
+  const servingsForSlot = data.type === 'recipe'
+    ? (activeMemberIds.value.size === 0 ? totalFamilyPortions.value : activePortions.value)
+    : null
+
   const slot: MenuSlot = {
     day,
     meal_type: mealType,
@@ -158,12 +224,21 @@ async function onAddItem(day: number, mealType: string, data: { type: 'recipe' |
     product_id: data.type === 'product' ? data.id : null,
     unit: data.type === 'product' ? (productStore.allItems.find((p) => p.id === data.id)?.recipe_unit ?? null) : null,
     quantity: data.type === 'product' ? (productStore.allItems.find((p) => p.id === data.id)?.recipe_unit === 'g' ? 100 : 1) : null,
-    servings_override: data.type === 'recipe' ? totalFamilyPortions.value : null,
+    servings_override: servingsForSlot,
+    member_ids: memberIdsForSlot,
   }
   await menuStore.addSlotToMenu(slot)
+
+  if (data.type === 'recipe' && isSubset) {
+    const recipeName = recipeNames.value[data.id] ?? `#${data.id}`
+    const memberNames = familyStore.items
+      .filter(m => activeMemberIds.value.has(m.id))
+      .map(m => m.name)
+    toast.show(`${recipeName}: ${activePortions.value.toFixed(1)} порции (${memberNames.join(', ')})`, 'success')
+  }
 }
 
-async function onRemoveItem(day: number, mealType: string, data: { recipe_id?: number | null; product_id?: number | null }) {
+async function onRemoveItem(day: number, mealType: string, data: { recipe_id?: number | null; product_id?: number | null; position?: number | null }) {
   if (!menuStore.current) return
   await menuStore.removeSlotFromMenu({ day, meal_type: mealType, ...data })
 }
@@ -207,6 +282,7 @@ async function onEditConfirm(val: string) {
     const updated: MenuSlot = {
       ...s,
       pieces_override: pcs !== editCalculatedPieces.value ? pcs : null,
+      member_ids: [],
     }
     await menuStore.addSlotToMenu(updated)
     return
@@ -218,6 +294,7 @@ async function onEditConfirm(val: string) {
     ...s,
     quantity: s.product_id != null ? num : s.quantity,
     servings_override: s.recipe_id != null ? num : s.servings_override,
+    member_ids: [],
   }
   await menuStore.addSlotToMenu(updated)
 }
@@ -383,6 +460,14 @@ async function onGenerateShoppingList() {
 
       <!-- Center: always visible -->
       <div class="flex-1 flex flex-col gap-4 min-w-0">
+        <MemberTagBar
+          :members="familyStore.items"
+          :active-member-ids="activeMemberIds"
+          :all-active="allActive"
+          :active-portions-label="activePortionsLabel"
+          @toggle-member="toggleMember"
+          @toggle-all="toggleAll"
+        />
         <div class="flex-1 overflow-hidden lg:overflow-x-auto">
           <PlannerGrid
             :slots="slots"
@@ -391,6 +476,9 @@ async function onGenerateShoppingList() {
             :picker-day="pickerOpen ? pickerDay : null"
             :picker-meal-type="pickerOpen ? pickerMealType : null"
             :menu-id="selectedId"
+            :active-member-ids="activeMemberIds"
+            :all-active="allActive"
+            :family-members="familyStore.items"
             @add-item="onAddItem"
             @remove-item="onRemoveItem"
             @edit-item="onEditItem"

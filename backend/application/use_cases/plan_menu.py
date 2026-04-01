@@ -79,9 +79,10 @@ class MoveSlotInMenu:
         to_position: int,
         recipe_id: RecipeId | None = None,
         product_id: ProductId | None = None,
+        position: int | None = None,
     ) -> WeeklyMenu:
         menu = load_owned(self._repo, menu_id, user_id, "Меню", not_found="не найдено")
-        menu.move_slot(day, meal_type, recipe_id, product_id, to_day, to_meal_type, to_position)
+        menu.move_slot(day, meal_type, recipe_id, product_id, to_day, to_meal_type, to_position, position)
         return self._repo.save(menu)
 
 
@@ -116,9 +117,10 @@ class RemoveItemFromSlot:
         user_id: UserId,
         recipe_id: RecipeId | None = None,
         product_id: ProductId | None = None,
+        position: int | None = None,
     ) -> WeeklyMenu:
         menu = load_owned(self._repo, menu_id, user_id, "Меню", not_found="не найдено")
-        menu.remove_item(day, meal_type, recipe_id, product_id)
+        menu.remove_item(day, meal_type, recipe_id, product_id, position)
         return self._repo.save(menu)
 
 
@@ -151,6 +153,7 @@ class CopyMenu:
                 servings_override=s.servings_override,
                 pieces_override=s.pieces_override,
                 position=s.position,
+                member_ids=list(s.member_ids),
             )
             for s in source.slots
         ]

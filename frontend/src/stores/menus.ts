@@ -88,6 +88,7 @@ export const useMenuStore = defineStore('menus', () => {
       meal_type: slot.meal_type,
       recipe_id: slot.recipe_id,
       product_id: slot.product_id,
+      position: slot.position ?? null,
       to_day: toDay,
       to_meal_type: toMealType,
       to_position: toPosition,

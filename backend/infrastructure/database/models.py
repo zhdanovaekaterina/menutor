@@ -217,6 +217,7 @@ class MenuSlotRow(Base):
     servings_override = Column(Float, nullable=True)
     pieces_override = Column(Integer, nullable=True)
     slot_position = Column(Integer, nullable=False, default=0, server_default="0")
+    member_ids = Column(String, nullable=False, default="[]", server_default="[]")
 
     menu = relationship("MenuRow", back_populates="slots")
 
