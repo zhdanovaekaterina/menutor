@@ -1,7 +1,13 @@
 from dataclasses import dataclass, field
 
 from backend.domain.exceptions import InvalidEntityError
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, UserId
+from backend.domain.value_objects.types import (
+    FamilyMemberId,
+    MenuId,
+    ProductId,
+    RecipeId,
+    UserId,
+)
 
 
 @dataclass
@@ -15,6 +21,7 @@ class MenuSlot:
     servings_override: float | None = field(default=None)
     pieces_override: int | None = field(default=None)
     position: int = 0
+    member_ids: list[FamilyMemberId] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         has_recipe = self.recipe_id is not None
@@ -58,6 +65,7 @@ class WeeklyMenu:
         to_day: int,
         to_meal_type: str,
         to_position: int,
+        position: int | None = None,
     ) -> None:
         """Move an item from one cell to another (or reposition within the same cell)."""
         slot = next(
@@ -66,6 +74,7 @@ class WeeklyMenu:
                 for s in self.slots
                 if s.day == day
                 and s.meal_type == meal_type
+                and (position is None or s.position == position)
                 and (
                     (recipe_id is not None and s.recipe_id == recipe_id)
                     or (product_id is not None and s.product_id == product_id)
@@ -101,10 +110,13 @@ class WeeklyMenu:
         meal_type: str,
         recipe_id: RecipeId | None = None,
         product_id: ProductId | None = None,
+        position: int | None = None,
     ) -> None:
         """Remove a specific item from a (day, meal_type) cell."""
         def matches(s: MenuSlot) -> bool:
             if s.day != day or s.meal_type != meal_type:
+                return False
+            if position is not None and s.position != position:
                 return False
             if recipe_id is not None and s.recipe_id == recipe_id:
                 return True
@@ -122,8 +134,8 @@ class WeeklyMenu:
     def _same_item(existing: MenuSlot, new: MenuSlot) -> bool:
         if existing.day != new.day or existing.meal_type != new.meal_type:
             return False
-        if new.recipe_id is not None and existing.recipe_id == new.recipe_id:
-            return True
         if new.product_id is not None and existing.product_id == new.product_id:
             return True
+        if new.recipe_id is not None and existing.recipe_id == new.recipe_id:
+            return sorted(existing.member_ids) == sorted(new.member_ids)
         return False
