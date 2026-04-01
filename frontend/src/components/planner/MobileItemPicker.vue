@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { ActiveCategory, MenuSlot, Product, Recipe } from '@/api/types'
+import type { ActiveCategory, FamilyMember, MenuSlot, Product, Recipe } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
 import { useTabbedFilter } from '@/composables/useTabbedFilter'
 import IconCheck from '@/components/ui/icons/IconCheck.vue'
@@ -15,6 +15,8 @@ const props = defineProps<{
   existingSlots: MenuSlot[]
   recipeCategories: ActiveCategory[]
   productCategories: ActiveCategory[]
+  familyMembers?: FamilyMember[]
+  activeMemberIds?: Set<number>
 }>()
 
 const emit = defineEmits<{
@@ -73,6 +75,21 @@ watch(() => props.open, (v) => {
     }
     window.addEventListener('popstate', handler)
   }
+})
+
+const activeMemberNames = computed(() => {
+  if (!props.familyMembers?.length || !props.activeMemberIds?.size) return ''
+  return props.familyMembers
+    .filter(m => props.activeMemberIds!.has(m.id))
+    .map(m => m.name)
+    .join(', ')
+})
+
+const activePortions = computed(() => {
+  if (!props.familyMembers?.length || !props.activeMemberIds?.size) return 0
+  return props.familyMembers
+    .filter(m => props.activeMemberIds!.has(m.id))
+    .reduce((sum, m) => sum + m.portion_multiplier, 0)
 })
 
 // Sheet drag-to-dismiss logic
@@ -177,6 +194,11 @@ function onTouchEnd() {
           >
             Ингредиенты
           </button>
+        </div>
+
+        <!-- Active member info (recipes tab only) -->
+        <div v-if="familyMembers?.length && tab === 'recipes' && activeMemberIds?.size" class="text-xs text-gray-500 px-4 py-1 shrink-0">
+          Для: {{ activeMemberNames }} ({{ activePortions.toFixed(1) }} п.)
         </div>
 
         <!-- Search + Category filter -->

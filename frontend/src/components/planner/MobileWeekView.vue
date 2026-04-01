@@ -1,17 +1,27 @@
 <script setup lang="ts">
-import type { MenuSlot } from '@/api/types'
+import type { FamilyMember, MenuSlot } from '@/api/types'
+import { isSlotVisible } from '@/utils/slotVisibility'
 import WeekDayCard from './WeekDayCard.vue'
 
-defineProps<{
+const props = defineProps<{
   slots: MenuSlot[]
   mealTypes: string[]
   recipeNames: Record<number, string>
   productNames: Record<number, string>
+  activeMemberIds?: Set<number>
+  allActive?: boolean
+  familyMembers?: FamilyMember[]
 }>()
 
 const emit = defineEmits<{ 'select-day': [dayIndex: number] }>()
 
 const dayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+function visibleSlots(slots: MenuSlot[]): MenuSlot[] {
+  const activeIds = props.activeMemberIds
+  if (!activeIds || activeIds.size === 0) return slots
+  return slots.filter(s => isSlotVisible(s, activeIds))
+}
 </script>
 
 <template>
@@ -21,7 +31,7 @@ const dayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
       :key="i"
       :day-index="i"
       :day-label="day"
-      :slots="slots"
+      :slots="visibleSlots(slots)"
       :meal-types="mealTypes"
       :recipe-names="recipeNames"
       :product-names="productNames"

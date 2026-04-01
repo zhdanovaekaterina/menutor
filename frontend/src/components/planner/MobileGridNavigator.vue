@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { MenuSlot } from '@/api/types'
+import type { FamilyMember, MenuSlot } from '@/api/types'
 import MobileWeekView from './MobileWeekView.vue'
 import MobileDayView from './MobileDayView.vue'
 import MobileMealView from './MobileMealView.vue'
+import MemberTagBar from './MemberTagBar.vue'
 
 const props = defineProps<{
   slots: MenuSlot[]
@@ -12,6 +13,9 @@ const props = defineProps<{
   pickerDay?: number | null
   pickerMealType?: string | null
   menuId?: number | null
+  activeMemberIds?: Set<number>
+  allActive?: boolean
+  familyMembers?: FamilyMember[]
 }>()
 
 const emit = defineEmits<{
@@ -100,6 +104,9 @@ const liveAnnouncement = computed(() => {
         :meal-types="meals"
         :recipe-names="recipeNames"
         :product-names="productNames"
+        :active-member-ids="activeMemberIds"
+        :all-active="allActive"
+        :family-members="familyMembers"
         @select-day="goToDay"
       />
 
@@ -113,6 +120,9 @@ const liveAnnouncement = computed(() => {
         :product-names="productNames"
         :picker-day="pickerDay"
         :picker-meal-type="pickerMealType"
+        :active-member-ids="activeMemberIds"
+        :all-active="allActive"
+        :family-members="familyMembers"
         @navigate-to-week="goToWeek"
         @navigate-to-meal="goToMeal"
         @navigate-day="onNavigateDay"
@@ -135,6 +145,9 @@ const liveAnnouncement = computed(() => {
         :product-names="productNames"
         :picker-day="pickerDay"
         :picker-meal-type="pickerMealType"
+        :active-member-ids="activeMemberIds"
+        :all-active="allActive"
+        :family-members="familyMembers"
         @navigate-to-day="goBackToDay"
         @navigate-day="onNavigateDay"
         @navigate-meal-type="onNavigateMealType"
