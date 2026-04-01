@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import type { FamilyMember } from '@/api/types'
+import MemberSelectorPopover from './MemberSelectorPopover.vue'
 
 const props = defineProps<{
   open: boolean
@@ -8,6 +10,8 @@ const props = defineProps<{
   calculatedPieces: number
   pieces: string
   showDelete?: boolean
+  familyMembers?: FamilyMember[]
+  slotMemberIds?: number[]
 }>()
 
 const emit = defineEmits<{
@@ -15,9 +19,31 @@ const emit = defineEmits<{
   cancel: []
   delete: []
   'update:pieces': [value: string]
+  'member-ids-changed': [ids: number[]]
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)
+const showMemberSelector = ref(false)
+
+const memberNames = computed(() => {
+  if (!props.slotMemberIds?.length || !props.familyMembers?.length) return null
+  return props.slotMemberIds
+    .map(id => props.familyMembers!.find(m => m.id === id)?.name ?? `#${id}`)
+    .join(', ')
+})
+
+const autoPortions = computed(() => {
+  if (!props.slotMemberIds?.length || !props.familyMembers?.length) return null
+  return props.familyMembers
+    .filter(m => props.slotMemberIds!.includes(m.id))
+    .reduce((sum, m) => sum + m.portion_multiplier, 0)
+    .toFixed(1)
+})
+
+function onMemberSelectorApply(ids: number[]) {
+  showMemberSelector.value = false
+  emit('member-ids-changed', ids)
+}
 
 const piecesError = computed(() => {
   const val = parseInt(props.pieces)
@@ -58,7 +84,31 @@ function onBlur() {
         <!-- Drag indicator (mobile) -->
         <div class="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4 sm:hidden" />
 
-        <h3 class="text-lg font-semibold mb-4">Количество: {{ recipeName }}</h3>
+        <h3 class="text-lg font-semibold mb-2">Количество: {{ recipeName }}</h3>
+
+        <!-- Member info -->
+        <div v-if="familyMembers?.length" class="mb-4">
+          <p class="text-xs text-gray-500">
+            <span v-if="memberNames">Участники: {{ memberNames }} (авто: {{ autoPortions }} порции)</span>
+            <span v-else>Участники: все</span>
+          </p>
+          <button
+            type="button"
+            class="mt-1 text-xs text-blue-600 hover:text-blue-700 underline"
+            @click="showMemberSelector = !showMemberSelector"
+          >
+            Изменить участников
+          </button>
+          <div v-if="showMemberSelector" class="mt-2">
+            <MemberSelectorPopover
+              :members="familyMembers"
+              :selected-ids="slotMemberIds ?? []"
+              @apply="onMemberSelectorApply"
+              @cancel="showMemberSelector = false"
+            />
+          </div>
+          <p class="text-xs text-amber-600 mt-1">Внимание: при изменении порций слот станет общим</p>
+        </div>
 
         <!-- Порции (read-only) -->
         <label class="block text-sm font-medium text-gray-500 mb-1">Порции (авто)</label>
