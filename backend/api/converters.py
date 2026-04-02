@@ -57,6 +57,7 @@ from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
 from backend.domain.value_objects.types import (
     FamilyMemberId,
+    PreferenceId,
     ProductCategoryId,
     ProductId,
     RecipeCategoryId,
@@ -150,8 +151,8 @@ def family_member_to_response(member: FamilyMember) -> FamilyMemberResponse:
         id=int(member.id),
         name=member.name,
         portion_multiplier=member.portion_multiplier,
-        dietary_restrictions=member.dietary_restrictions,
         comment=member.comment,
+        preference_ids=[int(pid) for pid in member.preference_ids],
     )
 
 
@@ -307,8 +308,8 @@ def schema_to_family_data(body: FamilyMemberCreate) -> FamilyMemberData:
     return FamilyMemberData(
         name=body.name,
         portion_multiplier=body.portion_multiplier,
-        dietary_restrictions=body.dietary_restrictions,
         comment=body.comment,
+        preference_ids=[PreferenceId(pid) for pid in body.preference_ids],
     )
 
 

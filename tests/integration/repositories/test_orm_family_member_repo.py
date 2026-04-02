@@ -17,7 +17,6 @@ def _member(user_id: UserId, **kw: object) -> FamilyMember:
         id=FamilyMemberId(0),
         name="Алиса",
         portion_multiplier=1.0,
-        dietary_restrictions="",
         comment="",
         user_id=user_id,
     )
@@ -32,15 +31,13 @@ def test_save_assigns_id(repo: OrmFamilyMemberRepository, user_id: UserId) -> No
 
 def test_save_and_get_by_id_roundtrip(repo: OrmFamilyMemberRepository, user_id: UserId) -> None:
     saved = repo.save(_member(user_id,
-        name="Боб", portion_multiplier=0.5,
-        dietary_restrictions="без глютена", comment="школьный обед",
+        name="Боб", portion_multiplier=0.5, comment="школьный обед",
     ))
     retrieved = repo.get_by_id(saved.id)
 
     assert retrieved is not None
     assert retrieved.name == "Боб"
     assert retrieved.portion_multiplier == pytest.approx(0.5)
-    assert retrieved.dietary_restrictions == "без глютена"
     assert retrieved.comment == "школьный обед"
     assert retrieved.user_id == user_id
 
@@ -68,7 +65,6 @@ def test_update_existing_member(repo: OrmFamilyMemberRepository, user_id: UserId
         id=saved.id,
         name="Алиса Иванова",
         portion_multiplier=0.75,
-        dietary_restrictions="вегетарианец",
         comment="обновлено",
         user_id=user_id,
     )
