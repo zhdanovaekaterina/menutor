@@ -4,6 +4,7 @@ from collections.abc import Callable
 
 from backend.api.schemas.category import ActiveCategoryResponse, CategoryResponse
 from backend.api.schemas.family import FamilyMemberCreate, FamilyMemberResponse
+from backend.api.schemas.preference import PreferenceCreate, PreferenceResponse
 from backend.api.schemas.meal_summary import (
     MealIngredientSchema,
     MealOccurrenceSchema,
@@ -35,6 +36,9 @@ from backend.application.use_cases.generate_meal_summary import (
     MealSummaryResponse as MealSummaryDomain,
 )
 from backend.application.use_cases.manage_family import FamilyMemberData
+from backend.application.use_cases.manage_preference import PreferenceData
+from backend.domain.entities.preference import Preference
+from backend.domain.value_objects.preference_enums import PreferenceMode, PreferenceType
 from backend.application.use_cases.manage_product import ProductData
 from backend.application.use_cases.manage_recipe import RecipeData
 from backend.application.use_cases.manage_saved_shopping_list import (
@@ -63,6 +67,28 @@ from backend.domain.value_objects.types import (
     RecipeCategoryId,
     RecipeId,
 )
+
+# ── Preference ──────────────────────────────────────────────────────
+
+def preference_to_response(pref: Preference) -> PreferenceResponse:
+    return PreferenceResponse(
+        id=int(pref.id),
+        name=pref.name,
+        type=pref.type.value,
+        mode=pref.mode.value,
+        category_ids=[int(cid) for cid in pref.category_ids],
+        product_ids=[int(pid) for pid in pref.product_ids],
+    )
+
+
+def schema_to_preference_data(body: PreferenceCreate) -> PreferenceData:
+    return PreferenceData(
+        name=body.name,
+        type=PreferenceType(body.type),
+        mode=PreferenceMode(body.mode),
+        category_ids=[ProductCategoryId(cid) for cid in body.category_ids],
+        product_ids=[ProductId(pid) for pid in body.product_ids],
+    )
 
 # ── Recipe ─────────────────────────────────────────────────────────
 

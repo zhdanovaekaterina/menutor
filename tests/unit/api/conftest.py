@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from backend.api.auth import get_current_user
 from backend.api.deps import get_container
-from backend.api.routers import auth, categories, family, menus, products, recipes
+from backend.api.routers import auth, categories, family, menus, preferences, products, recipes
 from backend.api.routers import import_export as import_export_router
 from backend.api.routers import shopping_list as shopping_list_router
 from backend.domain.entities.user import User
@@ -107,6 +107,7 @@ def _build_test_app() -> FastAPI:
     test_app.include_router(categories.router, prefix="/api")
     test_app.include_router(shopping_list_router.router, prefix="/api")
     test_app.include_router(import_export_router.router, prefix="/api")
+    test_app.include_router(preferences.router, prefix="/api")
 
     return test_app
 

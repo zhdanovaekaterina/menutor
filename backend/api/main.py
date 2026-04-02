@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 
 from backend.api.routers import auth, categories, family
 from backend.api.routers import import_export as import_export_router
-from backend.api.routers import menus, products, recipes
+from backend.api.routers import menus, preferences, products, recipes
 from backend.api.routers import shopping_list as shopping_list_router
 from backend.api.routers import system
 from backend.composition_root import ApplicationContainer
@@ -144,4 +144,5 @@ app.include_router(family.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")
 app.include_router(shopping_list_router.router, prefix="/api")
 app.include_router(import_export_router.router, prefix="/api")
+app.include_router(preferences.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
