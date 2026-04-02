@@ -4,26 +4,37 @@ import type { FamilyMember, FamilyMemberCreate } from '@/api/types'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import SlidePanel from '@/components/ui/SlidePanel.vue'
 import { useFamilyStore } from '@/stores/family'
+import { usePreferencesStore } from '@/stores/preferences'
 import { useToastStore } from '@/stores/toast'
 
 const store = useFamilyStore()
+const preferencesStore = usePreferencesStore()
 const toast = useToastStore()
 
 const selectedId = ref<number | null>(null)
 const name = ref('')
 const portionMultiplier = ref(1.0)
-const dietaryRestrictions = ref('')
+const selectedPreferenceIds = ref<number[]>([])
 const comment = ref('')
 const confirmOpen = ref(false)
 const formOpen = ref(false)
 
-onMounted(() => store.load())
+onMounted(() => {
+  store.load()
+  preferencesStore.load()
+})
+
+function togglePreference(id: number) {
+  const idx = selectedPreferenceIds.value.indexOf(id)
+  if (idx === -1) selectedPreferenceIds.value.push(id)
+  else selectedPreferenceIds.value.splice(idx, 1)
+}
 
 function selectMember(m: FamilyMember) {
   selectedId.value = m.id
   name.value = m.name
   portionMultiplier.value = m.portion_multiplier
-  dietaryRestrictions.value = m.dietary_restrictions
+  selectedPreferenceIds.value = [...m.preference_ids]
   comment.value = m.comment
   formOpen.value = true
 }
@@ -37,7 +48,7 @@ function clearForm() {
   selectedId.value = null
   name.value = ''
   portionMultiplier.value = 1.0
-  dietaryRestrictions.value = ''
+  selectedPreferenceIds.value = []
   comment.value = ''
   formOpen.value = false
 }
@@ -47,7 +58,7 @@ async function onSave() {
   const data: FamilyMemberCreate = {
     name: name.value.trim(),
     portion_multiplier: portionMultiplier.value,
-    dietary_restrictions: dietaryRestrictions.value,
+    preference_ids: selectedPreferenceIds.value,
     comment: comment.value,
   }
   try {
@@ -86,7 +97,7 @@ async function onConfirmDelete() {
           <tr>
             <th class="text-left px-4 py-2">Имя</th>
             <th class="text-center px-4 py-2 w-28">Коэф.</th>
-            <th class="text-left px-4 py-2">Ограничения</th>
+            <th class="text-left px-4 py-2">Предпочтения</th>
             <th class="text-left px-4 py-2">Комментарий</th>
           </tr>
         </thead>
@@ -100,7 +111,18 @@ async function onConfirmDelete() {
           >
             <td class="px-4 py-2">{{ m.name }}</td>
             <td class="px-4 py-2 text-center">{{ m.portion_multiplier }}</td>
-            <td class="px-4 py-2 text-gray-600">{{ m.dietary_restrictions || '—' }}</td>
+            <td class="px-4 py-2 text-gray-600">
+              <span v-if="m.preference_ids.length" class="flex flex-wrap gap-1">
+                <span
+                  v-for="pid in m.preference_ids"
+                  :key="pid"
+                  class="inline-flex text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700"
+                >
+                  {{ preferencesStore.items.find((p) => p.id === pid)?.name ?? pid }}
+                </span>
+              </span>
+              <span v-else>—</span>
+            </td>
             <td class="px-4 py-2 text-gray-600">{{ m.comment || '—' }}</td>
           </tr>
         </tbody>
@@ -120,7 +142,15 @@ async function onConfirmDelete() {
           <span class="font-medium text-sm">{{ m.name }}</span>
           <span class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">&times;{{ m.portion_multiplier }}</span>
         </div>
-        <p v-if="m.dietary_restrictions" class="text-xs text-gray-500 mt-1">{{ m.dietary_restrictions }}</p>
+        <div v-if="m.preference_ids.length" class="flex flex-wrap gap-1 mt-1">
+          <span
+            v-for="pid in m.preference_ids"
+            :key="pid"
+            class="inline-flex text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700"
+          >
+            {{ preferencesStore.items.find((p) => p.id === pid)?.name ?? pid }}
+          </span>
+        </div>
         <p v-if="m.comment" class="text-xs text-gray-400 mt-0.5">{{ m.comment }}</p>
       </div>
       <div v-if="!store.items.length" class="text-center text-sm text-gray-400 py-8">
@@ -147,9 +177,26 @@ async function onConfirmDelete() {
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Ограничения</label>
-          <input v-model="dietaryRestrictions"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+          <label class="block text-sm font-medium text-gray-700 mb-1">Пищевые предпочтения</label>
+          <div
+            v-if="preferencesStore.items.length"
+            class="border border-gray-300 rounded-lg divide-y max-h-40 overflow-y-auto"
+          >
+            <label
+              v-for="pref in preferencesStore.items"
+              :key="pref.id"
+              class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm"
+            >
+              <input
+                type="checkbox"
+                :checked="selectedPreferenceIds.includes(pref.id)"
+                class="rounded"
+                @change="togglePreference(pref.id)"
+              />
+              {{ pref.name }}
+            </label>
+          </div>
+          <p v-else class="text-sm text-gray-400">Нет предпочтений. Добавьте их в разделе «Предпочтения».</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Комментарий</label>

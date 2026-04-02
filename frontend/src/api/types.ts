@@ -158,7 +158,7 @@ export interface MoveSlotRequest {
 export interface FamilyMemberCreate {
   name: string
   portion_multiplier?: number
-  dietary_restrictions?: string
+  preference_ids?: number[]
   comment?: string
 }
 
@@ -166,8 +166,29 @@ export interface FamilyMember {
   id: number
   name: string
   portion_multiplier: number
-  dietary_restrictions: string
+  preference_ids: number[]
   comment: string
+}
+
+export interface PreferenceCreate {
+  name: string
+  type: 'CATEGORY_BASED' | 'ALLERGY'
+  mode: 'BLOCKED' | 'ALLOWED'
+  category_ids: number[]
+  product_ids: number[]
+}
+
+export interface Preference {
+  id: number
+  name: string
+  type: 'CATEGORY_BASED' | 'ALLERGY'
+  mode: 'BLOCKED' | 'ALLOWED'
+  category_ids: number[]
+  product_ids: number[]
+}
+
+export interface PreferenceMatchResponse {
+  preferences: Preference[]
 }
 
 export interface ActiveCategory {
