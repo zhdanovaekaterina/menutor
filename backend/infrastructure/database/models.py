@@ -203,6 +203,11 @@ class PreferenceRow(Base):
         back_populates="preference",
         cascade="all, delete-orphan",
     )
+    recipe_categories = relationship(
+        "PreferenceRecipeCategoryRow",
+        back_populates="preference",
+        cascade="all, delete-orphan",
+    )
 
 
 class PreferenceCategoryRow(Base):
@@ -231,6 +236,20 @@ class PreferenceProductRow(Base):
     )
 
     preference = relationship("PreferenceRow", back_populates="products")
+
+
+class PreferenceRecipeCategoryRow(Base):
+    __tablename__ = "preference_recipe_categories"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    preference_id = Column(
+        Integer, ForeignKey("preferences.id", ondelete="CASCADE"), nullable=False
+    )
+    recipe_category_id = Column(
+        Integer, ForeignKey("recipe_categories.id", ondelete="CASCADE"), nullable=False
+    )
+
+    preference = relationship("PreferenceRow", back_populates="recipe_categories")
 
 
 class FamilyMemberPreferenceRow(Base):
