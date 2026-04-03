@@ -6,7 +6,7 @@ const props = defineProps<{
   dayIndex: number
   dayLabel: string
   slots: MenuSlot[]
-  mealTypes: string[]
+  mealTypes: { id: number; name: string }[]
   recipeNames: Record<number, string>
   productNames: Record<number, string>
 }>()
@@ -20,15 +20,15 @@ const totalItems = computed(() => daySlots.value.length)
 const summaryText = computed(() => {
   if (!hasItems.value) return 'Нет блюд'
   const parts: string[] = []
-  for (const meal of props.mealTypes) {
-    const mealSlots = daySlots.value.filter(s => s.meal_type === meal)
+  for (const mt of props.mealTypes) {
+    const mealSlots = daySlots.value.filter(s => s.meal_type_id === mt.id)
     if (mealSlots.length === 0) continue
     const first = mealSlots[0]!  // safe: checked mealSlots.length > 0 above
     const name = first.recipe_id != null
       ? (props.recipeNames[first.recipe_id] ?? '?')
       : (props.productNames[first.product_id!] ?? '?')
     const extra = mealSlots.length > 1 ? `, +${mealSlots.length - 1}` : ''
-    parts.push(`${meal}: ${name}${extra}`)
+    parts.push(`${mt.name}: ${name}${extra}`)
   }
   return parts.join(' · ')
 })

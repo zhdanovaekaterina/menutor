@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { fetchMealSummary, generateFilteredShoppingList } from '@/api/client'
 import { buildSummaryText, getSummaryFilename } from '@/utils/exportSummaryTxt'
 import type { MealIngredient, MealSummaryRecipe, MealSummaryResponse } from '@/api/types'
+import { useMealTypeStore } from '@/stores/mealTypes'
 import { useShoppingListStore } from '@/stores/shoppingList'
 import { useToastStore } from '@/stores/toast'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
@@ -20,6 +21,7 @@ const route = useRoute()
 const router = useRouter()
 const shoppingStore = useShoppingListStore()
 const toast = useToastStore()
+const mealTypeStore = useMealTypeStore()
 
 const menuId = computed(() => Number(route.params['id']))
 
@@ -174,7 +176,14 @@ async function loadSummary() {
   }
 }
 
-onMounted(loadSummary)
+const mealTypeNames = computed<Record<number, string>>(() =>
+  Object.fromEntries(mealTypeStore.items.map((mt) => [mt.id, mt.name])),
+)
+
+onMounted(async () => {
+  await mealTypeStore.load()
+  await loadSummary()
+})
 
 // ── Toggle functions ───────────────────────────────────────────────────────
 
@@ -297,6 +306,7 @@ function exportTxt(): void {
     recipeIngredients.value,
     nestedRecipes.value,
     deselectedSubRecipes.value,
+    mealTypeNames.value,
   )
   exportFilename.value = getSummaryFilename(summary.value.menu_name)
   exportModalOpen.value = true
@@ -377,6 +387,7 @@ function exportTxt(): void {
             :recipe="recipe"
             :selected-slots="selectedSlotsByRecipe.get(recipe.recipe_id) ?? new Set()"
             :scaled-ingredients="recipeIngredients.get(recipe.recipe_id) ?? []"
+            :meal-type-names="mealTypeNames"
             @toggle-recipe="toggleRecipe(recipe.recipe_id)"
             @toggle-slot="(idx) => toggleRecipeSlot(recipe.recipe_id, idx)"
           />
@@ -415,6 +426,7 @@ function exportTxt(): void {
                 v-for="product in standaloneProducts"
                 :key="product.product_id"
                 :product="product"
+                :meal-type-names="mealTypeNames"
               />
             </div>
           </div>

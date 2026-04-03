@@ -17,7 +17,7 @@ import IconPlus from '@/components/ui/icons/IconPlus.vue'
 
 const props = defineProps<{
   day: number
-  mealType: string
+  mealTypeId: number
   slots: MenuSlot[]
   recipeNames: Record<number, string>
   productNames: Record<number, string>
@@ -32,8 +32,8 @@ const emit = defineEmits<{
   addItem: [data: { type: 'recipe' | 'product'; id: number }]
   removeItem: [data: { recipe_id?: number | null; product_id?: number | null; position?: number | null }]
   editItem: [slot: MenuSlot]
-  moveItem: [slot: MenuSlot, toDay: number, toMealType: string, toIndex: number]
-  reorderItems: [day: number, mealType: string, orderedSlots: MenuSlot[]]
+  moveItem: [slot: MenuSlot, toDay: number, toMealTypeId: number, toIndex: number]
+  reorderItems: [day: number, mealTypeId: number, orderedSlots: MenuSlot[]]
   openPicker: []
 }>()
 
@@ -128,7 +128,7 @@ function buildContextMenuItems() {
         const items = pasteSlot()
         if (!items || items.length === 0) return
         await menuStore.ensureMenuSelected()
-        await menuStore.mergeItemsIntoSlot(props.day, props.mealType, items)
+        await menuStore.mergeItemsIntoSlot(props.day, props.mealTypeId, items)
         closeContextMenu()
       },
     },
@@ -173,7 +173,7 @@ let sortable: Sortable | null = null
 
 const rawCellSlots = computed(() =>
   props.slots
-    .filter((s) => s.day === props.day && s.meal_type === props.mealType)
+    .filter((s) => s.day === props.day && s.meal_type_id === props.mealTypeId)
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
 )
 
@@ -257,9 +257,9 @@ function initSortable() {
     dragClass: 'sortable-drag',
     onEnd(evt) {
       const fromDay = Number(evt.from.dataset.day)
-      const fromMeal = evt.from.dataset.mealType!
+      const fromMealTypeId = Number(evt.from.dataset.mealTypeId)
       const toDay = Number(evt.to.dataset.day)
-      const toMeal = evt.to.dataset.mealType!
+      const toMealTypeId = Number(evt.to.dataset.mealTypeId)
       const oldIdx = evt.oldIndex!
       const newIdx = evt.newIndex!
 
@@ -278,18 +278,18 @@ function initSortable() {
 
       /* Resolve source slot from the index within that cell */
       const sourceSlots = props.slots
-        .filter((s) => s.day === fromDay && s.meal_type === fromMeal)
+        .filter((s) => s.day === fromDay && s.meal_type_id === fromMealTypeId)
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
       const movedSlot = sourceSlots[oldIdx]
       if (!movedSlot) return
 
-      if (fromDay !== toDay || fromMeal !== toMeal) {
-        emit('moveItem', movedSlot, toDay, toMeal, newIdx)
+      if (fromDay !== toDay || fromMealTypeId !== toMealTypeId) {
+        emit('moveItem', movedSlot, toDay, toMealTypeId, newIdx)
       } else if (oldIdx !== newIdx) {
         const reordered = [...sourceSlots]
         reordered.splice(oldIdx, 1)
         reordered.splice(newIdx, 0, movedSlot)
-        emit('reorderItems', fromDay, fromMeal, reordered)
+        emit('reorderItems', fromDay, fromMealTypeId, reordered)
       }
     },
   })
@@ -323,7 +323,7 @@ watch(
     @dragleave="dragOver = false"
     @drop="onDrop"
   >
-    <div ref="listRef" :data-day="day" :data-meal-type="mealType"
+    <div ref="listRef" :data-day="day" :data-meal-type-id="mealTypeId"
          class="flex flex-col gap-1 min-h-[8px] flex-1 overflow-y-auto"
          :class="props.size === 'full' ? '' : 'max-h-40'">
       <ItemRow

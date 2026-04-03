@@ -3,30 +3,30 @@ import type { FamilyMember, MenuSlot } from '@/api/types'
 import GridCell from './GridCell.vue'
 import MobileGridNavigator from './MobileGridNavigator.vue'
 
-defineProps<{
+const props = defineProps<{
   slots: MenuSlot[]
   recipeNames: Record<number, string>
   productNames: Record<number, string>
   pickerDay?: number | null
-  pickerMealType?: string | null
+  pickerMealTypeId?: number | null
   menuId?: number | null
   activeMemberIds?: Set<number>
   allActive?: boolean
   familyMembers?: FamilyMember[]
+  mealTypes?: { id: number; name: string }[]
 }>()
 
 const emit = defineEmits<{
-  addItem: [day: number, mealType: string, data: { type: 'recipe' | 'product'; id: number }]
-  removeItem: [day: number, mealType: string, data: { recipe_id?: number | null; product_id?: number | null }]
+  addItem: [day: number, mealTypeId: number, data: { type: 'recipe' | 'product'; id: number }]
+  removeItem: [day: number, mealTypeId: number, data: { recipe_id?: number | null; product_id?: number | null }]
   editItem: [slot: MenuSlot]
-  moveItem: [slot: MenuSlot, toDay: number, toMealType: string, toIndex: number]
-  reorderItems: [day: number, mealType: string, orderedSlots: MenuSlot[]]
-  openPicker: [day: number, mealType: string]
+  moveItem: [slot: MenuSlot, toDay: number, toMealTypeId: number, toIndex: number]
+  reorderItems: [day: number, mealTypeId: number, orderedSlots: MenuSlot[]]
+  openPicker: [day: number, mealTypeId: number]
   dayScrolled: []
 }>()
 
 const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-const meals = ['Завтрак', 'Обед', 'Ужин']
 </script>
 
 <template>
@@ -37,11 +37,12 @@ const meals = ['Завтрак', 'Обед', 'Ужин']
     :recipe-names="recipeNames"
     :product-names="productNames"
     :picker-day="pickerDay"
-    :picker-meal-type="pickerMealType"
+    :picker-meal-type-id="pickerMealTypeId ?? null"
     :menu-id="menuId"
     :active-member-ids="activeMemberIds"
     :all-active="allActive"
     :family-members="familyMembers"
+    :meal-types="props.mealTypes ?? []"
     @add-item="(d, m, data) => emit('addItem', d, m, data)"
     @remove-item="(d, m, data) => emit('removeItem', d, m, data)"
     @edit-item="(slot) => emit('editItem', slot)"
@@ -52,7 +53,10 @@ const meals = ['Завтрак', 'Обед', 'Ужин']
   />
 
   <!-- Desktop: original CSS grid layout (hidden below lg) -->
-  <div class="hidden lg:grid h-full min-w-[700px] grid-cols-[60px_repeat(7,1fr)] grid-rows-[auto_repeat(3,1fr)] gap-px bg-gray-200 rounded-lg overflow-hidden text-sm">
+  <div
+    class="hidden lg:grid h-full min-w-[700px] grid-cols-[60px_repeat(7,1fr)] gap-px bg-gray-200 rounded-lg overflow-hidden text-sm"
+    :style="{ gridTemplateRows: `auto repeat(${(props.mealTypes ?? []).length}, 1fr)` }"
+  >
     <!-- Header row -->
     <div class="bg-gray-100" />
     <div
@@ -64,23 +68,24 @@ const meals = ['Завтрак', 'Обед', 'Ужин']
     </div>
 
     <!-- Meal rows -->
-    <template v-for="(meal, mi) in meals" :key="'row-' + meal">
-      <div class="bg-gray-100 font-semibold px-3 py-2 flex items-start">{{ meal }}</div>
+    <template v-for="mt in (props.mealTypes ?? [])" :key="'row-' + mt.id">
+      <div class="bg-gray-100 font-semibold px-3 py-2 flex items-start">{{ mt.name }}</div>
       <GridCell
         v-for="day in 7"
-        :key="'gc-' + day + '-' + meal"
+        :key="'gc-' + day + '-' + mt.id"
         :day="day - 1"
-        :meal-type="meal"
+        :meal-type-id="mt.id"
         :slots="slots"
         :recipe-names="recipeNames"
         :product-names="productNames"
+        :picker-active="pickerDay === day - 1 && pickerMealTypeId === mt.id"
         :active-member-ids="activeMemberIds"
         :all-active="allActive"
         :family-members="familyMembers"
-        @add-item="(data) => emit('addItem', day - 1, meal, data)"
-        @remove-item="(data) => emit('removeItem', day - 1, meal, data)"
+        @add-item="(data) => emit('addItem', day - 1, mt.id, data)"
+        @remove-item="(data) => emit('removeItem', day - 1, mt.id, data)"
         @edit-item="(slot) => emit('editItem', slot)"
-        @move-item="(slot, toDay, toMeal, toIdx) => emit('moveItem', slot, toDay, toMeal, toIdx)"
+        @move-item="(slot, toDay, toMealTypeId, toIdx) => emit('moveItem', slot, toDay, toMealTypeId, toIdx)"
         @reorder-items="(d, m, ordered) => emit('reorderItems', d, m, ordered)"
       />
     </template>

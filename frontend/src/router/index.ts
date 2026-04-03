@@ -51,6 +51,10 @@ const router = createRouter({
           props: { type: 'recipe' as const },
         },
         {
+          path: 'meal-types',
+          component: () => import('@/components/settings/MealTypePanel.vue'),
+        },
+        {
           path: 'password',
           component: () => import('@/components/settings/ChangePasswordPanel.vue'),
         },

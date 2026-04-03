@@ -9,6 +9,9 @@ import type {
   ImportResult,
   IngredientRow,
   MealSummaryResponse,
+  MealType,
+  MealTypeCreate,
+  MealTypeUsageResponse,
   Menu,
   MenuSlot,
   MoveSlotRequest,
@@ -315,3 +318,15 @@ export const updatePreference = (id: number, data: PreferenceCreate) =>
 export const deletePreference = (id: number) => api.delete(`/preferences/${id}`)
 export const fetchRecipeMatchingPreferences = (recipeId: number) =>
   api.get<PreferenceMatchResponse>(`/recipes/${recipeId}/matching-preferences`).then((r) => r.data)
+
+/* Meal Types */
+export const fetchMealTypes = () =>
+  api.get<MealType[]>('/meal-types').then((r) => r.data)
+export const createMealType = (data: MealTypeCreate) =>
+  api.post<MealType>('/meal-types', data).then((r) => r.data)
+export const updateMealType = (id: number, data: MealTypeCreate) =>
+  api.put<MealType>(`/meal-types/${id}`, data).then((r) => r.data)
+export const deleteMealType = (id: number) =>
+  api.delete(`/meal-types/${id}`)
+export const fetchMealTypeUsage = (id: number) =>
+  api.get<MealTypeUsageResponse>(`/meal-types/${id}/usage`).then((r) => r.data)

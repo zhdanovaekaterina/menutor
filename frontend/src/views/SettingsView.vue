@@ -7,6 +7,7 @@ const links = [
   { to: '/settings/preferences', label: 'Предпочтения', mobileLabel: 'Предпочтения' },
   { to: '/settings/product-categories', label: 'Категории продуктов', mobileLabel: 'Кат. продуктов' },
   { to: '/settings/recipe-categories', label: 'Категории рецептов', mobileLabel: 'Кат. рецептов' },
+  { to: '/settings/meal-types', label: 'Приемы пищи', mobileLabel: 'Приемы пищи' },
   { to: '/settings/password', label: 'Настройки аккаунта', mobileLabel: 'Аккаунт' },
   { to: '/settings/shopping-list', label: 'Список покупок', mobileLabel: 'Список покупок' },
   { to: '/settings/about', label: 'О программе', mobileLabel: 'О прогр.' },
