@@ -3,7 +3,7 @@ import pytest
 from backend.domain.entities.preference import Preference
 from backend.domain.exceptions import InvalidEntityError
 from backend.domain.value_objects.preference_enums import PreferenceMode, PreferenceType
-from backend.domain.value_objects.types import PreferenceId, ProductCategoryId, ProductId, UserId
+from backend.domain.value_objects.types import PreferenceId, ProductCategoryId, ProductId, RecipeCategoryId, UserId
 
 
 def _pref(**kwargs) -> Preference:
@@ -83,3 +83,31 @@ def test_empty_ids_is_valid():
     pref = _pref(category_ids=[], product_ids=[])
     assert pref.category_ids == []
     assert pref.product_ids == []
+
+
+def test_category_based_with_recipe_category_ids_is_valid():
+    pref = _pref(
+        type=PreferenceType.CATEGORY_BASED,
+        mode=PreferenceMode.BLOCKED,
+        recipe_category_ids=[RecipeCategoryId(3)],
+    )
+    assert pref.recipe_category_ids == [RecipeCategoryId(3)]
+
+
+def test_allergy_with_recipe_category_ids_is_valid():
+    pref = _pref(
+        type=PreferenceType.ALLERGY,
+        mode=PreferenceMode.BLOCKED,
+        recipe_category_ids=[RecipeCategoryId(5)],
+    )
+    assert pref.recipe_category_ids == [RecipeCategoryId(5)]
+
+
+def test_empty_recipe_category_ids_is_valid():
+    pref = _pref(recipe_category_ids=[])
+    assert pref.recipe_category_ids == []
+
+
+def test_recipe_category_ids_default_is_empty():
+    pref = _pref()
+    assert pref.recipe_category_ids == []
