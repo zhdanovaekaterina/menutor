@@ -10,6 +10,7 @@ from backend.domain.value_objects.types import (
     PreferenceId,
     ProductCategoryId,
     ProductId,
+    RecipeCategoryId,
     UserId,
 )
 
@@ -21,6 +22,7 @@ class PreferenceData:
     mode: PreferenceMode
     category_ids: list[ProductCategoryId] = field(default_factory=list)
     product_ids: list[ProductId] = field(default_factory=list)
+    recipe_category_ids: list[RecipeCategoryId] = field(default_factory=list)
 
 
 class CreatePreference:
@@ -38,6 +40,7 @@ class CreatePreference:
             mode=data.mode,
             category_ids=data.category_ids,
             product_ids=data.product_ids,
+            recipe_category_ids=data.recipe_category_ids,
             user_id=user_id,
         )
         return self._repo.save(preference)
@@ -61,6 +64,7 @@ class UpdatePreference:
             mode=data.mode,
             category_ids=data.category_ids,
             product_ids=data.product_ids,
+            recipe_category_ids=data.recipe_category_ids,
             user_id=user_id,
         )
         return self._repo.save(preference)

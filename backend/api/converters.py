@@ -78,6 +78,7 @@ def preference_to_response(pref: Preference) -> PreferenceResponse:
         mode=pref.mode.value,
         category_ids=[int(cid) for cid in pref.category_ids],
         product_ids=[int(pid) for pid in pref.product_ids],
+        recipe_category_ids=[int(rcid) for rcid in pref.recipe_category_ids],
     )
 
 
@@ -88,6 +89,7 @@ def schema_to_preference_data(body: PreferenceCreate) -> PreferenceData:
         mode=PreferenceMode(body.mode),
         category_ids=[ProductCategoryId(cid) for cid in body.category_ids],
         product_ids=[ProductId(pid) for pid in body.product_ids],
+        recipe_category_ids=[RecipeCategoryId(rcid) for rcid in body.recipe_category_ids],
     )
 
 # ── Recipe ─────────────────────────────────────────────────────────

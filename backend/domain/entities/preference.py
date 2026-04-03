@@ -6,6 +6,7 @@ from backend.domain.value_objects.types import (
     PreferenceId,
     ProductCategoryId,
     ProductId,
+    RecipeCategoryId,
     UserId,
 )
 
@@ -18,6 +19,7 @@ class Preference:
     mode: PreferenceMode
     category_ids: list[ProductCategoryId] = field(default_factory=list)
     product_ids: list[ProductId] = field(default_factory=list)
+    recipe_category_ids: list[RecipeCategoryId] = field(default_factory=list)
     user_id: UserId = field(default=UserId(0))
 
     def __post_init__(self) -> None:

@@ -10,11 +10,13 @@ from backend.domain.value_objects.types import (
     PreferenceId,
     ProductCategoryId,
     ProductId,
+    RecipeCategoryId,
     UserId,
 )
 from backend.infrastructure.database.models import (
     PreferenceCategoryRow,
     PreferenceProductRow,
+    PreferenceRecipeCategoryRow,
     PreferenceRow,
 )
 
@@ -107,6 +109,10 @@ class OrmPreferenceRepository(PreferenceRepository):
                 PreferenceProductRow(product_id=int(pid))
                 for pid in pref.product_ids
             ],
+            recipe_categories=[
+                PreferenceRecipeCategoryRow(recipe_category_id=int(rcid))
+                for rcid in pref.recipe_category_ids
+            ],
         )
 
     def _update_row(self, row: Any, pref: Preference) -> None:
@@ -119,6 +125,11 @@ class OrmPreferenceRepository(PreferenceRepository):
         row.products.clear()
         for pid in pref.product_ids:
             row.products.append(PreferenceProductRow(product_id=int(pid)))
+        row.recipe_categories.clear()
+        for rcid in pref.recipe_category_ids:
+            row.recipe_categories.append(
+                PreferenceRecipeCategoryRow(recipe_category_id=int(rcid))
+            )
 
     @staticmethod
     def _row_to_entity(row: Any) -> Preference:
@@ -129,5 +140,8 @@ class OrmPreferenceRepository(PreferenceRepository):
             mode=PreferenceMode(row.mode),
             category_ids=[ProductCategoryId(c.category_id) for c in row.categories],
             product_ids=[ProductId(p.product_id) for p in row.products],
+            recipe_category_ids=[
+                RecipeCategoryId(rc.recipe_category_id) for rc in row.recipe_categories
+            ],
             user_id=UserId(row.user_id),
         )

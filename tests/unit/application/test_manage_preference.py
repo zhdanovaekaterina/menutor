@@ -12,7 +12,7 @@ from backend.application.use_cases.crud_base import GetEntity, ListEntities
 from backend.domain.entities.preference import Preference
 from backend.domain.exceptions import DuplicateNameError, EntityNotFoundError
 from backend.domain.value_objects.preference_enums import PreferenceMode, PreferenceType
-from backend.domain.value_objects.types import PreferenceId, UserId
+from backend.domain.value_objects.types import PreferenceId, RecipeCategoryId, UserId
 
 UID = UserId(1)
 
@@ -171,3 +171,42 @@ def test_list_preferences_returns_all() -> None:
     result = ListEntities(repo).execute(UID)
 
     assert len(result) == 2
+
+
+def test_create_preference_with_recipe_category_ids() -> None:
+    repo = MagicMock()
+    repo.find_by_name.return_value = None
+    saved = _pref()
+    saved.recipe_category_ids = [RecipeCategoryId(3)]
+    repo.save.return_value = saved
+
+    data = PreferenceData(
+        name="Веган",
+        type=PreferenceType.CATEGORY_BASED,
+        mode=PreferenceMode.BLOCKED,
+        recipe_category_ids=[RecipeCategoryId(3)],
+    )
+    CreatePreference(repo).execute(data, UID)
+
+    call_arg: Preference = repo.save.call_args[0][0]
+    assert call_arg.recipe_category_ids == [RecipeCategoryId(3)]
+
+
+def test_update_preference_with_recipe_category_ids() -> None:
+    repo = MagicMock()
+    repo.get_by_id.return_value = _pref(id=1)
+    repo.find_by_name.return_value = None
+    saved = _pref(id=1)
+    saved.recipe_category_ids = [RecipeCategoryId(5)]
+    repo.save.return_value = saved
+
+    data = PreferenceData(
+        name="Веган",
+        type=PreferenceType.CATEGORY_BASED,
+        mode=PreferenceMode.BLOCKED,
+        recipe_category_ids=[RecipeCategoryId(5)],
+    )
+    UpdatePreference(repo).execute(PreferenceId(1), data, UID)
+
+    call_arg: Preference = repo.save.call_args[0][0]
+    assert call_arg.recipe_category_ids == [RecipeCategoryId(5)]
