@@ -19,6 +19,7 @@ const productStore = useProductStore()
 onMounted(async () => {
   await Promise.all([
     categoryStore.load('product'),
+    categoryStore.load('recipe'),
     productStore.allItems.length === 0 ? productStore.load() : Promise.resolve(),
   ])
 })
@@ -28,6 +29,7 @@ const type = ref<'CATEGORY_BASED' | 'ALLERGY'>(props.initial?.type ?? 'CATEGORY_
 const mode = ref<'BLOCKED' | 'ALLOWED'>(props.initial?.mode ?? 'BLOCKED')
 const selectedCategoryIds = ref<number[]>(props.initial?.category_ids ?? [])
 const selectedProductIds = ref<number[]>(props.initial?.product_ids ?? [])
+const selectedRecipeCategoryIds = ref<number[]>(props.initial?.recipe_category_ids ?? [])
 
 // ALLERGY always forces BLOCKED mode
 watch(type, (newType) => {
@@ -43,6 +45,10 @@ const activeProductCategories = computed(() =>
   categoryStore.productCategories.filter((c) => c.active),
 )
 
+const activeRecipeCategories = computed(() =>
+  categoryStore.recipeCategories.filter((c) => c.active),
+)
+
 function toggleCategory(id: number) {
   const idx = selectedCategoryIds.value.indexOf(id)
   if (idx === -1) selectedCategoryIds.value.push(id)
@@ -55,6 +61,12 @@ function toggleProduct(id: number) {
   else selectedProductIds.value.splice(idx, 1)
 }
 
+function toggleRecipeCategory(id: number) {
+  const idx = selectedRecipeCategoryIds.value.indexOf(id)
+  if (idx === -1) selectedRecipeCategoryIds.value.push(id)
+  else selectedRecipeCategoryIds.value.splice(idx, 1)
+}
+
 function onSubmit() {
   emit('save', {
     name: name.value.trim(),
@@ -62,6 +74,7 @@ function onSubmit() {
     mode: type.value === 'ALLERGY' ? 'BLOCKED' : mode.value,
     category_ids: type.value === 'CATEGORY_BASED' ? selectedCategoryIds.value : [],
     product_ids: type.value === 'ALLERGY' ? selectedProductIds.value : [],
+    recipe_category_ids: selectedRecipeCategoryIds.value,
   })
 }
 </script>
@@ -153,6 +166,35 @@ function onSubmit() {
         </label>
       </div>
       <p v-else class="text-sm text-gray-400">Нет продуктов</p>
+    </div>
+
+    <!-- Recipe categories (for both CATEGORY_BASED and ALLERGY) -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Категории рецептов</label>
+      <div
+        v-if="activeRecipeCategories.length"
+        class="border border-gray-300 rounded-lg divide-y max-h-40 overflow-y-auto"
+      >
+        <label
+          v-for="cat in activeRecipeCategories"
+          :key="cat.id"
+          class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm"
+        >
+          <input
+            type="checkbox"
+            :checked="selectedRecipeCategoryIds.includes(cat.id)"
+            class="rounded"
+            @change="toggleRecipeCategory(cat.id)"
+          />
+          <span
+            v-if="cat.color"
+            class="inline-block w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
+            :style="{ backgroundColor: cat.color }"
+          />
+          {{ cat.name }}
+        </label>
+      </div>
+      <p v-else class="text-sm text-gray-400">Нет активных категорий рецептов</p>
     </div>
 
     <!-- Actions -->

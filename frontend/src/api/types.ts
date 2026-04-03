@@ -176,6 +176,7 @@ export interface PreferenceCreate {
   mode: 'BLOCKED' | 'ALLOWED'
   category_ids: number[]
   product_ids: number[]
+  recipe_category_ids: number[]
 }
 
 export interface Preference {
@@ -185,6 +186,7 @@ export interface Preference {
   mode: 'BLOCKED' | 'ALLOWED'
   category_ids: number[]
   product_ids: number[]
+  recipe_category_ids: number[]
 }
 
 export interface PreferenceMatchResponse {

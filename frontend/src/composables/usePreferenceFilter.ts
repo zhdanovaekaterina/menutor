@@ -1,6 +1,34 @@
 import { computed, type Ref } from 'vue'
 import type { FamilyMember, Preference, Product, Recipe } from '@/api/types'
 
+function resolveRecipeCategoryIds(
+  recipe: Recipe,
+  allRecipesById: Map<number, Recipe>,
+  visited: Set<number>,
+): [Set<number>, boolean] {
+  if (visited.has(recipe.id)) return [new Set(), false]
+  visited.add(recipe.id)
+  const ids = new Set<number>()
+  let hasUncategorized = false
+  if (recipe.category_id === 0) {
+    hasUncategorized = true
+  } else {
+    ids.add(recipe.category_id)
+  }
+  for (const ing of recipe.ingredients) {
+    if (ing.sub_recipe_id != null) {
+      const sub = allRecipesById.get(ing.sub_recipe_id)
+      if (sub) {
+        const [subIds, subUncategorized] = resolveRecipeCategoryIds(sub, allRecipesById, visited)
+        subIds.forEach(id => ids.add(id))
+        hasUncategorized = hasUncategorized || subUncategorized
+      }
+    }
+  }
+  visited.delete(recipe.id)
+  return [ids, hasUncategorized]
+}
+
 function resolveProductIds(
   recipe: Recipe,
   allRecipesById: Map<number, Recipe>,
@@ -43,6 +71,7 @@ function recipeViolatesPref(
 
   const blockedProductSet = new Set(pref.product_ids)
   const prefCategorySet = new Set(pref.category_ids)
+  const prefRecipeCategorySet = new Set(pref.recipe_category_ids)
 
   if (pref.type === 'ALLERGY') {
     for (const pid of productIds) {
@@ -51,6 +80,12 @@ function recipeViolatesPref(
     for (const cid of categoryIds) {
       if (prefCategorySet.has(cid)) return true
     }
+    if (prefRecipeCategorySet.size > 0) {
+      const [recipeCatIds] = resolveRecipeCategoryIds(recipe, allRecipesById, new Set())
+      for (const cid of recipeCatIds) {
+        if (prefRecipeCategorySet.has(cid)) return true
+      }
+    }
     return false
   }
 
@@ -58,15 +93,37 @@ function recipeViolatesPref(
     for (const cid of categoryIds) {
       if (prefCategorySet.has(cid)) return true
     }
+    if (prefRecipeCategorySet.size > 0) {
+      const [recipeCatIds] = resolveRecipeCategoryIds(recipe, allRecipesById, new Set())
+      for (const cid of recipeCatIds) {
+        if (prefRecipeCategorySet.has(cid)) return true
+      }
+    }
     return false
   }
 
   // ALLOWED mode
-  if (productIds.size === 0) return true
-  if (hasUncategorized) return true
-  for (const cid of categoryIds) {
-    if (!prefCategorySet.has(cid)) return true
+  const productCheckNeeded = prefCategorySet.size > 0
+  const recipeCheckNeeded = prefRecipeCategorySet.size > 0
+
+  if (!productCheckNeeded && !recipeCheckNeeded) return true
+
+  if (productCheckNeeded) {
+    if (productIds.size === 0) return true
+    if (hasUncategorized) return true
+    for (const cid of categoryIds) {
+      if (!prefCategorySet.has(cid)) return true
+    }
   }
+
+  if (recipeCheckNeeded) {
+    const [recipeCatIds, hasUncategorizedRecipe] = resolveRecipeCategoryIds(recipe, allRecipesById, new Set())
+    if (hasUncategorizedRecipe) return true
+    for (const cid of recipeCatIds) {
+      if (!prefRecipeCategorySet.has(cid)) return true
+    }
+  }
+
   return false
 }
 
