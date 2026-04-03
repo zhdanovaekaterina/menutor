@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from backend.application.use_cases.manage_meal_type import CreateSystemMealTypes
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.entities.refresh_token import RefreshToken
 from backend.domain.entities.user import User
 from backend.domain.exceptions import AuthenticationError, UserAlreadyExistsError
 from backend.domain.ports.family_member_repository import FamilyMemberRepository
+from backend.domain.ports.meal_type_repository import MealTypeRepository
 from backend.domain.ports.refresh_token_repository import RefreshTokenRepository
 from backend.domain.ports.user_repository import UserRepository
 from backend.domain.services.password_hasher import PasswordHasher
@@ -40,10 +42,12 @@ class RegisterUser:
         user_repo: UserRepository,
         hasher: PasswordHasher,
         family_repo: FamilyMemberRepository,
+        meal_type_repo: MealTypeRepository,
     ) -> None:
         self._user_repo = user_repo
         self._hasher = hasher
         self._family_repo = family_repo
+        self._meal_type_repo = meal_type_repo
 
     def execute(self, data: RegisterData) -> User:
         existing = self._user_repo.get_by_email(data.email)
@@ -64,6 +68,7 @@ class RegisterUser:
             portion_multiplier=1.0,
             user_id=saved_user.id,
         ))
+        CreateSystemMealTypes(self._meal_type_repo).execute(saved_user.id)
         return saved_user
 
 

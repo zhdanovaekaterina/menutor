@@ -17,7 +17,8 @@ from backend.composition._infrastructure import _Infrastructure
 def _wire_auth(infra: _Infrastructure) -> dict[str, Any]:
     return {
         "register_user": RegisterUser(
-            infra.user_repo, infra.password_hasher, infra.family_repo
+            infra.user_repo, infra.password_hasher, infra.family_repo,
+            infra.meal_type_repo,
         ),
         "login_user": LoginUser(
             infra.user_repo,

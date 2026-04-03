@@ -30,6 +30,9 @@ from backend.infrastructure.export.text_exporter import ShoppingListTextExporter
 from backend.infrastructure.repositories.orm_family_member_repository import (
     OrmFamilyMemberRepository,
 )
+from backend.infrastructure.repositories.orm_meal_type_repository import (
+    OrmMealTypeRepository,
+)
 from backend.infrastructure.repositories.orm_menu_repository import (
     OrmMenuRepository,
 )
@@ -78,6 +81,7 @@ class _Infrastructure:
     pdf_exporter: ShoppingListPdfExporter
     builder: ShoppingListBuilder
     saved_shopping_list_repo: OrmSavedShoppingListRepository
+    meal_type_repo: OrmMealTypeRepository
 
 
 _TEST_JWT_SECRET = "test-only-secret-do-not-use-in-production"
@@ -137,4 +141,5 @@ def _create_infrastructure(db_url: str | None) -> _Infrastructure:
             unit_converter=UnitConverter(),
         ),
         saved_shopping_list_repo=OrmSavedShoppingListRepository(session),
+        meal_type_repo=OrmMealTypeRepository(session),
     )

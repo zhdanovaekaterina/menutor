@@ -1,7 +1,13 @@
 from backend.application.use_cases.crud_base import load_owned
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.ports.menu_repository import MenuRepository
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, UserId
+from backend.domain.value_objects.types import (
+    MealTypeId,
+    MenuId,
+    ProductId,
+    RecipeId,
+    UserId,
+)
 
 
 class CreateMenu:
@@ -51,7 +57,7 @@ class ListMenus:
 
 
 class AddDishToSlot:
-    """Add or replace an item in a menu slot (upsert by day+meal_type+item_id)."""
+    """Add or replace an item in a menu slot (upsert by day+meal_type_id+item_id)."""
 
     def __init__(self, repo: MenuRepository) -> None:
         self._repo = repo
@@ -72,39 +78,39 @@ class MoveSlotInMenu:
         self,
         menu_id: MenuId,
         day: int,
-        meal_type: str,
+        meal_type_id: MealTypeId,
         user_id: UserId,
         to_day: int,
-        to_meal_type: str,
+        to_meal_type_id: MealTypeId,
         to_position: int,
         recipe_id: RecipeId | None = None,
         product_id: ProductId | None = None,
         position: int | None = None,
     ) -> WeeklyMenu:
         menu = load_owned(self._repo, menu_id, user_id, "Меню", not_found="не найдено")
-        menu.move_slot(day, meal_type, recipe_id, product_id, to_day, to_meal_type, to_position, position)
+        menu.move_slot(day, meal_type_id, recipe_id, product_id, to_day, to_meal_type_id, to_position, position)
         return self._repo.save(menu)
 
 
 class RemoveDishFromSlot:
-    """Remove all items from a (day, meal_type) cell."""
+    """Remove all items from a (day, meal_type_id) cell."""
 
     def __init__(self, repo: MenuRepository) -> None:
         self._repo = repo
 
     def execute(
-        self, menu_id: MenuId, day: int, meal_type: str, user_id: UserId
+        self, menu_id: MenuId, day: int, meal_type_id: MealTypeId, user_id: UserId
     ) -> WeeklyMenu:
         menu = load_owned(self._repo, menu_id, user_id, "Меню", not_found="не найдено")
         menu.slots = [
             s for s in menu.slots
-            if not (s.day == day and s.meal_type == meal_type)
+            if not (s.day == day and s.meal_type_id == meal_type_id)
         ]
         return self._repo.save(menu)
 
 
 class RemoveItemFromSlot:
-    """Remove a specific item from a (day, meal_type) cell by recipe_id or product_id."""
+    """Remove a specific item from a (day, meal_type_id) cell by recipe_id or product_id."""
 
     def __init__(self, repo: MenuRepository) -> None:
         self._repo = repo
@@ -113,14 +119,14 @@ class RemoveItemFromSlot:
         self,
         menu_id: MenuId,
         day: int,
-        meal_type: str,
+        meal_type_id: MealTypeId,
         user_id: UserId,
         recipe_id: RecipeId | None = None,
         product_id: ProductId | None = None,
         position: int | None = None,
     ) -> WeeklyMenu:
         menu = load_owned(self._repo, menu_id, user_id, "Меню", not_found="не найдено")
-        menu.remove_item(day, meal_type, recipe_id, product_id, position)
+        menu.remove_item(day, meal_type_id, recipe_id, product_id, position)
         return self._repo.save(menu)
 
 
@@ -145,7 +151,7 @@ class CopyMenu:
         copied_slots = [
             MenuSlot(
                 day=s.day,
-                meal_type=s.meal_type,
+                meal_type_id=s.meal_type_id,
                 recipe_id=s.recipe_id,
                 product_id=s.product_id,
                 quantity=s.quantity,

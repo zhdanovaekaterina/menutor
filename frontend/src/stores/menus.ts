@@ -81,41 +81,41 @@ export const useMenuStore = defineStore('menus', () => {
     _updateMenu(updated)
   }
 
-  async function moveSlot(slot: MenuSlot, toDay: number, toMealType: string, toPosition: number) {
+  async function moveSlot(slot: MenuSlot, toDay: number, toMealTypeId: number, toPosition: number) {
     if (!current.value) return
     const updated = await moveSlotApi(current.value.id, {
       day: slot.day,
-      meal_type: slot.meal_type,
+      meal_type_id: slot.meal_type_id,
       recipe_id: slot.recipe_id,
       product_id: slot.product_id,
       position: slot.position ?? null,
       to_day: toDay,
-      to_meal_type: toMealType,
+      to_meal_type_id: toMealTypeId,
       to_position: toPosition,
     })
     _updateMenu(updated)
   }
 
-  async function reorderSlots(day: number, mealType: string, orderedSlots: MenuSlot[]) {
+  async function reorderSlots(day: number, mealTypeId: number, orderedSlots: MenuSlot[]) {
     if (!current.value) return
     let updated: Menu | null = null
     for (let i = 0; i < orderedSlots.length; i++) {
-      const s: MenuSlot = { ...orderedSlots[i], day, meal_type: mealType, position: i }
+      const s: MenuSlot = { ...orderedSlots[i], day, meal_type_id: mealTypeId, position: i }
       updated = await addSlot(current.value.id, s)
     }
     if (updated) _updateMenu(updated)
   }
 
-  async function mergeItemsIntoSlot(day: number, mealType: string, items: MenuSlot[]) {
+  async function mergeItemsIntoSlot(day: number, mealTypeId: number, items: MenuSlot[]) {
     if (!current.value) return
     for (const src of items) {
-      // Remap the copied slot to target day/meal_type, preserving quantity fields
+      // Remap the copied slot to target day/meal_type_id, preserving quantity fields
       const slot: MenuSlot = {
         ...src,
         day,
-        meal_type: mealType,
+        meal_type_id: mealTypeId,
       }
-      // addSlot on the backend is an upsert keyed on (day, meal_type, recipe_id, product_id),
+      // addSlot on the backend is an upsert keyed on (day, meal_type_id, recipe_id, product_id),
       // so calling it for an existing item overwrites quantity/servings_override,
       // and for a new item it appends it.
       await addSlotToMenu(slot)

@@ -20,7 +20,7 @@ def _row(**kwargs) -> dict:
     defaults = dict(
         name="Меню на неделю",
         slots=[
-            {"day": 0, "meal_type": "завтрак", "recipe_id": 1, "product_id": None,
+            {"day": 0, "meal_type_id": 1, "recipe_id": 1, "product_id": None,
              "quantity": None, "unit": None, "servings_override": None, "position": 0},
         ],
     )
@@ -76,7 +76,7 @@ def test_mixed_create_and_update() -> None:
 
 def test_invalid_slot_both_ids_raises() -> None:
     row = _row(slots=[
-        {"day": 0, "meal_type": "завтрак", "recipe_id": 1, "product_id": 2, "position": 0}
+        {"day": 0, "meal_type_id": 1, "recipe_id": 1, "product_id": 2, "position": 0}
     ])
     with pytest.raises(ImportValidationError, match="слот"):
         MenuJsonImporter(_mock_repo()).import_from_bytes(_make_json(row), UID)
@@ -84,7 +84,7 @@ def test_invalid_slot_both_ids_raises() -> None:
 
 def test_invalid_slot_no_ids_raises() -> None:
     row = _row(slots=[
-        {"day": 0, "meal_type": "завтрак", "recipe_id": None, "product_id": None, "position": 0}
+        {"day": 0, "meal_type_id": 1, "recipe_id": None, "product_id": None, "position": 0}
     ])
     with pytest.raises(ImportValidationError, match="слот"):
         MenuJsonImporter(_mock_repo()).import_from_bytes(_make_json(row), UID)

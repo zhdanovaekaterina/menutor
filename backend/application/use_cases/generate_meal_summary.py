@@ -17,7 +17,7 @@ from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, User
 @dataclass
 class MealOccurrence:
     day: int
-    meal_type: str
+    meal_type_id: int
     servings: float
     pieces_override: int | None = None
     slot_index: int = 0
@@ -113,7 +113,7 @@ class GenerateMealSummary:
                 total_servings += servings_for_slot
                 occurrences.append(MealOccurrence(
                     day=slot.day,
-                    meal_type=slot.meal_type,
+                    meal_type_id=int(slot.meal_type_id),
                     servings=servings_for_slot,
                     pieces_override=slot.pieces_override,
                     slot_index=idx,
@@ -168,7 +168,7 @@ class GenerateMealSummary:
                 unit = u  # last wins (all should be same unit)
                 occurrences_list.append({
                     "day": slot.day,
-                    "meal_type": slot.meal_type,
+                    "meal_type_id": int(slot.meal_type_id),
                     "quantity": qty,
                     "unit": u,
                     "slot_index": idx,

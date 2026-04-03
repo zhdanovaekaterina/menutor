@@ -104,7 +104,7 @@ export interface Product {
 
 export interface MenuSlot {
   day: number
-  meal_type: string
+  meal_type_id: number
   recipe_id?: number | null
   product_id?: number | null
   quantity?: number | null
@@ -138,7 +138,7 @@ export interface Menu {
 
 export interface RemoveItemRequest {
   day: number
-  meal_type: string
+  meal_type_id: number
   recipe_id?: number | null
   product_id?: number | null
   position?: number | null
@@ -146,12 +146,12 @@ export interface RemoveItemRequest {
 
 export interface MoveSlotRequest {
   day: number
-  meal_type: string
+  meal_type_id: number
   recipe_id?: number | null
   product_id?: number | null
   position?: number | null
   to_day: number
-  to_meal_type: string
+  to_meal_type_id: number
   to_position: number
 }
 
@@ -334,7 +334,7 @@ export interface ImportResult {
 /* Meal Summary */
 export interface MealOccurrence {
   day: number
-  meal_type: string
+  meal_type_id: number
   servings: number
   pieces_override?: number | null
   slot_index: number
@@ -366,7 +366,7 @@ export interface MealSummaryRecipe {
 
 export interface MealSummaryProductOccurrence {
   day: number
-  meal_type: string
+  meal_type_id: number
   quantity: number
   unit: string
   slot_index: number
@@ -390,4 +390,29 @@ export interface MealSummaryResponse {
 export interface GenerateFilteredShoppingListRequest {
   slot_indices: number[]
   excluded_sub_recipe_ids: number[]
+}
+
+/* Meal Types */
+export interface MealType {
+  id: number
+  name: string
+  time: string
+  is_system: boolean
+  sort_order: number
+}
+
+export interface MealTypeCreate {
+  name: string
+  time: string
+}
+
+export interface MealTypeUsageMenu {
+  id: number
+  name: string
+}
+
+export interface MealTypeUsageResponse {
+  meal_type_id: number
+  menus: MealTypeUsageMenu[]
+  count: number
 }

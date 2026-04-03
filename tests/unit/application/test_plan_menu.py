@@ -15,7 +15,7 @@ from backend.application.use_cases.plan_menu import (
 )
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.exceptions import EntityNotFoundError
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, UserId
+from backend.domain.value_objects.types import MealTypeId, MenuId, ProductId, RecipeId, UserId
 
 UID = UserId(1)
 
@@ -25,12 +25,12 @@ def _menu(id: int = 1, slots: list[MenuSlot] | None = None) -> WeeklyMenu:
 
 
 def _slot(day: int = 0, meal: str = "обед", recipe_id: int = 1) -> MenuSlot:
-    return MenuSlot(day=day, meal_type=meal, recipe_id=RecipeId(recipe_id))
+    return MenuSlot(day=day, meal_type_id=MealTypeId(2), recipe_id=RecipeId(recipe_id))
 
 
 def _product_slot(day: int = 0, meal: str = "обед", product_id: int = 1,
                   quantity: float = 100.0, unit: str = "g") -> MenuSlot:
-    return MenuSlot(day=day, meal_type=meal, product_id=ProductId(product_id),
+    return MenuSlot(day=day, meal_type_id=MealTypeId(2), product_id=ProductId(product_id),
                     quantity=quantity, unit=unit)
 
 
@@ -129,9 +129,9 @@ def test_add_slot_appends_different_items_to_same_cell() -> None:
 
 def test_add_slot_replaces_duplicate_recipe_in_same_cell() -> None:
     """Adding same recipe to same (day, meal_type) replaces the existing one."""
-    existing = MenuSlot(day=0, meal_type="обед", recipe_id=RecipeId(1),
+    existing = MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1),
                         servings_override=1.0)
-    updated = MenuSlot(day=0, meal_type="обед", recipe_id=RecipeId(1),
+    updated = MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1),
                        servings_override=3.0)
     repo = MagicMock()
     repo.get_by_id.return_value = _menu(slots=[existing])
@@ -197,7 +197,7 @@ def test_remove_slot_removes_matching_day_and_meal() -> None:
     repo.get_by_id.return_value = _menu(slots=[_slot(0, "обед"), _slot(1, "ужин")])
     repo.save.side_effect = lambda m: m
 
-    result = RemoveDishFromSlot(repo).execute(MenuId(1), day=0, meal_type="обед", user_id=UID)
+    result = RemoveDishFromSlot(repo).execute(MenuId(1), day=0, meal_type_id=MealTypeId(2), user_id=UID)
 
     assert len(result.slots) == 1
     assert result.slots[0].day == 1
@@ -208,7 +208,7 @@ def test_remove_slot_no_op_when_slot_absent() -> None:
     repo.get_by_id.return_value = _menu(slots=[_slot(1, "ужин")])
     repo.save.side_effect = lambda m: m
 
-    result = RemoveDishFromSlot(repo).execute(MenuId(1), day=0, meal_type="обед", user_id=UID)
+    result = RemoveDishFromSlot(repo).execute(MenuId(1), day=0, meal_type_id=MealTypeId(2), user_id=UID)
 
     assert len(result.slots) == 1
 
@@ -232,7 +232,7 @@ def test_remove_item_removes_specific_recipe() -> None:
     repo.save.side_effect = lambda m: m
 
     result = RemoveItemFromSlot(repo).execute(
-        MenuId(1), day=0, meal_type="обед", user_id=UID, recipe_id=RecipeId(1)
+        MenuId(1), day=0, meal_type_id=MealTypeId(2), user_id=UID, recipe_id=RecipeId(1)
     )
 
     assert len(result.slots) == 1
@@ -248,7 +248,7 @@ def test_remove_item_removes_specific_product() -> None:
     repo.save.side_effect = lambda m: m
 
     result = RemoveItemFromSlot(repo).execute(
-        MenuId(1), day=0, meal_type="обед", user_id=UID, product_id=ProductId(5)
+        MenuId(1), day=0, meal_type_id=MealTypeId(2), user_id=UID, product_id=ProductId(5)
     )
 
     assert len(result.slots) == 1

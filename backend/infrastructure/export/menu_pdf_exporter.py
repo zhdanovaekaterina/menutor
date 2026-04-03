@@ -5,7 +5,6 @@ from typing import Any
 from backend.domain.entities.menu import WeeklyMenu
 
 _DAYS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
-_MEAL_TYPES = ["Завтрак", "Обед", "Ужин"]
 
 _UNIT_RU: dict[str, str] = {
     "g": "г", "kg": "кг", "ml": "мл", "l": "л",
@@ -69,7 +68,7 @@ _PRODUCT_DEFAULT_COLOR = "#10B981"
 def _cell_text(
     menu: WeeklyMenu,
     day: int,
-    meal_type: str,
+    meal_type_id: int,
     recipe_names: dict[int, str],
     product_names: dict[int, str],
     recipe_colors: dict[int, str] | None = None,
@@ -77,7 +76,7 @@ def _cell_text(
 ) -> str:
     """Build the text content for a single grid cell."""
     slots = [
-        s for s in menu.slots if s.day == day and s.meal_type == meal_type
+        s for s in menu.slots if s.day == day and int(s.meal_type_id) == meal_type_id
     ]
     slots.sort(key=lambda s: s.position)
 
@@ -117,6 +116,7 @@ def _build_pdf(
     paper: str = "a4",
     recipe_colors: dict[int, str] | None = None,
     product_colors: dict[int, str] | None = None,
+    meal_type_names: dict[int, str] | None = None,
 ) -> bytes:
     """Render the weekly menu as a PDF planning grid."""
     from reportlab.lib import colors  # type: ignore[import-untyped]
@@ -179,6 +179,23 @@ def _build_pdf(
         leading=11,
     )
 
+    # --- Build ordered list of (meal_type_id, label) pairs ---
+    # Use provided meal_type_names; fall back to generic label for unknown ids.
+    names = meal_type_names or {}
+
+    # Collect all unique meal_type_ids present in the menu, sorted by id for stable order
+    slot_type_ids = sorted({int(s.meal_type_id) for s in menu.slots})
+
+    # Build ordered set: ids from meal_type_names dict first (in their natural order by id),
+    # then any additional ids from slots not covered by the names dict.
+    known_ids = sorted(names.keys())
+    extra_ids = [tid for tid in slot_type_ids if tid not in names]
+    ordered_ids = known_ids + extra_ids
+
+    # If no meal type info at all, fall back to just the ids found in slots
+    if not ordered_ids:
+        ordered_ids = slot_type_ids
+
     # --- Build table data ---
     # Header row: ["", "Пн", "Вт", ..., "Вс"]
     header_row: list[Any] = [Paragraph("", header_style)]
@@ -187,17 +204,14 @@ def _build_pdf(
 
     table_data: list[list[Any]] = [header_row]
 
-    meal_types_present = _MEAL_TYPES.copy()
-    # Also include any custom meal types found in the menu that aren't in the default list
-    extra_types = sorted(
-        {s.meal_type for s in menu.slots if s.meal_type not in _MEAL_TYPES}
-    )
-    meal_types_present.extend(extra_types)
-
-    for meal_type in meal_types_present:
-        row: list[Any] = [Paragraph(meal_type, meal_label_style)]
+    for meal_type_id in ordered_ids:
+        label = names.get(meal_type_id, f"Тип #{meal_type_id}")
+        row: list[Any] = [Paragraph(label, meal_label_style)]
         for day_idx in range(7):
-            text = _cell_text(menu, day_idx, meal_type, recipe_names, product_names, recipe_colors, product_colors)
+            text = _cell_text(
+                menu, day_idx, meal_type_id,
+                recipe_names, product_names, recipe_colors, product_colors,
+            )
             row.append(Paragraph(text, cell_style))
         table_data.append(row)
 
@@ -250,5 +264,9 @@ class MenuPdfExporter:
         paper: str = "a4",
         recipe_colors: dict[int, str] | None = None,
         product_colors: dict[int, str] | None = None,
+        meal_type_names: dict[int, str] | None = None,
     ) -> bytes:
-        return _build_pdf(menu, recipe_names, product_names, paper, recipe_colors, product_colors)
+        return _build_pdf(
+            menu, recipe_names, product_names, paper,
+            recipe_colors, product_colors, meal_type_names,
+        )

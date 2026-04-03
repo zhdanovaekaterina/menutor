@@ -9,13 +9,13 @@ import IconChevronDown from '@/components/ui/icons/IconChevronDown.vue'
 
 const props = defineProps<{
   currentDay: number
-  currentMealType: string
+  currentMealTypeId: number
   slots: MenuSlot[]
-  mealTypes: string[]
+  mealTypes: { id: number; name: string }[]
   recipeNames: Record<number, string>
   productNames: Record<number, string>
   pickerDay?: number | null
-  pickerMealType?: string | null
+  pickerMealTypeId?: number | null
   activeMemberIds?: Set<number>
   allActive?: boolean
   familyMembers?: FamilyMember[]
@@ -26,18 +26,19 @@ const emit = defineEmits<{
   'navigate-day': [delta: number]
   'navigate-meal-type': [delta: number]
   'bounce': [direction: 'left' | 'right' | 'up' | 'down']
-  'add-item': [day: number, mealType: string, data: { type: 'recipe' | 'product'; id: number }]
-  'remove-item': [day: number, mealType: string, data: { recipe_id?: number | null; product_id?: number | null }]
+  'add-item': [day: number, mealTypeId: number, data: { type: 'recipe' | 'product'; id: number }]
+  'remove-item': [day: number, mealTypeId: number, data: { recipe_id?: number | null; product_id?: number | null }]
   'edit-item': [slot: MenuSlot]
-  'move-item': [slot: MenuSlot, toDay: number, toMealType: string, toIndex: number]
-  'reorder-items': [day: number, mealType: string, orderedSlots: MenuSlot[]]
-  'open-picker': [day: number, mealType: string]
+  'move-item': [slot: MenuSlot, toDay: number, toMealTypeId: number, toIndex: number]
+  'reorder-items': [day: number, mealTypeId: number, orderedSlots: MenuSlot[]]
+  'open-picker': [day: number, mealTypeId: number]
 }>()
 
 const dayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
-const isFirstMealType = computed(() => props.mealTypes.indexOf(props.currentMealType) === 0)
-const isLastMealType = computed(() => props.mealTypes.indexOf(props.currentMealType) === props.mealTypes.length - 1)
+const isFirstMealType = computed(() => props.mealTypes.findIndex(mt => mt.id === props.currentMealTypeId) === 0)
+const isLastMealType = computed(() => props.mealTypes.findIndex(mt => mt.id === props.currentMealTypeId) === props.mealTypes.length - 1)
+const currentMealTypeName = computed(() => props.mealTypes.find(mt => mt.id === props.currentMealTypeId)?.name ?? '')
 
 const bounceClass = ref('')
 
@@ -70,7 +71,7 @@ const { swipeHandlers } = useSwipeGesture({
       <ModeBackButton label="День" @click="emit('navigate-to-day')" />
       <div class="flex flex-col items-center">
         <span class="text-sm font-semibold text-gray-900">{{ dayLabels[currentDay] }}</span>
-        <span class="text-xs text-gray-500">{{ currentMealType }}</span>
+        <span class="text-xs text-gray-500">{{ currentMealTypeName }}</span>
       </div>
       <div class="flex flex-col items-center gap-0.5">
         <button
@@ -97,20 +98,20 @@ const { swipeHandlers } = useSwipeGesture({
       <GridCell
         size="full"
         :day="currentDay"
-        :meal-type="currentMealType"
+        :meal-type-id="currentMealTypeId"
         :slots="slots"
         :recipe-names="recipeNames"
         :product-names="productNames"
-        :picker-active="pickerDay === currentDay && pickerMealType === currentMealType"
+        :picker-active="pickerDay === currentDay && pickerMealTypeId === currentMealTypeId"
         :active-member-ids="activeMemberIds"
         :all-active="allActive"
         :family-members="familyMembers"
-        @add-item="(data) => emit('add-item', currentDay, currentMealType, data)"
-        @remove-item="(data) => emit('remove-item', currentDay, currentMealType, data)"
+        @add-item="(data) => emit('add-item', currentDay, currentMealTypeId, data)"
+        @remove-item="(data) => emit('remove-item', currentDay, currentMealTypeId, data)"
         @edit-item="(slot) => emit('edit-item', slot)"
         @move-item="(slot, d, m, idx) => emit('move-item', slot, d, m, idx)"
         @reorder-items="(d, m, ordered) => emit('reorder-items', d, m, ordered)"
-        @open-picker="emit('open-picker', currentDay, currentMealType)"
+        @open-picker="emit('open-picker', currentDay, currentMealTypeId)"
       />
     </div>
 
@@ -129,12 +130,12 @@ const { swipeHandlers } = useSwipeGesture({
     <!-- Meal type indicator -->
     <div class="flex justify-center items-center gap-3 py-1 pb-2 shrink-0">
       <span
-        v-for="meal in mealTypes"
-        :key="meal"
+        v-for="mt in mealTypes"
+        :key="mt.id"
         class="text-xs transition-colors duration-200"
-        :class="meal === currentMealType ? 'text-blue-700 font-semibold' : 'text-gray-400'"
+        :class="mt.id === currentMealTypeId ? 'text-blue-700 font-semibold' : 'text-gray-400'"
       >
-        {{ meal }}
+        {{ mt.name }}
       </span>
     </div>
   </div>

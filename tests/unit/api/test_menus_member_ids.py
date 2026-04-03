@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
-from backend.domain.value_objects.types import FamilyMemberId, MenuId, RecipeId
+from backend.domain.value_objects.types import FamilyMemberId, MealTypeId, MenuId, RecipeId
 
 
 def _menu(id: int = 1, slots: list[MenuSlot] | None = None) -> WeeklyMenu:
@@ -15,7 +15,7 @@ def _menu(id: int = 1, slots: list[MenuSlot] | None = None) -> WeeklyMenu:
 def _slot_with_members(member_ids: list[int], recipe_id: int = 1) -> MenuSlot:
     return MenuSlot(
         day=0,
-        meal_type="Завтрак",
+        meal_type_id=MealTypeId(1),
         recipe_id=RecipeId(recipe_id),
         member_ids=[FamilyMemberId(m) for m in member_ids],
     )
@@ -31,7 +31,7 @@ class TestAddSlotWithMemberIds:
         )
         body = {
             "day": 0,
-            "meal_type": "Завтрак",
+            "meal_type_id": 1,
             "recipe_id": 1,
             "member_ids": [1, 2],
         }
@@ -47,7 +47,7 @@ class TestAddSlotWithMemberIds:
         container.add_dish_to_slot.execute.return_value = _menu(
             slots=[_slot_with_members([])]
         )
-        body = {"day": 0, "meal_type": "Завтрак", "recipe_id": 1}
+        body = {"day": 0, "meal_type_id": 1, "recipe_id": 1}
         resp = client.post("/api/menus/1/slots", json=body)
         assert resp.status_code == 200
         slot = resp.json()["slots"][0]
@@ -77,7 +77,7 @@ class TestRemoveSlotWithPosition:
         container.remove_item_from_slot.execute.return_value = _menu()
         body = {
             "day": 0,
-            "meal_type": "Завтрак",
+            "meal_type_id": 1,
             "recipe_id": 1,
             "position": 2,
         }
@@ -91,7 +91,7 @@ class TestRemoveSlotWithPosition:
     ) -> None:
         """DELETE without position field — use case receives position=None."""
         container.remove_item_from_slot.execute.return_value = _menu()
-        body = {"day": 0, "meal_type": "Завтрак", "recipe_id": 1}
+        body = {"day": 0, "meal_type_id": 1, "recipe_id": 1}
         resp = client.request("DELETE", "/api/menus/1/slots", json=body)
         assert resp.status_code == 200
         _, kwargs = container.remove_item_from_slot.execute.call_args
@@ -104,14 +104,14 @@ class TestMoveSlotWithPosition:
     ) -> None:
         """POST /menus/{id}/slots/move with position field passes it to use case."""
         container.move_slot_in_menu.execute.return_value = _menu(
-            slots=[MenuSlot(day=1, meal_type="Обед", recipe_id=RecipeId(1))]
+            slots=[MenuSlot(day=1, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))]
         )
         body = {
             "day": 0,
-            "meal_type": "Завтрак",
+            "meal_type_id": 1,
             "recipe_id": 1,
             "to_day": 1,
-            "to_meal_type": "Обед",
+            "to_meal_type_id": 2,
             "to_position": 0,
             "position": 1,
         }
@@ -125,14 +125,14 @@ class TestMoveSlotWithPosition:
     ) -> None:
         """POST move without position — use case receives position=None."""
         container.move_slot_in_menu.execute.return_value = _menu(
-            slots=[MenuSlot(day=1, meal_type="Обед", recipe_id=RecipeId(1))]
+            slots=[MenuSlot(day=1, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))]
         )
         body = {
             "day": 0,
-            "meal_type": "Завтрак",
+            "meal_type_id": 1,
             "recipe_id": 1,
             "to_day": 1,
-            "to_meal_type": "Обед",
+            "to_meal_type_id": 2,
             "to_position": 0,
         }
         resp = client.post("/api/menus/1/slots/move", json=body)

@@ -10,9 +10,9 @@ class MenuJsonExporter:
     def _slot_to_dict(self, slot: Any) -> dict[str, Any]:
         return {
             "day": slot.day,
-            "meal_type": slot.meal_type,
-            "recipe_id": slot.recipe_id,
-            "product_id": slot.product_id,
+            "meal_type_id": int(slot.meal_type_id),
+            "recipe_id": int(slot.recipe_id) if slot.recipe_id is not None else None,
+            "product_id": int(slot.product_id) if slot.product_id is not None else None,
             "quantity": slot.quantity,
             "unit": slot.unit,
             "servings_override": slot.servings_override,
@@ -38,13 +38,13 @@ class MenuJsonExporter:
                 "name": "Меню на неделю",
                 "slots": [
                     {
-                        "day": 0, "meal_type": "завтрак",
+                        "day": 0, "meal_type_id": 1,
                         "recipe_id": 1, "product_id": None,
                         "quantity": None, "unit": None,
                         "servings_override": None, "pieces_override": None, "position": 0,
                     },
                     {
-                        "day": 0, "meal_type": "обед",
+                        "day": 0, "meal_type_id": 2,
                         "recipe_id": None, "product_id": 2,
                         "quantity": 250.0, "unit": "g",
                         "servings_override": None, "pieces_override": None, "position": 0,

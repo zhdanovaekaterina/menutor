@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class MealOccurrenceSchema(BaseModel):
     day: int
-    meal_type: str
+    meal_type_id: int
     servings: float
     pieces_override: int | None = None
     slot_index: int
@@ -37,7 +37,7 @@ class MealSummaryRecipeSchema(BaseModel):
 
 class MealSummaryProductOccurrence(BaseModel):
     day: int
-    meal_type: str
+    meal_type_id: int
     quantity: float
     unit: str
     slot_index: int

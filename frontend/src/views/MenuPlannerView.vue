@@ -28,6 +28,7 @@ import { downloadBlob } from '@/composables/useFileDownload'
 import { usePreferenceFilter } from '@/composables/usePreferenceFilter'
 import { useCategoryStore } from '@/stores/categories'
 import { useFamilyStore } from '@/stores/family'
+import { useMealTypeStore } from '@/stores/mealTypes'
 import { useMenuStore } from '@/stores/menus'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useProductStore } from '@/stores/products'
@@ -42,6 +43,7 @@ const recipeStore = useRecipeStore()
 const productStore = useProductStore()
 const familyStore = useFamilyStore()
 const categoryStore = useCategoryStore()
+const mealTypeStore = useMealTypeStore()
 const shoppingStore = useShoppingListStore()
 const preferencesStore = usePreferencesStore()
 const toast = useToastStore()
@@ -63,7 +65,7 @@ const mobileMenuOpen = ref(false)
 
 const pickerOpen = ref(false)
 const pickerDay = ref(0)
-const pickerMealType = ref('')
+const pickerMealTypeId = ref(0)
 
 const nameDialogOpen = ref(false)
 const confirmDeleteOpen = ref(false)
@@ -88,6 +90,7 @@ onMounted(async () => {
     preferencesStore.load(),
     categoryStore.load('product'),
     categoryStore.load('recipe'),
+    mealTypeStore.load(),
   ])
   if (previousId !== null) {
     await menuStore.select(previousId)
@@ -176,8 +179,12 @@ const dayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 const pickerDayLabel = computed(() => dayLabels[pickerDay.value] ?? '')
 
+const pickerMealTypeName = computed(() =>
+  mealTypeStore.items.find((mt) => mt.id === pickerMealTypeId.value)?.name ?? '',
+)
+
 const pickerExistingSlots = computed(() =>
-  slots.value.filter(s => s.day === pickerDay.value && s.meal_type === pickerMealType.value)
+  slots.value.filter(s => s.day === pickerDay.value && s.meal_type_id === pickerMealTypeId.value)
 )
 
 async function onSelectMenu(id: number) {
@@ -198,25 +205,25 @@ async function onDeleteMenu() {
   await menuStore.remove(selectedId.value)
 }
 
-async function onOpenPicker(day: number, mealType: string) {
+async function onOpenPicker(day: number, mealTypeId: number) {
   await menuStore.ensureMenuSelected()
   pickerDay.value = day
-  pickerMealType.value = mealType
+  pickerMealTypeId.value = mealTypeId
   pickerOpen.value = true
 }
 
 function onPickerSelect(data: { type: 'recipe' | 'product'; id: number }) {
-  onAddItem(pickerDay.value, pickerMealType.value, data)
+  onAddItem(pickerDay.value, pickerMealTypeId.value, data)
 }
 
 function onPickerRemove(data: { type: 'recipe' | 'product'; id: number }) {
-  onRemoveItem(pickerDay.value, pickerMealType.value, {
+  onRemoveItem(pickerDay.value, pickerMealTypeId.value, {
     recipe_id: data.type === 'recipe' ? data.id : null,
     product_id: data.type === 'product' ? data.id : null,
   })
 }
 
-async function onAddItem(day: number, mealType: string, data: { type: 'recipe' | 'product'; id: number }) {
+async function onAddItem(day: number, mealTypeId: number, data: { type: 'recipe' | 'product'; id: number }) {
   await menuStore.ensureMenuSelected()
 
   const isSubset = data.type === 'recipe' &&
@@ -231,7 +238,7 @@ async function onAddItem(day: number, mealType: string, data: { type: 'recipe' |
 
   const slot: MenuSlot = {
     day,
-    meal_type: mealType,
+    meal_type_id: mealTypeId,
     recipe_id: data.type === 'recipe' ? data.id : null,
     product_id: data.type === 'product' ? data.id : null,
     unit: data.type === 'product' ? (productStore.allItems.find((p) => p.id === data.id)?.recipe_unit ?? null) : null,
@@ -250,9 +257,9 @@ async function onAddItem(day: number, mealType: string, data: { type: 'recipe' |
   }
 }
 
-async function onRemoveItem(day: number, mealType: string, data: { recipe_id?: number | null; product_id?: number | null; position?: number | null }) {
+async function onRemoveItem(day: number, mealTypeId: number, data: { recipe_id?: number | null; product_id?: number | null; position?: number | null }) {
   if (!menuStore.current) return
-  await menuStore.removeSlotFromMenu({ day, meal_type: mealType, ...data })
+  await menuStore.removeSlotFromMenu({ day, meal_type_id: mealTypeId, ...data })
 }
 
 function onEditItem(slot: MenuSlot) {
@@ -280,7 +287,7 @@ async function onEditDelete() {
   if (!s) return
   editSlot.value = null
   editPiecesMode.value = false
-  await onRemoveItem(s.day, s.meal_type, { recipe_id: s.recipe_id, product_id: s.product_id })
+  await onRemoveItem(s.day, s.meal_type_id, { recipe_id: s.recipe_id, product_id: s.product_id })
 }
 
 async function onEditConfirm(val: string) {
@@ -311,19 +318,19 @@ async function onEditConfirm(val: string) {
   await menuStore.addSlotToMenu(updated)
 }
 
-async function onMoveItem(slot: MenuSlot, toDay: number, toMealType: string, toIndex: number) {
+async function onMoveItem(slot: MenuSlot, toDay: number, toMealTypeId: number, toIndex: number) {
   if (!menuStore.current) return
   try {
-    await menuStore.moveSlot(slot, toDay, toMealType, toIndex)
+    await menuStore.moveSlot(slot, toDay, toMealTypeId, toIndex)
   } catch (e: any) {
     toast.show(e?.response?.data?.detail ?? 'Ошибка перемещения', 'error')
   }
 }
 
-async function onReorderItems(day: number, mealType: string, orderedSlots: MenuSlot[]) {
+async function onReorderItems(day: number, mealTypeId: number, orderedSlots: MenuSlot[]) {
   if (!menuStore.current) return
   try {
-    await menuStore.reorderSlots(day, mealType, orderedSlots)
+    await menuStore.reorderSlots(day, mealTypeId, orderedSlots)
   } catch (e: any) {
     toast.show(e?.response?.data?.detail ?? 'Ошибка сортировки', 'error')
   }
@@ -513,11 +520,12 @@ async function onGenerateShoppingList() {
             :recipe-names="recipeNames"
             :product-names="productNames"
             :picker-day="pickerOpen ? pickerDay : null"
-            :picker-meal-type="pickerOpen ? pickerMealType : null"
+            :picker-meal-type-id="pickerOpen ? pickerMealTypeId : null"
             :menu-id="selectedId"
             :active-member-ids="activeMemberIds"
             :all-active="allActive"
             :family-members="familyStore.items"
+            :meal-types="mealTypeStore.sorted"
             @add-item="onAddItem"
             @remove-item="onRemoveItem"
             @edit-item="onEditItem"
@@ -703,7 +711,7 @@ async function onGenerateShoppingList() {
     <MobileItemPicker
       :open="pickerOpen"
       :day="pickerDay"
-      :meal-type="pickerMealType"
+      :meal-type="pickerMealTypeName"
       :day-label="pickerDayLabel"
       :recipes="recipeStore.allItems"
       :products="productStore.allItems"

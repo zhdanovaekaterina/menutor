@@ -46,6 +46,7 @@ from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
 from backend.domain.value_objects.types import (
+    MealTypeId,
     ProductCategoryId,
     RecipeCategoryId,
     UserId,
@@ -82,6 +83,12 @@ _SEED_USER_SQL = (
     "VALUES ('test@example.com', 'tester', 'hashed', '2025-01-01 00:00:00')"
 )
 
+_SEED_MEAL_TYPES_SQL = [
+    "INSERT INTO meal_types (user_id, name, time, is_system, sort_order) VALUES (1, 'Завтрак', '08:00', 1, 0)",
+    "INSERT INTO meal_types (user_id, name, time, is_system, sort_order) VALUES (1, 'Обед', '13:00', 1, 1)",
+    "INSERT INTO meal_types (user_id, name, time, is_system, sort_order) VALUES (1, 'Ужин', '18:00', 1, 2)",
+]
+
 
 @pytest.fixture
 def db():
@@ -91,6 +98,8 @@ def db():
     session = Session(engine)
     seed_defaults(session)
     session.execute(sa_text(_SEED_USER_SQL))
+    for sql in _SEED_MEAL_TYPES_SQL:
+        session.execute(sa_text(sql))
     session.commit()
     yield session
     session.close()
@@ -171,9 +180,13 @@ class TestFullUserScenario:
         menu = create_menu.execute("Неделя 1", uid)
         assert menu.id != 0
 
+        # Lookup breakfast meal type id
+        breakfast_id = db.execute(
+            sa_text("SELECT id FROM meal_types WHERE name='Завтрак' AND user_id=1")
+        ).scalar()
         add_dish = AddDishToSlot(repos["menu"])
         slot = MenuSlot(
-            day=0, meal_type="Завтрак",
+            day=0, meal_type_id=MealTypeId(breakfast_id),
             recipe_id=recipe.id, servings_override=4.0,
         )
         menu = add_dish.execute(menu.id, slot, uid)

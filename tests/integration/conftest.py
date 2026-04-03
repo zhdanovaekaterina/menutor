@@ -30,6 +30,13 @@ _SEED_USER_SQL = (
     "VALUES ('test@example.com', 'tester', 'hashed', '2025-01-01 00:00:00')"
 )
 
+# Three system meal types for user_id=1 (ids 1=Завтрак, 2=Обед, 3=Ужин)
+_SEED_MEAL_TYPES_SQL = [
+    "INSERT OR IGNORE INTO meal_types (id, user_id, name, time, is_system, sort_order) VALUES (1, 1, 'Завтрак', '08:00', 1, 0)",
+    "INSERT OR IGNORE INTO meal_types (id, user_id, name, time, is_system, sort_order) VALUES (2, 1, 'Обед', '13:00', 1, 1)",
+    "INSERT OR IGNORE INTO meal_types (id, user_id, name, time, is_system, sort_order) VALUES (3, 1, 'Ужин', '18:00', 1, 2)",
+]
+
 TEST_USER_ID = UserId(1)
 
 
@@ -46,6 +53,8 @@ def conn() -> Generator[Session, None, None]:
     for stmt in _SEED_SQL:
         session.execute(text(stmt))
     session.execute(text(_SEED_USER_SQL))
+    for stmt in _SEED_MEAL_TYPES_SQL:
+        session.execute(text(stmt))
     session.commit()
     yield session
     session.close()

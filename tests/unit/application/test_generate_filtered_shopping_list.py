@@ -11,7 +11,7 @@ from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.entities.saved_shopping_list import SavedShoppingList
 from backend.domain.entities.shopping_list import ShoppingList
 from backend.domain.exceptions import EntityNotFoundError
-from backend.domain.value_objects.types import MenuId, RecipeId, SavedShoppingListId, UserId
+from backend.domain.value_objects.types import MealTypeId, MenuId, RecipeId, SavedShoppingListId, UserId
 
 UID = UserId(1)
 OTHER_UID = UserId(2)
@@ -27,8 +27,8 @@ def _uc(
 
 def _make_menu(name: str = "Неделя", user_id: UserId = UID) -> WeeklyMenu:
     slots = [
-        MenuSlot(day=0, meal_type="обед", recipe_id=RecipeId(1)),
-        MenuSlot(day=1, meal_type="ужин", recipe_id=RecipeId(2)),
+        MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
+        MenuSlot(day=1, meal_type_id=MealTypeId(3), recipe_id=RecipeId(2)),
     ]
     return WeeklyMenu(MenuId(1), name, slots, user_id=user_id)
 

@@ -30,6 +30,7 @@ export function buildSummaryText(
   recipeIngredients: Map<number, MealIngredient[]>,
   nestedRecipes: NestedRecipeSummary[],
   deselectedSubRecipes: Set<number>,
+  mealTypeNames: Record<number, string> = {},
 ): string {
   const date = new Date().toLocaleDateString('ru-RU', {
     day: '2-digit',
@@ -80,11 +81,12 @@ export function buildSummaryText(
       lines.push('    Приёмы пищи:')
       for (const occ of selectedOccs) {
         const day = DAY_LABELS[occ.day] ?? String(occ.day)
+        const mealName = mealTypeNames[occ.meal_type_id] ?? `#${occ.meal_type_id}`
         if (recipe.pieces_info) {
           const pcs = Math.round(occ.servings * recipe.pieces_info.pieces_per_portion)
-          lines.push(`    • ${day}, ${occ.meal_type} — ${pcs} шт. (${fmtServings(occ.servings)} порц.)`)
+          lines.push(`    • ${day}, ${mealName} — ${pcs} шт. (${fmtServings(occ.servings)} порц.)`)
         } else {
-          lines.push(`    • ${day}, ${occ.meal_type} — ${fmtServings(occ.servings)} порц.`)
+          lines.push(`    • ${day}, ${mealName} — ${fmtServings(occ.servings)} порц.`)
         }
       }
 
@@ -157,7 +159,8 @@ export function buildSummaryText(
       lines.push('    Приёмы пищи:')
       for (const occ of product.occurrences) {
         const day = DAY_LABELS[occ.day] ?? String(occ.day)
-        lines.push(`    • ${day}, ${occ.meal_type} — ${fmtQty(occ.quantity)} ${formatUnit(occ.unit)}`)
+        const mealName = mealTypeNames[occ.meal_type_id] ?? `#${occ.meal_type_id}`
+        lines.push(`    • ${day}, ${mealName} — ${fmtQty(occ.quantity)} ${formatUnit(occ.unit)}`)
       }
     }
     lines.push('')

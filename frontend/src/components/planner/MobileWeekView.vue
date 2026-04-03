@@ -5,7 +5,7 @@ import WeekDayCard from './WeekDayCard.vue'
 
 const props = defineProps<{
   slots: MenuSlot[]
-  mealTypes: string[]
+  mealTypes: { id: number; name: string }[]
   recipeNames: Record<number, string>
   productNames: Record<number, string>
   activeMemberIds?: Set<number>

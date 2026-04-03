@@ -69,6 +69,14 @@ class SubRecipeWeightError(DomainError):
     """Sub-recipe used with a weight unit but the recipe has zero weight."""
 
 
+class MealTypeLimitError(DomainError):
+    """Превышен лимит пользовательских типов приемов пищи."""
+
+
+class SystemMealTypeDeletionError(DomainError):
+    """Попытка удалить системный тип приема пищи."""
+
+
 # --- Infrastructure-layer errors ---
 
 

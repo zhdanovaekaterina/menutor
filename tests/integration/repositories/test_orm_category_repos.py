@@ -186,8 +186,8 @@ def test_product_category_hard_delete_cascades_to_recipe_ingredients(conn) -> No
         text("INSERT INTO menus (id, name, user_id) VALUES (9000, 'Тест-меню', 1)")
     )
     conn.execute(
-        text("INSERT INTO menu_slots (menu_id, day, meal_type, product_id, slot_position) "
-             "VALUES (9000, 1, 'breakfast', 9000, 0)")
+        text("INSERT INTO menu_slots (menu_id, day, meal_type_id, product_id, slot_position) "
+             "VALUES (9000, 1, 1, 9000, 0)")
     )
     conn.commit()
 
@@ -332,8 +332,8 @@ def test_recipe_category_hard_delete_cascades_to_menu_slots(conn) -> None:
         text("INSERT INTO menus (id, name, user_id) VALUES (9001, 'Тест-меню', 1)")
     )
     conn.execute(
-        text("INSERT INTO menu_slots (menu_id, day, meal_type, recipe_id, slot_position) "
-             "VALUES (9001, 1, 'lunch', 9001, 0)")
+        text("INSERT INTO menu_slots (menu_id, day, meal_type_id, recipe_id, slot_position) "
+             "VALUES (9001, 1, 2, 9001, 0)")
     )
     conn.commit()
 

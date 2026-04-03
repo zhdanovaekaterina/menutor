@@ -1,7 +1,7 @@
 import json
 
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
-from backend.domain.value_objects.types import MenuId, RecipeId, UserId
+from backend.domain.value_objects.types import MealTypeId, MenuId, RecipeId, UserId
 from backend.infrastructure.export.menu_json_exporter import MenuJsonExporter
 
 
@@ -10,7 +10,7 @@ def _menu() -> WeeklyMenu:
         id=MenuId(1),
         name="Меню на неделю",
         slots=[
-            MenuSlot(day=0, meal_type="завтрак", recipe_id=RecipeId(1), position=0),
+            MenuSlot(day=0, meal_type_id=MealTypeId(1), recipe_id=RecipeId(1), position=0),
         ],
         user_id=UserId(1),
     )
@@ -32,7 +32,7 @@ def test_export_bytes_fields() -> None:
 def test_export_bytes_slot_fields() -> None:
     slot = json.loads(MenuJsonExporter().export_bytes([_menu()]))[0]["slots"][0]
     assert slot["day"] == 0
-    assert slot["meal_type"] == "завтрак"
+    assert slot["meal_type_id"] == 1
     assert slot["recipe_id"] == 1
     assert slot["product_id"] is None
     assert slot["position"] == 0

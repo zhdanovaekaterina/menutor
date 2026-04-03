@@ -11,20 +11,21 @@ const props = defineProps<{
   recipeNames: Record<number, string>
   productNames: Record<number, string>
   pickerDay?: number | null
-  pickerMealType?: string | null
+  pickerMealTypeId?: number | null
   menuId?: number | null
   activeMemberIds?: Set<number>
   allActive?: boolean
   familyMembers?: FamilyMember[]
+  mealTypes?: { id: number; name: string }[]
 }>()
 
 const emit = defineEmits<{
-  'add-item': [day: number, mealType: string, data: { type: 'recipe' | 'product'; id: number }]
-  'remove-item': [day: number, mealType: string, data: { recipe_id?: number | null; product_id?: number | null }]
+  'add-item': [day: number, mealTypeId: number, data: { type: 'recipe' | 'product'; id: number }]
+  'remove-item': [day: number, mealTypeId: number, data: { recipe_id?: number | null; product_id?: number | null }]
   'edit-item': [slot: MenuSlot]
-  'move-item': [slot: MenuSlot, toDay: number, toMealType: string, toIndex: number]
-  'reorder-items': [day: number, mealType: string, orderedSlots: MenuSlot[]]
-  'open-picker': [day: number, mealType: string]
+  'move-item': [slot: MenuSlot, toDay: number, toMealTypeId: number, toIndex: number]
+  'reorder-items': [day: number, mealTypeId: number, orderedSlots: MenuSlot[]]
+  'open-picker': [day: number, mealTypeId: number]
   'day-scrolled': []
 }>()
 
@@ -32,15 +33,16 @@ type Mode = 'week' | 'day' | 'meal'
 
 const mode = ref<Mode>('week')
 const currentDay = ref(0)
-const currentMealType = ref('')
+const currentMealTypeId = ref(0)
 const transitionName = ref('mode-zoom')
-const meals = ['Завтрак', 'Обед', 'Ужин']
+
+const meals = computed(() => props.mealTypes ?? [])
 
 // Reset to week view when menu changes
 watch(() => props.menuId, () => {
   mode.value = 'week'
   currentDay.value = 0
-  currentMealType.value = ''
+  currentMealTypeId.value = meals.value[0]?.id ?? 0
 })
 
 function goToDay(dayIndex: number) {
@@ -54,8 +56,8 @@ function goToWeek() {
   mode.value = 'week'
 }
 
-function goToMeal(mealType: string) {
-  currentMealType.value = mealType
+function goToMeal(mealTypeId: number) {
+  currentMealTypeId.value = mealTypeId
   transitionName.value = 'mode-drill'
   mode.value = 'meal'
 }
@@ -73,13 +75,17 @@ function onNavigateDay(delta: number) {
 }
 
 function onNavigateMealType(delta: number) {
-  const idx = meals.indexOf(currentMealType.value)
+  const idx = meals.value.findIndex(mt => mt.id === currentMealTypeId.value)
   const next = idx + delta
-  if (next < 0 || next >= meals.length) return
-  currentMealType.value = meals[next]!
+  if (next < 0 || next >= meals.value.length) return
+  currentMealTypeId.value = meals.value[next]!.id
 }
 
 const dayLabelsFull = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
+
+const currentMealTypeName = computed(() =>
+  meals.value.find(mt => mt.id === currentMealTypeId.value)?.name ?? '',
+)
 
 const liveAnnouncement = computed(() => {
   if (mode.value === 'week') return 'Обзор недели'
@@ -87,8 +93,8 @@ const liveAnnouncement = computed(() => {
     const daySlots = props.slots.filter(s => s.day === currentDay.value)
     return `${dayLabelsFull[currentDay.value]}, ${daySlots.length} блюд`
   }
-  const mealSlots = props.slots.filter(s => s.day === currentDay.value && s.meal_type === currentMealType.value)
-  return `${dayLabelsFull[currentDay.value]}, ${currentMealType.value}, ${mealSlots.length} блюд`
+  const mealSlots = props.slots.filter(s => s.day === currentDay.value && s.meal_type_id === currentMealTypeId.value)
+  return `${dayLabelsFull[currentDay.value]}, ${currentMealTypeName.value}, ${mealSlots.length} блюд`
 })
 </script>
 
@@ -119,7 +125,7 @@ const liveAnnouncement = computed(() => {
         :recipe-names="recipeNames"
         :product-names="productNames"
         :picker-day="pickerDay"
-        :picker-meal-type="pickerMealType"
+        :picker-meal-type-id="pickerMealTypeId ?? null"
         :active-member-ids="activeMemberIds"
         :all-active="allActive"
         :family-members="familyMembers"
@@ -138,13 +144,13 @@ const liveAnnouncement = computed(() => {
         v-else
         key="meal"
         :current-day="currentDay"
-        :current-meal-type="currentMealType"
+        :current-meal-type-id="currentMealTypeId"
         :slots="slots"
         :meal-types="meals"
         :recipe-names="recipeNames"
         :product-names="productNames"
         :picker-day="pickerDay"
-        :picker-meal-type="pickerMealType"
+        :picker-meal-type-id="pickerMealTypeId ?? null"
         :active-member-ids="activeMemberIds"
         :all-active="allActive"
         :family-members="familyMembers"

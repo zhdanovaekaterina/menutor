@@ -3,7 +3,7 @@ from pydantic import BaseModel, model_validator
 
 class MenuSlotSchema(BaseModel):
     day: int
-    meal_type: str
+    meal_type_id: int
     recipe_id: int | None = None
     product_id: int | None = None
     quantity: float | None = None
@@ -30,7 +30,7 @@ class MenuCreate(BaseModel):
 
 class RemoveItemRequest(BaseModel):
     day: int
-    meal_type: str
+    meal_type_id: int
     recipe_id: int | None = None
     product_id: int | None = None
     position: int | None = None
@@ -38,11 +38,11 @@ class RemoveItemRequest(BaseModel):
 
 class MoveSlotRequest(BaseModel):
     day: int
-    meal_type: str
+    meal_type_id: int
     recipe_id: int | None = None
     product_id: int | None = None
     to_day: int
-    to_meal_type: str
+    to_meal_type_id: int
     to_position: int = 0
     position: int | None = None
 

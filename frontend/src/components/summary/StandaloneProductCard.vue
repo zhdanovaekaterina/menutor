@@ -4,18 +4,15 @@ import type { MealSummaryProduct, MealSummaryProductOccurrence } from '@/api/typ
 import { formatUnit } from '@/utils/units'
 
 const DAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-const MEAL_TYPE_ORDER = ['Завтрак', 'Обед', 'Ужин']
 
-function mealTypeRank(mt: string): number {
-  const i = MEAL_TYPE_ORDER.indexOf(mt)
-  return i === -1 ? MEAL_TYPE_ORDER.length : i
+function sortOccurrences<T extends { day: number; meal_type_id: number }>(occs: T[]): T[] {
+  return [...occs].sort((a, b) => a.day - b.day || a.meal_type_id - b.meal_type_id)
 }
 
-function sortOccurrences<T extends { day: number; meal_type: string }>(occs: T[]): T[] {
-  return [...occs].sort((a, b) => a.day - b.day || mealTypeRank(a.meal_type) - mealTypeRank(b.meal_type))
-}
-
-defineProps<{ product: MealSummaryProduct }>()
+const props = defineProps<{
+  product: MealSummaryProduct
+  mealTypeNames?: Record<number, string>
+}>()
 
 const expanded = ref(false)
 
@@ -24,7 +21,8 @@ function fmtQty(n: number): string {
 }
 
 function occurrenceLabel(occ: MealSummaryProductOccurrence): string {
-  return `${DAY_LABELS[occ.day] ?? ''}, ${occ.meal_type}`
+  const mealName = props.mealTypeNames?.[occ.meal_type_id] ?? `#${occ.meal_type_id}`
+  return `${DAY_LABELS[occ.day] ?? ''}, ${mealName}`
 }
 </script>
 

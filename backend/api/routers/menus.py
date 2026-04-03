@@ -20,7 +20,7 @@ from backend.api.schemas.menu import (
 )
 from backend.composition_root import ApplicationContainer
 from backend.domain.entities.user import User
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId
+from backend.domain.value_objects.types import MealTypeId, MenuId, ProductId, RecipeId
 
 router = APIRouter(prefix="/menus", tags=["menus"])
 
@@ -100,10 +100,10 @@ def move_slot(
     menu = container.move_slot_in_menu.execute(
         menu_id=MenuId(menu_id),
         day=body.day,
-        meal_type=body.meal_type,
+        meal_type_id=MealTypeId(body.meal_type_id),
         user_id=user.id,
         to_day=body.to_day,
-        to_meal_type=body.to_meal_type,
+        to_meal_type_id=MealTypeId(body.to_meal_type_id),
         to_position=body.to_position,
         recipe_id=RecipeId(body.recipe_id) if body.recipe_id is not None else None,
         product_id=(
@@ -124,7 +124,7 @@ def remove_slot(
     menu = container.remove_item_from_slot.execute(
         menu_id=MenuId(menu_id),
         day=body.day,
-        meal_type=body.meal_type,
+        meal_type_id=MealTypeId(body.meal_type_id),
         user_id=user.id,
         recipe_id=RecipeId(body.recipe_id) if body.recipe_id is not None else None,
         product_id=(
@@ -185,7 +185,13 @@ def export_menu_pdf(
         int(p.id): p.name for p in products.items if int(p.id) in product_ids
     }
 
-    pdf_bytes = MenuPdfExporter().export_bytes(menu, recipe_names, product_names, paper)
+    meal_types = container.list_meal_types.execute(user.id)
+    meal_type_names: dict[int, str] = {int(mt.id): mt.name for mt in meal_types}
+
+    pdf_bytes = MenuPdfExporter().export_bytes(
+        menu, recipe_names, product_names, paper,
+        meal_type_names=meal_type_names,
+    )
 
     safe_name = menu.name.replace(" ", "_")
     ascii_name = safe_name.encode("ascii", errors="ignore").decode("ascii") or "menu"

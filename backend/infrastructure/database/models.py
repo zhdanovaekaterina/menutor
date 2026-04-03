@@ -4,6 +4,7 @@ These are infrastructure-only: domain entities stay pure.
 Repositories map between these rows and domain entities.
 """
 
+import sqlalchemy as sa
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -13,6 +14,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
 
@@ -268,6 +270,22 @@ class FamilyMemberPreferenceRow(Base):
     )
 
 
+class MealTypeRow(Base):
+    __tablename__ = "meal_types"
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "name", name="uq_meal_types_user_name"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    name = Column(String, nullable=False)
+    time = Column(String(5), nullable=False)  # "08:00", "13:00"
+    is_system = Column(Boolean, nullable=False, default=False, server_default="0")
+    sort_order = Column(Integer, nullable=False, default=0, server_default="0")
+
+
 class MenuRow(Base):
     __tablename__ = "menus"
 
@@ -299,7 +317,9 @@ class MenuSlotRow(Base):
         Integer, ForeignKey("menus.id", ondelete="CASCADE"), nullable=False
     )
     day = Column(Integer, nullable=False)
-    meal_type = Column(String, nullable=False)
+    meal_type_id = Column(
+        Integer, ForeignKey("meal_types.id", ondelete="CASCADE"), nullable=False
+    )
     recipe_id = Column(Integer, ForeignKey("recipes.id"), nullable=True)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
     quantity = Column(Float, nullable=True)
