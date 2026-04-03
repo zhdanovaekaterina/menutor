@@ -15,6 +15,7 @@ from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.category import ActiveCategory
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
 from backend.domain.value_objects.types import (
+    MealTypeId,
     MenuId,
     ProductCategoryId,
     ProductId,
@@ -68,7 +69,7 @@ def test_single_slot_quantity_and_cost() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))],
     )
     # base=2 servings → 200g → 0.2 kg → 20 RUB
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -87,7 +88,7 @@ def test_single_slot_no_members_uses_base_servings() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))],
     )
     # base_servings=2 used directly → 200g → 0.2 kg
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -110,8 +111,8 @@ def test_two_slots_same_ingredient_aggregated() -> None:
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
         slots=[
-            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),
-            MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(2)),
+            MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
+            MenuSlot(day=1, meal_type_id=MealTypeId(2), recipe_id=RecipeId(2)),
         ],
     )
     # 200g + 300g = 500g → 0.5 kg
@@ -135,8 +136,8 @@ def test_two_different_products_two_items() -> None:
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
         slots=[
-            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),
-            MenuSlot(day=1, meal_type="dinner", recipe_id=RecipeId(2)),
+            MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
+            MenuSlot(day=1, meal_type_id=MealTypeId(3), recipe_id=RecipeId(2)),
         ],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -154,7 +155,7 @@ def test_slot_servings_override_used_instead_of_base() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1),
                         servings_override=4.0)],
     )
     # override=4.0 → scale_to(4.0) → 100g*(4/2)=200g
@@ -171,7 +172,7 @@ def test_slot_servings_override_scales_down() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1),
                         servings_override=1.0)],
     )
     # override=1.0, base=4 → factor=0.25 → 200g*0.25=50g
@@ -188,7 +189,7 @@ def test_slot_servings_override_fractional() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1),
                         servings_override=3.0)],
     )
     # override=3.0, base=2 → factor=1.5 → 200g*1.5=300g
@@ -206,7 +207,7 @@ def test_slot_no_override_uses_base_servings_factor_one() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))],
     )
     # no override → scale_to(4) → factor=1.0 → 350g unchanged
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -235,7 +236,7 @@ def test_slot_override_scales_all_ingredients_proportionally() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1),
                         servings_override=6.0)],
     )
     # override=6, base=2 → factor=3 → 100g→300g, 50ml→150ml
@@ -256,7 +257,7 @@ def test_total_cost() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
 
@@ -290,8 +291,8 @@ def test_items_by_category() -> None:
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
         slots=[
-            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),
-            MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(2)),
+            MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
+            MenuSlot(day=1, meal_type_id=MealTypeId(2), recipe_id=RecipeId(2)),
         ],
     )
     result = _builder(recipe_repo, product_repo, product_category_repo).build(menu)
@@ -312,7 +313,7 @@ def test_standalone_product_slot_adds_quantity_directly() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", product_id=ProductId(1),
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), product_id=ProductId(1),
                         quantity=500.0, unit="g")],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -329,7 +330,7 @@ def test_standalone_product_no_family_scaling() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", product_id=ProductId(1),
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), product_id=ProductId(1),
                         quantity=200.0, unit="g")],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -347,8 +348,8 @@ def test_product_slot_aggregates_with_recipe_ingredient() -> None:
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
         slots=[
-            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),
-            MenuSlot(day=1, meal_type="lunch", product_id=ProductId(1),
+            MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
+            MenuSlot(day=1, meal_type_id=MealTypeId(2), product_id=ProductId(1),
                      quantity=300.0, unit="g"),
         ],
     )
@@ -372,7 +373,7 @@ def test_incompatible_recipe_unit_skips_product() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
 
@@ -387,7 +388,7 @@ def test_standalone_slot_unknown_unit_skipped() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", product_id=ProductId(1),
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), product_id=ProductId(1),
                         quantity=500.0, unit="unknown_unit")],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -416,8 +417,8 @@ def test_incompatible_aggregation_keeps_first_occurrence() -> None:
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
         slots=[
-            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),
-            MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(2)),
+            MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
+            MenuSlot(day=1, meal_type_id=MealTypeId(2), recipe_id=RecipeId(2)),
         ],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -450,7 +451,7 @@ def test_sub_recipe_flattened_to_products() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
 
@@ -481,7 +482,7 @@ def test_sub_recipe_products_aggregated_with_parent() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
 
@@ -516,7 +517,7 @@ def test_nested_sub_recipe_flattened() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
 
@@ -545,7 +546,7 @@ def test_sub_recipe_scales_with_servings_override() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1), servings_override=3.0)],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1), servings_override=3.0)],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
 
@@ -579,8 +580,8 @@ def test_sub_recipe_standalone_and_nested_aggregate() -> None:
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
         slots=[
-            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(2)),
-            MenuSlot(day=1, meal_type="dinner", recipe_id=RecipeId(1)),
+            MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(2)),
+            MenuSlot(day=1, meal_type_id=MealTypeId(3), recipe_id=RecipeId(1)),
         ],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -605,7 +606,7 @@ def test_sub_recipe_empty_ingredients_contributes_nothing() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
 
@@ -634,7 +635,7 @@ def test_sub_recipe_cycle_defensive_guard() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))],
     )
     # Must terminate, not loop forever
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -802,7 +803,7 @@ def test_pieces_mode_recipe_scale_factor() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1),
                         servings_override=2.5)],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -823,7 +824,7 @@ def test_pieces_mode_with_pieces_override() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1),
                         pieces_override=15)],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -847,9 +848,9 @@ def test_pieces_mode_two_slots_aggregated() -> None:
         id=MenuId(1), name="Week",
         slots=[
             # slot1: pieces_override=5 → scale=0.5 → 250g
-            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1), pieces_override=5),
+            MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1), pieces_override=5),
             # slot2: pieces_override=5 → scale=0.5 → 250g
-            MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(1), pieces_override=5),
+            MenuSlot(day=1, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1), pieces_override=5),
         ],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -886,9 +887,9 @@ def test_pieces_mode_and_normal_in_same_menu() -> None:
         id=MenuId(1), name="Week",
         slots=[
             # pieces: pieces_override=5 → scale=0.5 → 250g flour
-            MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1), pieces_override=5),
+            MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1), pieces_override=5),
             # normal: no override → scale=1.0 → 200g sugar
-            MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(2)),
+            MenuSlot(day=1, meal_type_id=MealTypeId(2), recipe_id=RecipeId(2)),
         ],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -913,7 +914,7 @@ def test_pieces_mode_minimum_one_piece() -> None:
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
         # servings_override=0.1 → pcs = max(1, round(0.1*2)) = max(1, round(0.2)) = max(1,0) = 1
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1),
                         servings_override=0.1)],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -936,7 +937,7 @@ def test_pieces_mode_rounding() -> None:
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
         # servings_override=2.1 → pcs = max(1, round(2.1*2)) = max(1, round(4.2)) = 4
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1),
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1),
                         servings_override=2.1)],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
@@ -978,7 +979,7 @@ def test_nested_pieces_recipe_in_normal_parent() -> None:
 
     menu = WeeklyMenu(
         id=MenuId(1), name="Week",
-        slots=[MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1))],
+        slots=[MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1))],
     )
     result = _builder(recipe_repo, product_repo).build(menu)
 
@@ -1006,9 +1007,9 @@ def test_build_filtered_uses_only_selected_slots() -> None:
 
     builder_obj = _builder(recipe_repo, product_repo)
     menu = WeeklyMenu(MenuId(1), "Test", [
-        MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),   # index 0
-        MenuSlot(day=1, meal_type="lunch", recipe_id=RecipeId(2)),   # index 1
-        MenuSlot(day=2, meal_type="dinner", recipe_id=RecipeId(1)),  # index 2
+        MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),   # index 0
+        MenuSlot(day=1, meal_type_id=MealTypeId(2), recipe_id=RecipeId(2)),   # index 1
+        MenuSlot(day=2, meal_type_id=MealTypeId(3), recipe_id=RecipeId(1)),  # index 2
     ])
 
     result = builder_obj.build_filtered(menu, {0, 2})
@@ -1028,7 +1029,7 @@ def test_build_filtered_empty_indices_returns_empty_list() -> None:
 
     builder_obj = _builder(recipe_repo, product_repo)
     menu = WeeklyMenu(MenuId(1), "Test", [
-        MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),
+        MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
     ])
 
     result = builder_obj.build_filtered(menu, set())
@@ -1048,8 +1049,8 @@ def test_build_filtered_all_indices_matches_build() -> None:
 
     builder_obj = _builder(recipe_repo, product_repo)
     menu = WeeklyMenu(MenuId(1), "Test", [
-        MenuSlot(day=0, meal_type="lunch", recipe_id=RecipeId(1)),
-        MenuSlot(day=1, meal_type="dinner", recipe_id=RecipeId(2)),
+        MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
+        MenuSlot(day=1, meal_type_id=MealTypeId(3), recipe_id=RecipeId(2)),
     ])
 
     full_result = builder_obj.build(menu)
@@ -1254,7 +1255,7 @@ def test_build_filtered_excludes_sub_recipe_ids() -> None:
 
     builder_obj = _builder(recipe_repo, product_repo)
     menu = WeeklyMenu(MenuId(1), "Test", [
-        MenuSlot(day=0, meal_type="обед", recipe_id=RecipeId(1)),
+        MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
     ])
 
     result = builder_obj.build_filtered(menu, {0}, excluded_sub_recipe_ids={RecipeId(10)})
@@ -1292,7 +1293,7 @@ def test_build_filtered_excluded_sub_recipe_ids_empty_set_includes_all() -> None
 
     builder_obj = _builder(recipe_repo, product_repo)
     menu = WeeklyMenu(MenuId(1), "Test", [
-        MenuSlot(day=0, meal_type="обед", recipe_id=RecipeId(1)),
+        MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
     ])
 
     result = builder_obj.build_filtered(menu, {0}, excluded_sub_recipe_ids=set())

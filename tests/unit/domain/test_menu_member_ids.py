@@ -1,19 +1,19 @@
 import pytest
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
-from backend.domain.value_objects.types import FamilyMemberId, MenuId, ProductId, RecipeId, UserId
+from backend.domain.value_objects.types import FamilyMemberId, MealTypeId, MenuId, ProductId, RecipeId, UserId
 
 
-def make_recipe_slot(day=0, meal="breakfast", recipe_id=1, member_ids=None, position=0):
+def make_recipe_slot(day=0, meal=MealTypeId(1), recipe_id=1, member_ids=None, position=0):
     return MenuSlot(
-        day=day, meal_type=meal,
+        day=day, meal_type_id=meal,
         recipe_id=RecipeId(recipe_id),
         member_ids=[FamilyMemberId(m) for m in (member_ids or [])],
         position=position,
     )
 
-def make_product_slot(day=0, meal="breakfast", product_id=1, member_ids=None, position=0):
+def make_product_slot(day=0, meal=MealTypeId(1), product_id=1, member_ids=None, position=0):
     return MenuSlot(
-        day=day, meal_type=meal,
+        day=day, meal_type_id=meal,
         product_id=ProductId(product_id),
         member_ids=[FamilyMemberId(m) for m in (member_ids or [])],
         position=position,
@@ -78,7 +78,7 @@ def test_remove_item_by_position():
     slot_a = make_recipe_slot(recipe_id=1, member_ids=[1], position=0)
     slot_b = make_recipe_slot(recipe_id=1, member_ids=[2], position=1)
     menu.slots = [slot_a, slot_b]
-    menu.remove_item(day=0, meal_type="breakfast", recipe_id=RecipeId(1), position=0)
+    menu.remove_item(day=0, meal_type_id=MealTypeId(1), recipe_id=RecipeId(1), position=0)
     assert len(menu.slots) == 1
     assert menu.slots[0].position == 1
 
@@ -88,7 +88,7 @@ def test_remove_item_without_position_removes_all_matching():
     slot_a = make_recipe_slot(recipe_id=1, member_ids=[1], position=0)
     slot_b = make_recipe_slot(recipe_id=1, member_ids=[2], position=1)
     menu.slots = [slot_a, slot_b]
-    menu.remove_item(day=0, meal_type="breakfast", recipe_id=RecipeId(1))
+    menu.remove_item(day=0, meal_type_id=MealTypeId(1), recipe_id=RecipeId(1))
     assert len(menu.slots) == 0
 
 
@@ -98,9 +98,9 @@ def test_move_slot_with_position_disambiguation():
     slot_b = make_recipe_slot(recipe_id=1, member_ids=[2], position=1)
     menu.slots = [slot_a, slot_b]
     menu.move_slot(
-        day=0, meal_type="breakfast",
+        day=0, meal_type_id=MealTypeId(1),
         recipe_id=RecipeId(1), product_id=None,
-        to_day=1, to_meal_type="lunch", to_position=0,
+        to_day=1, to_meal_type_id=MealTypeId(2), to_position=0,
         position=0,
     )
     assert len(menu.slots) == 2
@@ -113,9 +113,9 @@ def test_member_ids_preserved_on_move():
     slot = make_recipe_slot(recipe_id=1, member_ids=[1, 2], position=0)
     menu.slots = [slot]
     menu.move_slot(
-        day=0, meal_type="breakfast",
+        day=0, meal_type_id=MealTypeId(1),
         recipe_id=RecipeId(1), product_id=None,
-        to_day=2, to_meal_type="dinner", to_position=0,
+        to_day=2, to_meal_type_id=MealTypeId(3), to_position=0,
     )
     assert sorted(menu.slots[0].member_ids) == [FamilyMemberId(1), FamilyMemberId(2)]
 
