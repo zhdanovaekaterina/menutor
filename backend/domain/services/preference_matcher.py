@@ -3,7 +3,12 @@ from backend.domain.entities.recipe import Recipe
 from backend.domain.ports.product_repository import ProductRepository
 from backend.domain.ports.recipe_repository import RecipeRepository
 from backend.domain.value_objects.preference_enums import PreferenceMode, PreferenceType
-from backend.domain.value_objects.types import ProductCategoryId, ProductId, RecipeCategoryId, RecipeId
+from backend.domain.value_objects.types import (
+    ProductCategoryId,
+    ProductId,
+    RecipeCategoryId,
+    RecipeId,
+)
 
 
 class PreferenceMatcher:
