@@ -7,10 +7,21 @@ import re
 import pytest
 
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId
+from backend.domain.value_objects.types import MealTypeId, MenuId, ProductId, RecipeId
 from backend.infrastructure.export.menu_pdf_exporter import MenuPdfExporter
 
 reportlab = pytest.importorskip("reportlab", reason="reportlab not installed")
+
+# System meal type ids (as seeded)
+_BREAKFAST_ID = 1
+_LUNCH_ID = 2
+_DINNER_ID = 3
+
+_MEAL_TYPE_NAMES = {
+    _BREAKFAST_ID: "Завтрак",
+    _LUNCH_ID: "Обед",
+    _DINNER_ID: "Ужин",
+}
 
 
 def _make_menu(slots: list[MenuSlot] | None = None) -> WeeklyMenu:
@@ -21,10 +32,15 @@ def _make_menu(slots: list[MenuSlot] | None = None) -> WeeklyMenu:
     )
 
 
-def _recipe_slot(day: int, meal_type: str, recipe_id: int = 1, servings: float | None = None) -> MenuSlot:
+def _recipe_slot(
+    day: int,
+    meal_type_id: int,
+    recipe_id: int = 1,
+    servings: float | None = None,
+) -> MenuSlot:
     return MenuSlot(
         day=day,
-        meal_type=meal_type,
+        meal_type_id=MealTypeId(meal_type_id),
         recipe_id=RecipeId(recipe_id),
         servings_override=servings,
     )
@@ -32,14 +48,14 @@ def _recipe_slot(day: int, meal_type: str, recipe_id: int = 1, servings: float |
 
 def _product_slot(
     day: int,
-    meal_type: str,
+    meal_type_id: int,
     product_id: int = 1,
     quantity: float | None = None,
     unit: str | None = None,
 ) -> MenuSlot:
     return MenuSlot(
         day=day,
-        meal_type=meal_type,
+        meal_type_id=MealTypeId(meal_type_id),
         product_id=ProductId(product_id),
         quantity=quantity,
         unit=unit,
@@ -66,33 +82,41 @@ class TestMenuPdfExporter:
 
     def test_menu_with_recipe_slots(self) -> None:
         slots = [
-            _recipe_slot(0, "Завтрак", recipe_id=10),
-            _recipe_slot(3, "Обед", recipe_id=20, servings=2.0),
+            _recipe_slot(0, _BREAKFAST_ID, recipe_id=10),
+            _recipe_slot(3, _LUNCH_ID, recipe_id=20, servings=2.0),
         ]
         menu = _make_menu(slots)
         recipe_names = {10: "Омлет", 20: "Борщ"}
-        data = MenuPdfExporter().export_bytes(menu, recipe_names, {})
+        data = MenuPdfExporter().export_bytes(
+            menu, recipe_names, {}, meal_type_names=_MEAL_TYPE_NAMES
+        )
         assert data[:4] == b"%PDF"
         assert len(data) > 1000
 
     def test_menu_with_product_slots(self) -> None:
         slots = [
-            _product_slot(1, "Завтрак", product_id=5, quantity=250.0, unit="мл"),
-            _product_slot(4, "Ужин", product_id=6),
+            _product_slot(_BREAKFAST_ID, _BREAKFAST_ID, product_id=5, quantity=250.0, unit="мл"),
+            _product_slot(4, _DINNER_ID, product_id=6),
         ]
         menu = _make_menu(slots)
         product_names = {5: "Молоко", 6: "Кефир"}
-        data = MenuPdfExporter().export_bytes(menu, {}, product_names)
+        data = MenuPdfExporter().export_bytes(
+            menu, {}, product_names, meal_type_names=_MEAL_TYPE_NAMES
+        )
         assert data[:4] == b"%PDF"
 
     def test_a4_produces_valid_pdf(self) -> None:
-        menu = _make_menu([_recipe_slot(0, "Завтрак")])
-        data = MenuPdfExporter().export_bytes(menu, {1: "Каша"}, {}, paper="a4")
+        menu = _make_menu([_recipe_slot(0, _BREAKFAST_ID)])
+        data = MenuPdfExporter().export_bytes(
+            menu, {1: "Каша"}, {}, paper="a4", meal_type_names=_MEAL_TYPE_NAMES
+        )
         assert data[:4] == b"%PDF"
 
     def test_a3_produces_valid_pdf(self) -> None:
-        menu = _make_menu([_recipe_slot(0, "Завтрак")])
-        data = MenuPdfExporter().export_bytes(menu, {1: "Каша"}, {}, paper="a3")
+        menu = _make_menu([_recipe_slot(0, _BREAKFAST_ID)])
+        data = MenuPdfExporter().export_bytes(
+            menu, {1: "Каша"}, {}, paper="a3", meal_type_names=_MEAL_TYPE_NAMES
+        )
         assert data[:4] == b"%PDF"
 
     def test_a4_and_a3_produce_valid_pdfs_with_different_page_sizes(self) -> None:
@@ -103,12 +127,16 @@ class TestMenuPdfExporter:
         regardless of page dimensions. We therefore only assert that both outputs
         are valid PDFs; the separate a4/a3 validity tests cover each format individually.
         """
-        slots = [_recipe_slot(i, "Обед") for i in range(7)]
+        slots = [_recipe_slot(i, _LUNCH_ID) for i in range(7)]
         recipe_names = {i + 1: f"Рецепт {i + 1}" for i in range(7)}
         menu_a4 = _make_menu(slots)
         menu_a3 = _make_menu(slots)
-        data_a4 = MenuPdfExporter().export_bytes(menu_a4, recipe_names, {}, paper="a4")
-        data_a3 = MenuPdfExporter().export_bytes(menu_a3, recipe_names, {}, paper="a3")
+        data_a4 = MenuPdfExporter().export_bytes(
+            menu_a4, recipe_names, {}, paper="a4", meal_type_names=_MEAL_TYPE_NAMES
+        )
+        data_a3 = MenuPdfExporter().export_bytes(
+            menu_a3, recipe_names, {}, paper="a3", meal_type_names=_MEAL_TYPE_NAMES
+        )
         assert data_a4[:4] == b"%PDF"
         assert data_a3[:4] == b"%PDF"
 
@@ -129,9 +157,11 @@ class TestMenuPdfExporter:
         font is DejaVuSans by searching for the '+DejaVuSans' suffix in the raw
         PDF bytes.
         """
-        slots = [_recipe_slot(0, "Завтрак", recipe_id=1)]
+        slots = [_recipe_slot(0, _BREAKFAST_ID, recipe_id=1)]
         menu = _make_menu(slots)
-        data = MenuPdfExporter().export_bytes(menu, {1: "Омлет с сыром"}, {})
+        data = MenuPdfExporter().export_bytes(
+            menu, {1: "Омлет с сыром"}, {}, meal_type_names=_MEAL_TYPE_NAMES
+        )
         assert re.search(rb"[A-Z]{6}\+DejaVuSans", data), (
             "PDF does not contain an embedded DejaVuSans subset. "
             "Ensure backend/infrastructure/export/fonts/DejaVuSans.ttf exists "
@@ -140,57 +170,67 @@ class TestMenuPdfExporter:
 
     def test_servings_override_shown_as_integer_when_whole(self) -> None:
         """Servings displayed as '2п' not '2.0п' for whole numbers."""
-        slots = [_recipe_slot(0, "Обед", recipe_id=1, servings=2.0)]
+        slots = [_recipe_slot(0, _LUNCH_ID, recipe_id=1, servings=2.0)]
         menu = _make_menu(slots)
         # We cannot easily inspect PDF text content, but we can verify it renders
-        data = MenuPdfExporter().export_bytes(menu, {1: "Пицца"}, {})
+        data = MenuPdfExporter().export_bytes(
+            menu, {1: "Пицца"}, {}, meal_type_names=_MEAL_TYPE_NAMES
+        )
         assert data[:4] == b"%PDF"
 
     def test_servings_override_shown_for_recipe(self) -> None:
         """A fractional servings_override renders without error."""
-        slots = [_recipe_slot(0, "Обед", recipe_id=1, servings=1.5)]
+        slots = [_recipe_slot(0, _LUNCH_ID, recipe_id=1, servings=1.5)]
         menu = _make_menu(slots)
-        data = MenuPdfExporter().export_bytes(menu, {1: "Пицца"}, {})
+        data = MenuPdfExporter().export_bytes(
+            menu, {1: "Пицца"}, {}, meal_type_names=_MEAL_TYPE_NAMES
+        )
         assert data[:4] == b"%PDF"
 
     def test_full_week_all_meals(self) -> None:
         """Filling every cell in the grid renders without errors."""
         slots = []
         for day in range(7):
-            for meal_type in ["Завтрак", "Обед", "Ужин"]:
-                slots.append(_recipe_slot(day, meal_type, recipe_id=day + 1))
+            for meal_type_id in [_BREAKFAST_ID, _LUNCH_ID, _DINNER_ID]:
+                slots.append(_recipe_slot(day, meal_type_id, recipe_id=day + 1))
         recipe_names = {i: f"Рецепт {i}" for i in range(1, 8)}
         menu = _make_menu(slots)
-        data = MenuPdfExporter().export_bytes(menu, recipe_names, {})
+        data = MenuPdfExporter().export_bytes(
+            menu, recipe_names, {}, meal_type_names=_MEAL_TYPE_NAMES
+        )
         assert data[:4] == b"%PDF"
         assert len(data) > 2000
 
     def test_recipe_color_map_renders_without_error(self) -> None:
         """Providing recipe_colors produces a valid PDF with color markers."""
-        slots = [_recipe_slot(0, "Завтрак", recipe_id=1)]
+        slots = [_recipe_slot(0, _BREAKFAST_ID, recipe_id=1)]
         menu = _make_menu(slots)
         recipe_colors = {1: "#FF5733"}
         data = MenuPdfExporter().export_bytes(
-            menu, {1: "Омлет"}, {}, recipe_colors=recipe_colors
+            menu, {1: "Омлет"}, {}, recipe_colors=recipe_colors,
+            meal_type_names=_MEAL_TYPE_NAMES,
         )
         assert data[:4] == b"%PDF"
 
     def test_product_color_map_renders_without_error(self) -> None:
         """Providing product_colors produces a valid PDF with color markers."""
-        slots = [_product_slot(0, "Завтрак", product_id=5, quantity=200.0, unit="g")]
+        slots = [_product_slot(0, _BREAKFAST_ID, product_id=5, quantity=200.0, unit="g")]
         menu = _make_menu(slots)
         product_colors = {5: "#22C55E"}
         data = MenuPdfExporter().export_bytes(
-            menu, {}, {5: "Йогурт"}, product_colors=product_colors
+            menu, {}, {5: "Йогурт"}, product_colors=product_colors,
+            meal_type_names=_MEAL_TYPE_NAMES,
         )
         assert data[:4] == b"%PDF"
 
     def test_default_colors_used_when_no_color_map_provided(self) -> None:
         """Slots render with default color indicators when no color maps are given."""
         slots = [
-            _recipe_slot(0, "Завтрак", recipe_id=1),
-            _product_slot(1, "Обед", product_id=2, quantity=100.0, unit="g"),
+            _recipe_slot(0, _BREAKFAST_ID, recipe_id=1),
+            _product_slot(1, _LUNCH_ID, product_id=2, quantity=100.0, unit="g"),
         ]
         menu = _make_menu(slots)
-        data = MenuPdfExporter().export_bytes(menu, {1: "Каша"}, {2: "Масло"})
+        data = MenuPdfExporter().export_bytes(
+            menu, {1: "Каша"}, {2: "Масло"}, meal_type_names=_MEAL_TYPE_NAMES
+        )
         assert data[:4] == b"%PDF"

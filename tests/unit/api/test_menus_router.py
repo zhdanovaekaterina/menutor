@@ -14,7 +14,7 @@ from backend.application.use_cases.generate_meal_summary import (
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.services.shopping_list_builder import IngredientNode
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId
+from backend.domain.value_objects.types import MealTypeId, MenuId, ProductId, RecipeId
 
 
 def _menu(id: int = 1, slots: list[MenuSlot] | None = None) -> WeeklyMenu:
@@ -22,12 +22,12 @@ def _menu(id: int = 1, slots: list[MenuSlot] | None = None) -> WeeklyMenu:
 
 
 def _slot_recipe(pieces_override: int | None = None) -> MenuSlot:
-    return MenuSlot(day=0, meal_type="Завтрак", recipe_id=RecipeId(1), pieces_override=pieces_override)
+    return MenuSlot(day=0, meal_type_id=MealTypeId(1), recipe_id=RecipeId(1), pieces_override=pieces_override)
 
 
 def _slot_product() -> MenuSlot:
     return MenuSlot(
-        day=1, meal_type="Перекус", product_id=ProductId(5), quantity=2.0, unit="pcs"
+        day=1, meal_type_id=MealTypeId(4), product_id=ProductId(5), quantity=2.0, unit="pcs"
     )
 
 
@@ -115,7 +115,7 @@ class TestAddSlot:
         container.add_dish_to_slot.execute.return_value = _menu(
             slots=[_slot_recipe()]
         )
-        body = {"day": 0, "meal_type": "Завтрак", "recipe_id": 1}
+        body = {"day": 0, "meal_type_id": 1, "recipe_id": 1}
         resp = client.post("/api/menus/1/slots", json=body)
         assert resp.status_code == 200
         assert len(resp.json()["slots"]) == 1
@@ -126,7 +126,7 @@ class TestAddSlot:
         )
         body = {
             "day": 1,
-            "meal_type": "Перекус",
+            "meal_type_id": 4,
             "product_id": 5,
             "quantity": 2.0,
             "unit": "pcs",
@@ -137,14 +137,14 @@ class TestAddSlot:
     def test_returns_422_when_both_ids_set(
         self, client: TestClient, container: MagicMock
     ) -> None:
-        body = {"day": 0, "meal_type": "Завтрак", "recipe_id": 1, "product_id": 2}
+        body = {"day": 0, "meal_type_id": 1, "recipe_id": 1, "product_id": 2}
         resp = client.post("/api/menus/1/slots", json=body)
         assert resp.status_code == 422
 
     def test_returns_422_when_no_ids_set(
         self, client: TestClient, container: MagicMock
     ) -> None:
-        body = {"day": 0, "meal_type": "Завтрак"}
+        body = {"day": 0, "meal_type_id": 1}
         resp = client.post("/api/menus/1/slots", json=body)
         assert resp.status_code == 422
 
@@ -154,7 +154,7 @@ class TestAddSlot:
         container.add_dish_to_slot.execute.side_effect = EntityNotFoundError(
             "Меню 999 не найдено"
         )
-        body = {"day": 0, "meal_type": "Завтрак", "recipe_id": 1}
+        body = {"day": 0, "meal_type_id": 1, "recipe_id": 1}
         resp = client.post("/api/menus/999/slots", json=body)
         assert resp.status_code == 404
 
@@ -165,20 +165,20 @@ class TestAddSlot:
 class TestMoveSlot:
     def test_moves_slot(self, client: TestClient, container: MagicMock) -> None:
         container.move_slot_in_menu.execute.return_value = _menu(
-            slots=[MenuSlot(day=1, meal_type="Обед", recipe_id=RecipeId(1), position=0)]
+            slots=[MenuSlot(day=1, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1), position=0)]
         )
         body = {
             "day": 0,
-            "meal_type": "Завтрак",
+            "meal_type_id": 1,
             "recipe_id": 1,
             "to_day": 1,
-            "to_meal_type": "Обед",
+            "to_meal_type_id": 2,
             "to_position": 0,
         }
         resp = client.post("/api/menus/1/slots/move", json=body)
         assert resp.status_code == 200
         assert resp.json()["slots"][0]["day"] == 1
-        assert resp.json()["slots"][0]["meal_type"] == "Обед"
+        assert resp.json()["slots"][0]["meal_type_id"] == 2
         container.move_slot_in_menu.execute.assert_called_once()
 
     def test_returns_404_when_menu_not_found(
@@ -189,10 +189,10 @@ class TestMoveSlot:
         )
         body = {
             "day": 0,
-            "meal_type": "Завтрак",
+            "meal_type_id": 1,
             "recipe_id": 1,
             "to_day": 1,
-            "to_meal_type": "Обед",
+            "to_meal_type_id": 2,
             "to_position": 0,
         }
         resp = client.post("/api/menus/999/slots/move", json=body)
@@ -205,7 +205,7 @@ class TestMoveSlot:
 class TestRemoveSlot:
     def test_removes_slot(self, client: TestClient, container: MagicMock) -> None:
         container.remove_item_from_slot.execute.return_value = _menu()
-        body = {"day": 0, "meal_type": "Завтрак", "recipe_id": 1}
+        body = {"day": 0, "meal_type_id": 1, "recipe_id": 1}
         resp = client.request("DELETE", "/api/menus/1/slots", json=body)
         assert resp.status_code == 200
         container.remove_item_from_slot.execute.assert_called_once()
@@ -216,7 +216,7 @@ class TestRemoveSlot:
         container.remove_item_from_slot.execute.side_effect = EntityNotFoundError(
             "Меню 999 не найдено"
         )
-        body = {"day": 0, "meal_type": "Завтрак", "recipe_id": 1}
+        body = {"day": 0, "meal_type_id": 1, "recipe_id": 1}
         resp = client.request("DELETE", "/api/menus/999/slots", json=body)
         assert resp.status_code == 404
 
@@ -251,7 +251,7 @@ class TestPiecesOverride:
         """POST /menus/{id}/slots с pieces_override."""
         container.add_dish_to_slot.execute.return_value = _menu(1, [_slot_recipe(pieces_override=5)])
         resp = client.post("/api/menus/1/slots", json={
-            "day": 0, "meal_type": "Завтрак", "recipe_id": 1, "pieces_override": 5,
+            "day": 0, "meal_type_id": 1, "recipe_id": 1, "pieces_override": 5,
         })
         assert resp.status_code == 200
         slot = resp.json()["slots"][0]
@@ -261,7 +261,7 @@ class TestPiecesOverride:
         """POST /menus/{id}/slots без pieces_override -- null в ответе."""
         container.add_dish_to_slot.execute.return_value = _menu(1, [_slot_recipe()])
         resp = client.post("/api/menus/1/slots", json={
-            "day": 0, "meal_type": "Завтрак", "recipe_id": 1,
+            "day": 0, "meal_type_id": 1, "recipe_id": 1,
         })
         assert resp.status_code == 200
         slot = resp.json()["slots"][0]
@@ -286,6 +286,7 @@ class TestExportMenuPdf:
         container.load_menu.execute.return_value = _menu(3)
         container.list_recipes.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
         container.list_products.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
+        container.list_meal_types.execute.return_value = []
         resp = client.post("/api/menus/3/export/pdf")
         assert resp.status_code == 200
         assert resp.headers["content-type"] == "application/pdf"
@@ -301,6 +302,7 @@ class TestExportMenuPdf:
         container.load_menu.execute.return_value = cyrillic_menu
         container.list_recipes.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
         container.list_products.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
+        container.list_meal_types.execute.return_value = []
         resp = client.post("/api/menus/3/export/pdf")
         assert resp.status_code == 200
         assert resp.content[:4] == b"%PDF"
@@ -322,6 +324,7 @@ class TestExportMenuPdf:
         container.load_menu.execute.return_value = _menu(1)
         container.list_recipes.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
         container.list_products.execute.return_value = PaginatedResult(items=[], total=0, page=1, page_size=0)
+        container.list_meal_types.execute.return_value = []
         resp = client.post("/api/menus/1/export/pdf")
         assert resp.status_code == 200
         cd = resp.headers["content-disposition"]
@@ -365,7 +368,7 @@ def _meal_summary(
                 occurrences=[
                     MealOccurrence(
                         day=0,
-                        meal_type="Завтрак",
+                        meal_type_id=1,
                         servings=4.0,
                         pieces_override=None,
                         slot_index=0,
@@ -380,7 +383,7 @@ def _meal_summary(
             MealSummaryProduct(
                 product_id=ProductId(2),
                 product_name="Молоко",
-                occurrences=[{"day": 1, "meal_type": "Перекус", "quantity": 0.5, "unit": "l", "slot_index": 1}],
+                occurrences=[{"day": 1, "meal_type_id": 4, "quantity": 0.5, "unit": "l", "slot_index": 1}],
                 total_quantity=0.5,
                 unit="l",
             )

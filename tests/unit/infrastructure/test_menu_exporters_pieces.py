@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.value_objects.import_result import ImportResult
-from backend.domain.value_objects.types import MenuId, RecipeId, UserId
+from backend.domain.value_objects.types import MealTypeId, MenuId, RecipeId, UserId
 from backend.infrastructure.export.menu_json_exporter import MenuJsonExporter
 from backend.infrastructure.import_.menu_json_importer import MenuJsonImporter
 
@@ -17,7 +17,7 @@ def _menu_with_pieces_override() -> WeeklyMenu:
         slots=[
             MenuSlot(
                 day=0,
-                meal_type="обед",
+                meal_type_id=MealTypeId(2),
                 recipe_id=RecipeId(1),
                 position=0,
                 pieces_override=5,
@@ -32,7 +32,7 @@ def _menu_without_pieces_override() -> WeeklyMenu:
         id=MenuId(2),
         name="Меню обычное",
         slots=[
-            MenuSlot(day=1, meal_type="завтрак", recipe_id=RecipeId(2), position=0),
+            MenuSlot(day=1, meal_type_id=MealTypeId(1), recipe_id=RecipeId(2), position=0),
         ],
         user_id=UID,
     )
@@ -51,7 +51,7 @@ def _make_json(*rows: dict) -> bytes:
 
 def _slot_row(pieces_override=None, **kwargs) -> dict:
     defaults = dict(
-        day=0, meal_type="обед", recipe_id=1, product_id=None,
+        day=0, meal_type_id=2, recipe_id=1, product_id=None,
         quantity=None, unit=None, servings_override=None,
         pieces_override=pieces_override, position=0,
     )
@@ -103,7 +103,7 @@ def test_import_menu_with_null_pieces_override() -> None:
 def test_import_menu_old_format_without_pieces_override_backward_compat() -> None:
     # Old format: slot dict has no pieces_override key at all
     old_slot = dict(
-        day=0, meal_type="завтрак", recipe_id=1, product_id=None,
+        day=0, meal_type_id=1, recipe_id=1, product_id=None,
         quantity=None, unit=None, servings_override=None, position=0,
     )
     row = dict(name="Старое меню", slots=[old_slot])

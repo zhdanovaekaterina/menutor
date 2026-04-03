@@ -4,7 +4,7 @@ from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.exceptions import ImportValidationError, InvalidEntityError
 from backend.domain.ports.menu_repository import MenuRepository
 from backend.domain.value_objects.import_result import ImportResult
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, UserId
+from backend.domain.value_objects.types import MealTypeId, MenuId, ProductId, RecipeId, UserId
 
 
 class MenuJsonImporter:
@@ -34,7 +34,7 @@ class MenuJsonImporter:
                 slots = [
                     MenuSlot(
                         day=int(s["day"]),
-                        meal_type=str(s["meal_type"]),
+                        meal_type_id=MealTypeId(int(s["meal_type_id"])),
                         recipe_id=RecipeId(int(s["recipe_id"])) if s.get("recipe_id") is not None else None,
                         product_id=ProductId(int(s["product_id"])) if s.get("product_id") is not None else None,
                         quantity=float(s["quantity"]) if s.get("quantity") is not None else None,

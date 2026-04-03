@@ -13,6 +13,7 @@ from backend.api.auth import get_current_user
 from backend.api.deps import get_container
 from backend.api.routers import auth, categories, family, menus, preferences, products, recipes
 from backend.api.routers import import_export as import_export_router
+from backend.api.routers import meal_types as meal_types_router
 from backend.api.routers import shopping_list as shopping_list_router
 from backend.domain.entities.user import User
 from backend.domain.exceptions import (
@@ -22,8 +23,10 @@ from backend.domain.exceptions import (
     DomainError,
     EntityNotFoundError,
     ImportValidationError,
+    MealTypeLimitError,
     NestingDepthExceededError,
     RepositoryError,
+    SystemMealTypeDeletionError,
     UserAlreadyExistsError,
 )
 from backend.domain.value_objects.types import UserId
@@ -81,6 +84,18 @@ def _build_test_app() -> FastAPI:
             content={"detail": str(exc), "error_type": "nesting_depth_exceeded"},
         )
 
+    @test_app.exception_handler(SystemMealTypeDeletionError)
+    async def handle_system_meal_type_deletion(
+        request: Request, exc: SystemMealTypeDeletionError
+    ) -> JSONResponse:
+        return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+    @test_app.exception_handler(MealTypeLimitError)
+    async def handle_meal_type_limit(
+        request: Request, exc: MealTypeLimitError
+    ) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
     @test_app.exception_handler(DomainError)
     async def handle_domain(request: Request, exc: DomainError) -> JSONResponse:
         return JSONResponse(status_code=422, content={"detail": str(exc)})
@@ -108,6 +123,7 @@ def _build_test_app() -> FastAPI:
     test_app.include_router(shopping_list_router.router, prefix="/api")
     test_app.include_router(import_export_router.router, prefix="/api")
     test_app.include_router(preferences.router, prefix="/api")
+    test_app.include_router(meal_types_router.router, prefix="/api")
 
     return test_app
 

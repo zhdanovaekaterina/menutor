@@ -13,6 +13,7 @@ from backend.api.schemas.meal_summary import (
     MealSummaryResponseSchema,
     PiecesInfoSchema,
 )
+from backend.api.schemas.meal_type import MealTypeResponse, MealTypeUsageMenu, MealTypeUsageResponse
 from backend.api.schemas.menu import MenuResponse, MenuSlotSchema
 from backend.api.schemas.preference import PreferenceCreate, PreferenceResponse
 from backend.api.schemas.product import ProductCreate, ProductResponse
@@ -43,6 +44,7 @@ from backend.application.use_cases.manage_saved_shopping_list import (
     SavedShoppingListItemData,
 )
 from backend.domain.entities.family_member import FamilyMember
+from backend.domain.entities.meal_type import MealType
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.entities.preference import Preference
 from backend.domain.entities.product import Product
@@ -61,6 +63,7 @@ from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
 from backend.domain.value_objects.types import (
     FamilyMemberId,
+    MealTypeId,
     PreferenceId,
     ProductCategoryId,
     ProductId,
@@ -152,7 +155,7 @@ def product_to_response(product: Product) -> ProductResponse:
 def menu_slot_to_schema(slot: MenuSlot) -> MenuSlotSchema:
     return MenuSlotSchema(
         day=slot.day,
-        meal_type=slot.meal_type,
+        meal_type_id=int(slot.meal_type_id),
         recipe_id=int(slot.recipe_id) if slot.recipe_id is not None else None,
         product_id=int(slot.product_id) if slot.product_id is not None else None,
         quantity=slot.quantity,
@@ -344,7 +347,7 @@ def schema_to_family_data(body: FamilyMemberCreate) -> FamilyMemberData:
 def schema_to_menu_slot(s: MenuSlotSchema) -> MenuSlot:
     return MenuSlot(
         day=s.day,
-        meal_type=s.meal_type,
+        meal_type_id=MealTypeId(s.meal_type_id),
         recipe_id=RecipeId(s.recipe_id) if s.recipe_id is not None else None,
         product_id=ProductId(s.product_id) if s.product_id is not None else None,
         quantity=s.quantity,
@@ -370,6 +373,28 @@ def _ingredient_node_to_schema(node: IngredientNode) -> MealIngredientSchema:
     )
 
 
+# ── MealType ──────────────────────────────────────────────────────
+
+def meal_type_to_response(mt: MealType) -> MealTypeResponse:
+    return MealTypeResponse(
+        id=int(mt.id),
+        name=mt.name,
+        time=mt.time.strftime("%H:%M"),
+        is_system=mt.is_system,
+        sort_order=mt.sort_order,
+    )
+
+
+def meal_type_usage_to_response(
+    meal_type_id: int, menus: list[tuple[int, str]]
+) -> MealTypeUsageResponse:
+    return MealTypeUsageResponse(
+        meal_type_id=meal_type_id,
+        menus=[MealTypeUsageMenu(id=mid, name=mname) for mid, mname in menus],
+        count=len(menus),
+    )
+
+
 def meal_summary_to_response(summary: MealSummaryDomain) -> MealSummaryResponseSchema:
     recipes = []
     for r in summary.recipes:
@@ -385,7 +410,7 @@ def meal_summary_to_response(summary: MealSummaryDomain) -> MealSummaryResponseS
             occurrences=[
                 MealOccurrenceSchema(
                     day=o.day,
-                    meal_type=o.meal_type,
+                    meal_type_id=o.meal_type_id,
                     servings=o.servings,
                     pieces_override=o.pieces_override,
                     slot_index=o.slot_index,
@@ -405,7 +430,7 @@ def meal_summary_to_response(summary: MealSummaryDomain) -> MealSummaryResponseS
             occurrences=[
                 MealSummaryProductOccurrence(
                     day=o["day"],
-                    meal_type=o["meal_type"],
+                    meal_type_id=o["meal_type_id"],
                     quantity=o["quantity"],
                     unit=o["unit"],
                     slot_index=o["slot_index"],

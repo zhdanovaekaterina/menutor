@@ -13,7 +13,7 @@ from backend.domain.entities.product import Product
 from backend.domain.entities.recipe import Recipe
 from backend.domain.exceptions import EntityNotFoundError
 from backend.domain.value_objects.money import Money
-from backend.domain.value_objects.types import MenuId, ProductId, RecipeId, UserId
+from backend.domain.value_objects.types import MealTypeId, MenuId, ProductId, RecipeId, UserId
 
 from decimal import Decimal
 
@@ -63,8 +63,8 @@ def test_execute_returns_summary_for_valid_menu() -> None:
     product = _make_product(product_id=10, name="Молоко")
 
     slots = [
-        MenuSlot(day=0, meal_type="обед", recipe_id=RecipeId(1)),
-        MenuSlot(day=1, meal_type="ужин", product_id=ProductId(10), quantity=500.0, unit="ml"),
+        MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
+        MenuSlot(day=1, meal_type_id=MealTypeId(3), product_id=ProductId(10), quantity=500.0, unit="ml"),
     ]
     menu = WeeklyMenu(MenuId(1), "Неделя 1", slots, user_id=UID)
 
@@ -116,8 +116,8 @@ def test_execute_aggregates_same_recipe_occurrences() -> None:
     recipe = _make_recipe(recipe_id=1, name="Плов", servings=4)
 
     slots = [
-        MenuSlot(day=0, meal_type="обед", recipe_id=RecipeId(1), servings_override=2.0),
-        MenuSlot(day=3, meal_type="ужин", recipe_id=RecipeId(1), servings_override=3.0),
+        MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1), servings_override=2.0),
+        MenuSlot(day=3, meal_type_id=MealTypeId(3), recipe_id=RecipeId(1), servings_override=3.0),
     ]
     menu = WeeklyMenu(MenuId(1), "Неделя", slots, user_id=UID)
 
@@ -140,7 +140,7 @@ def test_execute_aggregates_same_recipe_occurrences() -> None:
 def test_execute_respects_servings_override() -> None:
     recipe = _make_recipe(recipe_id=1, name="Суп", servings=4)
 
-    slot = MenuSlot(day=2, meal_type="обед", recipe_id=RecipeId(1), servings_override=6.0)
+    slot = MenuSlot(day=2, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1), servings_override=6.0)
     menu = WeeklyMenu(MenuId(1), "Неделя", [slot], user_id=UID)
 
     menu_repo = MagicMock()
@@ -165,7 +165,7 @@ def test_execute_handles_pieces_mode() -> None:
         total_pieces=12, pieces_per_portion=3,
     )
 
-    slot = MenuSlot(day=0, meal_type="завтрак", recipe_id=RecipeId(1), pieces_override=6)
+    slot = MenuSlot(day=0, meal_type_id=MealTypeId(1), recipe_id=RecipeId(1), pieces_override=6)
     menu = WeeklyMenu(MenuId(1), "Неделя", [slot], user_id=UID)
 
     menu_repo = MagicMock()
@@ -191,7 +191,7 @@ def test_execute_handles_pieces_mode() -> None:
 
 def test_execute_skips_missing_recipe() -> None:
     slots = [
-        MenuSlot(day=0, meal_type="обед", recipe_id=RecipeId(99)),
+        MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(99)),
     ]
     menu = WeeklyMenu(MenuId(1), "Неделя", slots, user_id=UID)
 
@@ -209,7 +209,7 @@ def test_execute_skips_missing_recipe() -> None:
 
 def test_execute_skips_missing_product() -> None:
     slots = [
-        MenuSlot(day=0, meal_type="завтрак", product_id=ProductId(99), quantity=200.0, unit="ml"),
+        MenuSlot(day=0, meal_type_id=MealTypeId(1), product_id=ProductId(99), quantity=200.0, unit="ml"),
     ]
     menu = WeeklyMenu(MenuId(1), "Неделя", slots, user_id=UID)
 
@@ -244,8 +244,8 @@ def test_execute_includes_slot_index_in_occurrences() -> None:
     recipe = _make_recipe(recipe_id=1, name="Каша", servings=2)
 
     slots = [
-        MenuSlot(day=0, meal_type="завтрак", recipe_id=RecipeId(1)),
-        MenuSlot(day=1, meal_type="завтрак", recipe_id=RecipeId(1)),
+        MenuSlot(day=0, meal_type_id=MealTypeId(1), recipe_id=RecipeId(1)),
+        MenuSlot(day=1, meal_type_id=MealTypeId(1), recipe_id=RecipeId(1)),
     ]
     menu = WeeklyMenu(MenuId(1), "Неделя", slots, user_id=UID)
 
@@ -271,8 +271,8 @@ def test_execute_calls_builder_for_each_unique_recipe() -> None:
     recipe_b = _make_recipe(recipe_id=2, name="Пельмени", servings=3)
 
     slots = [
-        MenuSlot(day=0, meal_type="обед", recipe_id=RecipeId(1)),
-        MenuSlot(day=1, meal_type="обед", recipe_id=RecipeId(2)),
+        MenuSlot(day=0, meal_type_id=MealTypeId(2), recipe_id=RecipeId(1)),
+        MenuSlot(day=1, meal_type_id=MealTypeId(2), recipe_id=RecipeId(2)),
     ]
     menu = WeeklyMenu(MenuId(1), "Неделя", slots, user_id=UID)
 
