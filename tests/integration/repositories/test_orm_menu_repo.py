@@ -7,6 +7,7 @@ from backend.domain.entities.product import Product
 from backend.domain.entities.recipe import Recipe
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.types import (
+    MealTypeId,
     MenuId,
     ProductCategoryId,
     ProductId,
@@ -79,8 +80,8 @@ def test_save_and_get_by_id_empty_menu(menu_repo: OrmMenuRepository, user_id: Us
 def test_save_and_get_with_recipe_slots(menu_repo: OrmMenuRepository,
                                   seeded_recipe: Recipe, user_id: UserId) -> None:
     menu = WeeklyMenu(MenuId(0), "С блюдами", slots=[
-        MenuSlot(day=0, meal_type="завтрак", recipe_id=seeded_recipe.id),
-        MenuSlot(day=1, meal_type="обед",    recipe_id=seeded_recipe.id,
+        MenuSlot(day=0, meal_type_id=MealTypeId(1), recipe_id=seeded_recipe.id),
+        MenuSlot(day=1, meal_type_id=MealTypeId(2), recipe_id=seeded_recipe.id,
                  servings_override=3.0),
     ], user_id=user_id)
     saved = menu_repo.save(menu)
@@ -88,17 +89,17 @@ def test_save_and_get_with_recipe_slots(menu_repo: OrmMenuRepository,
 
     assert retrieved is not None
     assert len(retrieved.slots) == 2
-    slot_map = {s.meal_type: s for s in retrieved.slots}
-    assert slot_map["завтрак"].day == 0
-    assert slot_map["завтрак"].recipe_id == seeded_recipe.id
-    assert slot_map["завтрак"].product_id is None
-    assert slot_map["обед"].servings_override == pytest.approx(3.0)
+    slot_map = {s.meal_type_id: s for s in retrieved.slots}
+    assert slot_map[MealTypeId(1)].day == 0
+    assert slot_map[MealTypeId(1)].recipe_id == seeded_recipe.id
+    assert slot_map[MealTypeId(1)].product_id is None
+    assert slot_map[MealTypeId(2)].servings_override == pytest.approx(3.0)
 
 
 def test_save_and_get_with_product_slot(menu_repo: OrmMenuRepository,
                                         seeded_product: Product, user_id: UserId) -> None:
     menu = WeeklyMenu(MenuId(0), "С продуктом", slots=[
-        MenuSlot(day=2, meal_type="ужин", product_id=seeded_product.id,
+        MenuSlot(day=2, meal_type_id=MealTypeId(3), product_id=seeded_product.id,
                  quantity=500.0, unit="ml"),
     ], user_id=user_id)
     saved = menu_repo.save(menu)
@@ -118,8 +119,8 @@ def test_save_multiple_items_same_cell(menu_repo: OrmMenuRepository,
                                        seeded_product: Product, user_id: UserId) -> None:
     """Multiple items in the same (day, meal_type) should all be saved."""
     menu = WeeklyMenu(MenuId(0), "Мульти", slots=[
-        MenuSlot(day=0, meal_type="завтрак", recipe_id=seeded_recipe.id),
-        MenuSlot(day=0, meal_type="завтрак", product_id=seeded_product.id,
+        MenuSlot(day=0, meal_type_id=MealTypeId(1), recipe_id=seeded_recipe.id),
+        MenuSlot(day=0, meal_type_id=MealTypeId(1), product_id=seeded_product.id,
                  quantity=200.0, unit="ml"),
     ], user_id=user_id)
     saved = menu_repo.save(menu)
@@ -148,7 +149,7 @@ def test_delete_cascades_to_slots(menu_repo: OrmMenuRepository,
     from sqlalchemy.orm import Session
     session: Session = conn  # type: ignore[assignment]
     menu = WeeklyMenu(MenuId(0), "Тест", slots=[
-        MenuSlot(0, "завтрак", recipe_id=seeded_recipe.id)
+        MenuSlot(0, MealTypeId(1), recipe_id=seeded_recipe.id)
     ], user_id=user_id)
     saved = menu_repo.save(menu)
     menu_repo.delete([saved.id])
@@ -170,11 +171,11 @@ def test_save_updates_existing_menu_and_replaces_slots(
     menu_repo: OrmMenuRepository, seeded_recipe: Recipe, user_id: UserId
 ) -> None:
     saved = menu_repo.save(WeeklyMenu(MenuId(0), "Исходное", slots=[
-        MenuSlot(0, "завтрак", recipe_id=seeded_recipe.id),
+        MenuSlot(0, MealTypeId(1), recipe_id=seeded_recipe.id),
     ], user_id=user_id))
     # Update: rename + change slots
     updated = menu_repo.save(WeeklyMenu(saved.id, "Обновлённое", slots=[
-        MenuSlot(3, "ужин", recipe_id=seeded_recipe.id),
+        MenuSlot(3, MealTypeId(3), recipe_id=seeded_recipe.id),
     ], user_id=user_id))
     assert updated.name == "Обновлённое"
     assert len(updated.slots) == 1

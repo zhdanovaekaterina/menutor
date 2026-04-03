@@ -10,6 +10,7 @@ from backend.domain.entities.recipe import Recipe
 from backend.domain.value_objects.money import Money
 from backend.domain.value_objects.types import (
     FamilyMemberId,
+    MealTypeId,
     MenuId,
     ProductCategoryId,
     ProductId,
@@ -52,7 +53,7 @@ def test_save_load_member_ids_round_trip(
     menu = WeeklyMenu(MenuId(0), "Тест member_ids", slots=[
         MenuSlot(
             day=0,
-            meal_type="завтрак",
+            meal_type_id=MealTypeId(1),
             recipe_id=seeded_recipe.id,
             member_ids=[FamilyMemberId(1), FamilyMemberId(2)],
         )
@@ -72,7 +73,7 @@ def test_empty_member_ids_default(
     menu = WeeklyMenu(MenuId(0), "Тест пустой member_ids", slots=[
         MenuSlot(
             day=1,
-            meal_type="обед",
+            meal_type_id=MealTypeId(2),
             recipe_id=seeded_recipe.id,
             member_ids=[],
         )
@@ -98,8 +99,8 @@ def test_existing_rows_backward_compat(
     assert menu_id_raw is not None
 
     session.execute(text(
-        "INSERT INTO menu_slots (menu_id, day, meal_type, recipe_id, slot_position) "
-        "VALUES (:menu_id, 0, 'завтрак', :recipe_id, 0)"
+        "INSERT INTO menu_slots (menu_id, day, meal_type_id, recipe_id, slot_position) "
+        "VALUES (:menu_id, 0, 1, :recipe_id, 0)"
     ), {"menu_id": menu_id_raw, "recipe_id": int(seeded_recipe.id)})
     session.flush()
 
