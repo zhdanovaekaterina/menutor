@@ -14,6 +14,7 @@ from backend.api.schemas.meal_summary import (
     PiecesInfoSchema,
 )
 from backend.api.schemas.menu import MenuResponse, MenuSlotSchema
+from backend.api.schemas.preference import PreferenceCreate, PreferenceResponse
 from backend.api.schemas.product import ProductCreate, ProductResponse
 from backend.api.schemas.recipe import (
     CookingStepSchema,
@@ -35,6 +36,7 @@ from backend.application.use_cases.generate_meal_summary import (
     MealSummaryResponse as MealSummaryDomain,
 )
 from backend.application.use_cases.manage_family import FamilyMemberData
+from backend.application.use_cases.manage_preference import PreferenceData
 from backend.application.use_cases.manage_product import ProductData
 from backend.application.use_cases.manage_recipe import RecipeData
 from backend.application.use_cases.manage_saved_shopping_list import (
@@ -42,6 +44,7 @@ from backend.application.use_cases.manage_saved_shopping_list import (
 )
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
+from backend.domain.entities.preference import Preference
 from backend.domain.entities.product import Product
 from backend.domain.entities.recipe import Recipe
 from backend.domain.entities.saved_shopping_list import (
@@ -53,15 +56,39 @@ from backend.domain.services.shopping_list_builder import IngredientNode
 from backend.domain.value_objects.category import ActiveCategory, Category
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.preference_enums import PreferenceMode, PreferenceType
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
 from backend.domain.value_objects.types import (
     FamilyMemberId,
+    PreferenceId,
     ProductCategoryId,
     ProductId,
     RecipeCategoryId,
     RecipeId,
 )
+
+# ── Preference ──────────────────────────────────────────────────────
+
+def preference_to_response(pref: Preference) -> PreferenceResponse:
+    return PreferenceResponse(
+        id=int(pref.id),
+        name=pref.name,
+        type=pref.type.value,
+        mode=pref.mode.value,
+        category_ids=[int(cid) for cid in pref.category_ids],
+        product_ids=[int(pid) for pid in pref.product_ids],
+    )
+
+
+def schema_to_preference_data(body: PreferenceCreate) -> PreferenceData:
+    return PreferenceData(
+        name=body.name,
+        type=PreferenceType(body.type),
+        mode=PreferenceMode(body.mode),
+        category_ids=[ProductCategoryId(cid) for cid in body.category_ids],
+        product_ids=[ProductId(pid) for pid in body.product_ids],
+    )
 
 # ── Recipe ─────────────────────────────────────────────────────────
 
@@ -150,8 +177,8 @@ def family_member_to_response(member: FamilyMember) -> FamilyMemberResponse:
         id=int(member.id),
         name=member.name,
         portion_multiplier=member.portion_multiplier,
-        dietary_restrictions=member.dietary_restrictions,
         comment=member.comment,
+        preference_ids=[int(pid) for pid in member.preference_ids],
     )
 
 
@@ -307,8 +334,8 @@ def schema_to_family_data(body: FamilyMemberCreate) -> FamilyMemberData:
     return FamilyMemberData(
         name=body.name,
         portion_multiplier=body.portion_multiplier,
-        dietary_restrictions=body.dietary_restrictions,
         comment=body.comment,
+        preference_ids=[PreferenceId(pid) for pid in body.preference_ids],
     )
 
 

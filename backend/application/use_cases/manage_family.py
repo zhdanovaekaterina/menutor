@@ -9,15 +9,15 @@ from backend.application.use_cases.crud_base import (
 )
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.ports.family_member_repository import FamilyMemberRepository
-from backend.domain.value_objects.types import FamilyMemberId, UserId
+from backend.domain.value_objects.types import FamilyMemberId, PreferenceId, UserId
 
 
 @dataclass
 class FamilyMemberData:
     name: str
     portion_multiplier: float = field(default=1.0)
-    dietary_restrictions: str = field(default="")
     comment: str = field(default="")
+    preference_ids: list[PreferenceId] = field(default_factory=list)
 
 
 def _build_member(
@@ -27,9 +27,9 @@ def _build_member(
         id=id,
         name=data.name,
         portion_multiplier=data.portion_multiplier,
-        dietary_restrictions=data.dietary_restrictions,
         comment=data.comment,
         user_id=user_id,
+        preference_ids=data.preference_ids,
     )
 
 

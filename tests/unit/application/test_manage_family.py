@@ -17,8 +17,7 @@ UID = UserId(1)
 
 
 def _data(**kwargs) -> FamilyMemberData:
-    defaults = dict(name="Алиса", portion_multiplier=1.0,
-                    dietary_restrictions="", comment="")
+    defaults = dict(name="Алиса", portion_multiplier=1.0, comment="")
     defaults.update(kwargs)
     return FamilyMemberData(**defaults)
 

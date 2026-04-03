@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { ActiveCategory, FamilyMember, Product, Recipe } from '@/api/types'
 import SearchInput from '@/components/ui/SearchInput.vue'
 import { useTabbedFilter } from '@/composables/useTabbedFilter'
@@ -9,6 +10,8 @@ const props = defineProps<{
   familyMembers: FamilyMember[]
   recipeCategories: ActiveCategory[]
   productCategories: ActiveCategory[]
+  blockedRecipeIds?: Set<number>
+  blockedProductIds?: Set<number>
 }>()
 
 const {
@@ -17,6 +20,26 @@ const {
   () => props.recipes,
   () => props.products,
 )
+
+const sortedRecipes = computed(() => {
+  const blocked = props.blockedRecipeIds
+  if (!blocked?.size) return filteredRecipes.value
+  return [...filteredRecipes.value].sort((a, b) => {
+    const aB = blocked.has(a.id) ? 1 : 0
+    const bB = blocked.has(b.id) ? 1 : 0
+    return aB - bB
+  })
+})
+
+const sortedProducts = computed(() => {
+  const blocked = props.blockedProductIds
+  if (!blocked?.size) return filteredProducts.value
+  return [...filteredProducts.value].sort((a, b) => {
+    const aB = blocked.has(a.id) ? 1 : 0
+    const bB = blocked.has(b.id) ? 1 : 0
+    return aB - bB
+  })
+})
 
 function onDragStart(e: DragEvent, type: 'recipe' | 'product', id: number) {
   e.dataTransfer?.setData('application/json', JSON.stringify({ type, id }))
@@ -77,13 +100,22 @@ function onDragStart(e: DragEvent, type: 'recipe' | 'product', id: number) {
     <div v-if="tab === 'recipes'" class="flex-1 relative overflow-hidden border rounded-lg">
       <ul class="absolute inset-0 overflow-y-auto text-sm divide-y pb-4">
         <li
-          v-for="r in filteredRecipes"
+          v-for="r in sortedRecipes"
           :key="r.id"
           draggable="true"
-          class="px-2 py-1.5 cursor-grab hover:bg-gray-100"
+          class="px-2 py-1.5 cursor-grab flex items-center gap-1.5"
+          :class="blockedRecipeIds?.has(r.id)
+            ? 'opacity-40 hover:opacity-60'
+            : 'hover:bg-gray-100'"
+          :title="blockedRecipeIds?.has(r.id) ? 'Не подходит по предпочтениям' : undefined"
           @dragstart="onDragStart($event, 'recipe', r.id)"
         >
-          {{ r.name }}
+          <span
+            v-if="blockedRecipeIds?.has(r.id)"
+            class="shrink-0 text-amber-500"
+            aria-label="Несовместимо с предпочтениями"
+          >⚠</span>
+          <span>{{ r.name }}</span>
         </li>
       </ul>
       <div class="absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />
@@ -93,13 +125,22 @@ function onDragStart(e: DragEvent, type: 'recipe' | 'product', id: number) {
     <div v-else class="flex-1 relative overflow-hidden border rounded-lg">
       <ul class="absolute inset-0 overflow-y-auto text-sm divide-y pb-4">
         <li
-          v-for="p in filteredProducts"
+          v-for="p in sortedProducts"
           :key="p.id"
           draggable="true"
-          class="px-2 py-1.5 cursor-grab hover:bg-gray-100"
+          class="px-2 py-1.5 cursor-grab flex items-center gap-1.5"
+          :class="blockedProductIds?.has(p.id)
+            ? 'opacity-40 hover:opacity-60'
+            : 'hover:bg-gray-100'"
+          :title="blockedProductIds?.has(p.id) ? 'Не подходит по предпочтениям' : undefined"
           @dragstart="onDragStart($event, 'product', p.id)"
         >
-          {{ p.name }}
+          <span
+            v-if="blockedProductIds?.has(p.id)"
+            class="shrink-0 text-amber-500"
+            aria-label="Несовместимо с предпочтениями"
+          >⚠</span>
+          <span>{{ p.name }}</span>
         </li>
       </ul>
       <div class="absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />

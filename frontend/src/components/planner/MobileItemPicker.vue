@@ -17,6 +17,8 @@ const props = defineProps<{
   productCategories: ActiveCategory[]
   familyMembers?: FamilyMember[]
   activeMemberIds?: Set<number>
+  blockedRecipeIds?: Set<number>
+  blockedProductIds?: Set<number>
 }>()
 
 const emit = defineEmits<{
@@ -39,6 +41,27 @@ const existingRecipeIds = computed(() =>
 const existingProductIds = computed(() =>
   new Set(props.existingSlots.filter(s => s.product_id != null).map(s => s.product_id!))
 )
+
+// Sort blocked items to the bottom
+const sortedRecipes = computed(() => {
+  const blocked = props.blockedRecipeIds
+  if (!blocked?.size) return filteredRecipes.value
+  return [...filteredRecipes.value].sort((a, b) => {
+    const aB = blocked.has(a.id) ? 1 : 0
+    const bB = blocked.has(b.id) ? 1 : 0
+    return aB - bB
+  })
+})
+
+const sortedProducts = computed(() => {
+  const blocked = props.blockedProductIds
+  if (!blocked?.size) return filteredProducts.value
+  return [...filteredProducts.value].sort((a, b) => {
+    const aB = blocked.has(a.id) ? 1 : 0
+    const bB = blocked.has(b.id) ? 1 : 0
+    return aB - bB
+  })
+})
 
 // Recently added IDs for flash feedback (cleared on close)
 const justAdded = ref<Set<string>>(new Set())
@@ -227,19 +250,28 @@ function onTouchEnd() {
         <div class="flex-1 overflow-y-auto overscroll-contain" role="listbox">
           <!-- Recipes tab -->
           <template v-if="tab === 'recipes'">
-            <div v-if="filteredRecipes.length === 0" class="flex flex-col items-center justify-center py-8 text-gray-400 text-sm">
+            <div v-if="sortedRecipes.length === 0" class="flex flex-col items-center justify-center py-8 text-gray-400 text-sm">
               <span v-if="recipes.length === 0">Нет блюд</span>
               <span v-else>Ничего не найдено</span>
             </div>
             <button
-              v-for="r in filteredRecipes"
+              v-for="r in sortedRecipes"
               :key="r.id"
               role="option"
-              class="w-full flex items-center gap-3 px-4 py-3 text-left text-base active:bg-gray-100 transition-colors border-b border-gray-100"
-              :class="justAdded.has(`recipe-${r.id}`) ? 'bg-green-50' : ''"
+              class="w-full flex items-center gap-3 px-4 py-3 text-left text-base transition-colors border-b border-gray-100"
+              :class="[
+                justAdded.has(`recipe-${r.id}`) ? 'bg-green-50' : 'active:bg-gray-100',
+                blockedRecipeIds?.has(r.id) ? 'opacity-40' : '',
+              ]"
+              :title="blockedRecipeIds?.has(r.id) ? 'Не подходит по предпочтениям' : undefined"
               @click="onSelectItem('recipe', r.id)"
             >
-              <span class="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+              <span
+                v-if="blockedRecipeIds?.has(r.id)"
+                class="text-amber-500 shrink-0 text-sm leading-none"
+                aria-label="Несовместимо с предпочтениями"
+              >⚠</span>
+              <span v-else class="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
               <span class="flex-1 truncate">{{ r.name }}</span>
               <IconCheck v-if="existingRecipeIds.has(r.id)" class="w-4 h-4 text-green-500 shrink-0" />
             </button>
@@ -247,19 +279,28 @@ function onTouchEnd() {
 
           <!-- Products tab -->
           <template v-else>
-            <div v-if="filteredProducts.length === 0" class="flex flex-col items-center justify-center py-8 text-gray-400 text-sm">
+            <div v-if="sortedProducts.length === 0" class="flex flex-col items-center justify-center py-8 text-gray-400 text-sm">
               <span v-if="products.length === 0">Нет ингредиентов</span>
               <span v-else>Ничего не найдено</span>
             </div>
             <button
-              v-for="p in filteredProducts"
+              v-for="p in sortedProducts"
               :key="p.id"
               role="option"
-              class="w-full flex items-center gap-3 px-4 py-3 text-left text-base active:bg-gray-100 transition-colors border-b border-gray-100"
-              :class="justAdded.has(`product-${p.id}`) ? 'bg-green-50' : ''"
+              class="w-full flex items-center gap-3 px-4 py-3 text-left text-base transition-colors border-b border-gray-100"
+              :class="[
+                justAdded.has(`product-${p.id}`) ? 'bg-green-50' : 'active:bg-gray-100',
+                blockedProductIds?.has(p.id) ? 'opacity-40' : '',
+              ]"
+              :title="blockedProductIds?.has(p.id) ? 'Не подходит по предпочтениям' : undefined"
               @click="onSelectItem('product', p.id)"
             >
-              <span class="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
+              <span
+                v-if="blockedProductIds?.has(p.id)"
+                class="text-amber-500 shrink-0 text-sm leading-none"
+                aria-label="Несовместимо с предпочтениями"
+              >⚠</span>
+              <span v-else class="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
               <span class="flex-1 truncate">{{ p.name }}</span>
               <IconCheck v-if="existingProductIds.has(p.id)" class="w-4 h-4 text-green-500 shrink-0" />
             </button>

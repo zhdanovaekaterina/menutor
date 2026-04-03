@@ -6,6 +6,7 @@ from backend.composition._family import _wire_family
 from backend.composition._import_export import _wire_import_export
 from backend.composition._infrastructure import _create_infrastructure
 from backend.composition._menus import _wire_menus
+from backend.composition._preferences import _wire_preferences
 from backend.composition._products import _wire_products
 from backend.composition._recipes import _wire_recipes
 from backend.composition._shopping import _wire_shopping
@@ -30,6 +31,8 @@ class ApplicationContainer:
         for name, obj in _wire_family(infra).items():
             setattr(self, name, obj)
         for name, obj in _wire_shopping(infra).items():
+            setattr(self, name, obj)
+        for name, obj in _wire_preferences(infra).items():
             setattr(self, name, obj)
 
         # import/export wiring needs generate_shopping_list already set

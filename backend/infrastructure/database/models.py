@@ -174,8 +174,79 @@ class FamilyMemberRow(Base):
     )
     name = Column(String, nullable=False)
     portion_multiplier = Column(Float, nullable=False, default=1.0, server_default="1.0")
-    dietary_restrictions = Column(String, nullable=False, default="", server_default="")
     comment = Column(String, nullable=False, default="", server_default="")
+
+    preference_links = relationship(
+        "FamilyMemberPreferenceRow",
+        cascade="all, delete-orphan",
+    )
+
+
+class PreferenceRow(Base):
+    __tablename__ = "preferences"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    name = Column(String, nullable=False)
+    type = Column(String, nullable=False)   # "CATEGORY_BASED" or "ALLERGY"
+    mode = Column(String, nullable=False)   # "BLOCKED" or "ALLOWED"
+
+    categories = relationship(
+        "PreferenceCategoryRow",
+        back_populates="preference",
+        cascade="all, delete-orphan",
+    )
+    products = relationship(
+        "PreferenceProductRow",
+        back_populates="preference",
+        cascade="all, delete-orphan",
+    )
+
+
+class PreferenceCategoryRow(Base):
+    __tablename__ = "preference_categories"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    preference_id = Column(
+        Integer, ForeignKey("preferences.id", ondelete="CASCADE"), nullable=False
+    )
+    category_id = Column(
+        Integer, ForeignKey("product_categories.id"), nullable=False
+    )
+
+    preference = relationship("PreferenceRow", back_populates="categories")
+
+
+class PreferenceProductRow(Base):
+    __tablename__ = "preference_products"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    preference_id = Column(
+        Integer, ForeignKey("preferences.id", ondelete="CASCADE"), nullable=False
+    )
+    product_id = Column(
+        Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False
+    )
+
+    preference = relationship("PreferenceRow", back_populates="products")
+
+
+class FamilyMemberPreferenceRow(Base):
+    __tablename__ = "family_member_preferences"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    family_member_id = Column(
+        Integer,
+        ForeignKey("family_members.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    preference_id = Column(
+        Integer,
+        ForeignKey("preferences.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
 
 class MenuRow(Base):

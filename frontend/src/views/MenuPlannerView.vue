@@ -25,9 +25,11 @@ import { exportEntities, exportMenuPdf } from '@/api/client'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { formatUnit } from '@/utils/units'
 import { downloadBlob } from '@/composables/useFileDownload'
+import { usePreferenceFilter } from '@/composables/usePreferenceFilter'
 import { useCategoryStore } from '@/stores/categories'
 import { useFamilyStore } from '@/stores/family'
 import { useMenuStore } from '@/stores/menus'
+import { usePreferencesStore } from '@/stores/preferences'
 import { useProductStore } from '@/stores/products'
 import { useRecipeStore } from '@/stores/recipes'
 import { useShoppingListStore } from '@/stores/shoppingList'
@@ -41,6 +43,7 @@ const productStore = useProductStore()
 const familyStore = useFamilyStore()
 const categoryStore = useCategoryStore()
 const shoppingStore = useShoppingListStore()
+const preferencesStore = usePreferencesStore()
 const toast = useToastStore()
 
 const isXl = ref(typeof window !== 'undefined' && window.innerWidth >= 1280)
@@ -82,6 +85,7 @@ onMounted(async () => {
     recipeStore.load(),
     productStore.load(),
     familyStore.load(),
+    preferencesStore.load(),
     categoryStore.load('product'),
     categoryStore.load('recipe'),
   ])
@@ -152,6 +156,14 @@ function toggleAll() {
     activeMemberIds.value = new Set(familyStore.items.map(m => m.id))
   }
 }
+
+const { blockedRecipeIds, blockedProductIds, activePreferences } = usePreferenceFilter(
+  activeMemberIds,
+  computed(() => familyStore.items),
+  computed(() => preferencesStore.items),
+  computed(() => recipeStore.allItems),
+  computed(() => productStore.allItems),
+)
 
 const recipeNames = computed(() =>
   Object.fromEntries(recipeStore.allItems.map((r) => [r.id, r.name])),
@@ -468,6 +480,33 @@ async function onGenerateShoppingList() {
           @toggle-member="toggleMember"
           @toggle-all="toggleAll"
         />
+        <div
+          v-if="activePreferences.length > 0"
+          class="flex items-center gap-1.5 flex-wrap text-xs"
+          aria-label="Активные предпочтения"
+        >
+          <span class="text-gray-500 shrink-0">Предпочтения:</span>
+          <span
+            v-for="pref in activePreferences"
+            :key="pref.id"
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
+            :class="pref.type === 'ALLERGY'
+              ? 'bg-red-100 text-red-700'
+              : pref.mode === 'ALLOWED'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-amber-100 text-amber-700'"
+            :title="pref.type === 'ALLERGY'
+              ? 'Аллергия'
+              : pref.mode === 'ALLOWED'
+                ? 'Разрешено'
+                : 'Запрещено'"
+          >
+            <span v-if="pref.type === 'ALLERGY'">⚠</span>
+            <span v-else-if="pref.mode === 'ALLOWED'">✓</span>
+            <span v-else>✕</span>
+            {{ pref.name }}
+          </span>
+        </div>
         <div class="flex-1 overflow-hidden lg:overflow-x-auto">
           <PlannerGrid
             :slots="slots"
@@ -593,6 +632,8 @@ async function onGenerateShoppingList() {
             :family-members="familyStore.items"
             :recipe-categories="recipeStore.categories"
             :product-categories="productStore.categories"
+            :blocked-recipe-ids="blockedRecipeIds"
+            :blocked-product-ids="blockedProductIds"
           />
         </div>
       </div>
@@ -669,6 +710,10 @@ async function onGenerateShoppingList() {
       :existing-slots="pickerExistingSlots"
       :recipe-categories="recipeStore.categories"
       :product-categories="productStore.categories"
+      :family-members="familyStore.items"
+      :active-member-ids="activeMemberIds"
+      :blocked-recipe-ids="blockedRecipeIds"
+      :blocked-product-ids="blockedProductIds"
       @close="pickerOpen = false"
       @select="onPickerSelect"
       @remove="onPickerRemove"

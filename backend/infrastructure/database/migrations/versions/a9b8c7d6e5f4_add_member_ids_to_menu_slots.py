@@ -3,7 +3,7 @@
 Add member_ids column to menu_slots table for Individual Menu Mode.
 
 Revision ID: a9b8c7d6e5f4
-Revises: f1a2b3c4d5e6
+Revises: a2b3c4d5e6f7
 Create Date: 2026-04-01 12:00:00.000000
 
 """
@@ -14,7 +14,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "a9b8c7d6e5f4"
-down_revision: Union[str, None] = "f1a2b3c4d5e6"
+down_revision: Union[str, None] = "a2b3c4d5e6f7"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

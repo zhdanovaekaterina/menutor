@@ -13,6 +13,9 @@ import type {
   MenuSlot,
   MoveSlotRequest,
   PaginatedResponse,
+  Preference,
+  PreferenceCreate,
+  PreferenceMatchResponse,
   Product,
   ProductCreate,
   Recipe,
@@ -301,3 +304,14 @@ export const importEntities = (entityType: string, format: string, file: File) =
   formData.append('file', file)
   return api.post<ImportResult>(`/${entityType}/import/${format}`, formData).then((r) => r.data)
 }
+
+/* Preferences */
+export const fetchPreferences = () =>
+  api.get<Preference[]>('/preferences').then((r) => r.data)
+export const createPreference = (data: PreferenceCreate) =>
+  api.post<Preference>('/preferences', data).then((r) => r.data)
+export const updatePreference = (id: number, data: PreferenceCreate) =>
+  api.put<Preference>(`/preferences/${id}`, data).then((r) => r.data)
+export const deletePreference = (id: number) => api.delete(`/preferences/${id}`)
+export const fetchRecipeMatchingPreferences = (recipeId: number) =>
+  api.get<PreferenceMatchResponse>(`/recipes/${recipeId}/matching-preferences`).then((r) => r.data)

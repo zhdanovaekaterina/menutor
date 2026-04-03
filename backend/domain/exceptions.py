@@ -72,5 +72,9 @@ class SubRecipeWeightError(DomainError):
 # --- Infrastructure-layer errors ---
 
 
+class IncompatiblePreferenceModesError(DomainError):
+    """Попытка назначить предпочтения с несовместимыми режимами одному члену семьи."""
+
+
 class RepositoryError(AppError):
     """Failure in the persistence layer."""

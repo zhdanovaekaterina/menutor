@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.exceptions import EntityNotFoundError
-from backend.domain.value_objects.types import FamilyMemberId
+from backend.domain.value_objects.types import FamilyMemberId, PreferenceId
 
 
 def _member(id: int = 1) -> FamilyMember:
@@ -14,8 +14,8 @@ def _member(id: int = 1) -> FamilyMember:
         id=FamilyMemberId(id),
         name="Взрослый",
         portion_multiplier=1.0,
-        dietary_restrictions="без глютена",
         comment="заметка",
+        preference_ids=[],
     )
 
 
@@ -50,7 +50,6 @@ class TestCreateFamilyMember:
         body = {
             "name": "Взрослый",
             "portion_multiplier": 1.0,
-            "dietary_restrictions": "без глютена",
             "comment": "заметка",
         }
         resp = client.post("/api/family-members", json=body)
@@ -58,7 +57,8 @@ class TestCreateFamilyMember:
         data = resp.json()
         assert data["name"] == "Взрослый"
         assert data["portion_multiplier"] == 1.0
-        assert data["dietary_restrictions"] == "без глютена"
+        assert "dietary_restrictions" not in data
+        assert "preference_ids" in data
         container.create_family_member.execute.assert_called_once()
 
     def test_creates_with_minimal_fields(
@@ -75,6 +75,20 @@ class TestCreateFamilyMember:
     ) -> None:
         resp = client.post("/api/family-members", json={})
         assert resp.status_code == 422
+
+    def test_creates_with_preference_ids(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        member = FamilyMember(
+            id=FamilyMemberId(1),
+            name="Взрослый",
+            preference_ids=[PreferenceId(10), PreferenceId(20)],
+        )
+        container.create_family_member.execute.return_value = member
+        body = {"name": "Взрослый", "preference_ids": [10, 20]}
+        resp = client.post("/api/family-members", json=body)
+        assert resp.status_code == 201
+        assert resp.json()["preference_ids"] == [10, 20]
 
 
 # ---- PUT /api/family-members/{member_id} ----
@@ -93,6 +107,20 @@ class TestUpdateFamilyMember:
         assert resp.status_code == 200
         assert resp.json()["name"] == "Ребёнок"
         assert resp.json()["portion_multiplier"] == 0.5
+
+    def test_updates_preference_ids(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        updated = FamilyMember(
+            id=FamilyMemberId(1),
+            name="Взрослый",
+            preference_ids=[PreferenceId(5)],
+        )
+        container.edit_family_member.execute.return_value = updated
+        body = {"name": "Взрослый", "preference_ids": [5]}
+        resp = client.put("/api/family-members/1", json=body)
+        assert resp.status_code == 200
+        assert resp.json()["preference_ids"] == [5]
 
     def test_returns_404_when_not_found(
         self, client: TestClient, container: MagicMock

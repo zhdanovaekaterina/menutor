@@ -4,8 +4,11 @@ from sqlalchemy.orm import Session
 
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.ports.family_member_repository import FamilyMemberRepository
-from backend.domain.value_objects.types import FamilyMemberId, UserId
-from backend.infrastructure.database.models import FamilyMemberRow
+from backend.domain.value_objects.types import FamilyMemberId, PreferenceId, UserId
+from backend.infrastructure.database.models import (
+    FamilyMemberPreferenceRow,
+    FamilyMemberRow,
+)
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
 
@@ -29,24 +32,33 @@ class OrmFamilyMemberRepository(
             user_id=int(entity.user_id),
             name=entity.name,
             portion_multiplier=entity.portion_multiplier,
-            dietary_restrictions=entity.dietary_restrictions,
             comment=entity.comment,
+            preference_links=[
+                FamilyMemberPreferenceRow(preference_id=int(pid))
+                for pid in entity.preference_ids
+            ],
         )
 
     def _update_row(self, row: Any, entity: FamilyMember) -> None:
         row.name = entity.name
         row.portion_multiplier = entity.portion_multiplier
-        row.dietary_restrictions = entity.dietary_restrictions
         row.comment = entity.comment
+        row.preference_links.clear()
+        for pid in entity.preference_ids:
+            row.preference_links.append(
+                FamilyMemberPreferenceRow(preference_id=int(pid))
+            )
 
     def _row_to_entity(self, row: Any) -> FamilyMember:
         return FamilyMember(
             id=FamilyMemberId(row.id),
             name=row.name,
             portion_multiplier=row.portion_multiplier,
-            dietary_restrictions=row.dietary_restrictions or "",
             comment=row.comment or "",
             user_id=UserId(row.user_id),
+            preference_ids=[
+                PreferenceId(link.preference_id) for link in row.preference_links
+            ],
         )
 
     def find_all(self, user_id: UserId) -> list[FamilyMember]:

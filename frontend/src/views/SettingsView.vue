@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 
 const links = [
   { to: '/settings/family', label: 'Члены семьи', mobileLabel: 'Семья' },
+  { to: '/settings/preferences', label: 'Предпочтения', mobileLabel: 'Предпочтения' },
   { to: '/settings/product-categories', label: 'Категории продуктов', mobileLabel: 'Кат. продуктов' },
   { to: '/settings/recipe-categories', label: 'Категории рецептов', mobileLabel: 'Кат. рецептов' },
   { to: '/settings/password', label: 'Настройки аккаунта', mobileLabel: 'Аккаунт' },

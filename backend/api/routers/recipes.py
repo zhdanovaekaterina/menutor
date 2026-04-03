@@ -4,12 +4,14 @@ from fastapi.responses import JSONResponse
 from backend.api.auth import get_current_user
 from backend.api.converters import (
     active_category_to_response,
+    preference_to_response,
     recipe_to_response,
     schema_to_recipe_data,
 )
 from backend.api.deps import get_container
 from backend.api.schemas.category import ActiveCategoryResponse
 from backend.api.schemas.pagination import PaginatedResponse
+from backend.api.schemas.preference import PreferenceMatchResponse
 from backend.api.schemas.recipe import (
     FlattenedProductResponse,
     FlattenedProductsPreviewRequest,
@@ -219,4 +221,19 @@ def batch_delete_recipes(
 ) -> None:
     container.delete_recipe.execute(
         [RecipeId(rid) for rid in body], user.id
+    )
+
+
+@router.get(
+    "/{recipe_id}/matching-preferences",
+    response_model=PreferenceMatchResponse,
+)
+def get_matching_preferences(
+    recipe_id: int,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> PreferenceMatchResponse:
+    matched = container.match_recipe_preferences.execute(RecipeId(recipe_id), user.id)
+    return PreferenceMatchResponse(
+        preferences=[preference_to_response(p) for p in matched]
     )
