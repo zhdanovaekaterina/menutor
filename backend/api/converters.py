@@ -4,7 +4,6 @@ from collections.abc import Callable
 
 from backend.api.schemas.category import ActiveCategoryResponse, CategoryResponse
 from backend.api.schemas.family import FamilyMemberCreate, FamilyMemberResponse
-from backend.api.schemas.preference import PreferenceCreate, PreferenceResponse
 from backend.api.schemas.meal_summary import (
     MealIngredientSchema,
     MealOccurrenceSchema,
@@ -15,6 +14,7 @@ from backend.api.schemas.meal_summary import (
     PiecesInfoSchema,
 )
 from backend.api.schemas.menu import MenuResponse, MenuSlotSchema
+from backend.api.schemas.preference import PreferenceCreate, PreferenceResponse
 from backend.api.schemas.product import ProductCreate, ProductResponse
 from backend.api.schemas.recipe import (
     CookingStepSchema,
@@ -37,8 +37,6 @@ from backend.application.use_cases.generate_meal_summary import (
 )
 from backend.application.use_cases.manage_family import FamilyMemberData
 from backend.application.use_cases.manage_preference import PreferenceData
-from backend.domain.entities.preference import Preference
-from backend.domain.value_objects.preference_enums import PreferenceMode, PreferenceType
 from backend.application.use_cases.manage_product import ProductData
 from backend.application.use_cases.manage_recipe import RecipeData
 from backend.application.use_cases.manage_saved_shopping_list import (
@@ -46,6 +44,7 @@ from backend.application.use_cases.manage_saved_shopping_list import (
 )
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
+from backend.domain.entities.preference import Preference
 from backend.domain.entities.product import Product
 from backend.domain.entities.recipe import Recipe
 from backend.domain.entities.saved_shopping_list import (
@@ -57,6 +56,7 @@ from backend.domain.services.shopping_list_builder import IngredientNode
 from backend.domain.value_objects.category import ActiveCategory, Category
 from backend.domain.value_objects.cooking_step import CookingStep
 from backend.domain.value_objects.money import Money
+from backend.domain.value_objects.preference_enums import PreferenceMode, PreferenceType
 from backend.domain.value_objects.quantity import Quantity
 from backend.domain.value_objects.recipe_ingredient import RecipeIngredient
 from backend.domain.value_objects.types import (

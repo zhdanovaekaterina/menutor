@@ -1,5 +1,8 @@
-from backend.domain.exceptions import EntityNotFoundError, IncompatiblePreferenceModesError
 from backend.domain.entities.family_member import FamilyMember
+from backend.domain.exceptions import (
+    EntityNotFoundError,
+    IncompatiblePreferenceModesError,
+)
 from backend.domain.ports.family_member_repository import FamilyMemberRepository
 from backend.domain.ports.preference_repository import PreferenceRepository
 from backend.domain.value_objects.preference_enums import PreferenceMode, PreferenceType

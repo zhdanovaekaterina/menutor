@@ -9,7 +9,9 @@ from backend.application.use_cases.manage_preference import (
     DeletePreference,
     UpdatePreference,
 )
-from backend.application.use_cases.match_recipe_preferences import MatchRecipePreferences
+from backend.application.use_cases.match_recipe_preferences import (
+    MatchRecipePreferences,
+)
 from backend.composition._infrastructure import _Infrastructure
 from backend.domain.services.preference_matcher import PreferenceMatcher
 from backend.infrastructure.repositories.orm_preference_repository import (

@@ -5,7 +5,10 @@ from sqlalchemy.orm import Session
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.ports.family_member_repository import FamilyMemberRepository
 from backend.domain.value_objects.types import FamilyMemberId, PreferenceId, UserId
-from backend.infrastructure.database.models import FamilyMemberPreferenceRow, FamilyMemberRow
+from backend.infrastructure.database.models import (
+    FamilyMemberPreferenceRow,
+    FamilyMemberRow,
+)
 from backend.infrastructure.repositories.base import BaseOrmRepository
 
 
