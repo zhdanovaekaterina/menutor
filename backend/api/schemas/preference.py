@@ -7,6 +7,7 @@ class PreferenceCreate(BaseModel):
     mode: str          # "BLOCKED" or "ALLOWED"
     category_ids: list[int] = []
     product_ids: list[int] = []
+    recipe_category_ids: list[int] = []
 
 
 PreferenceUpdate = PreferenceCreate
@@ -19,6 +20,7 @@ class PreferenceResponse(BaseModel):
     mode: str
     category_ids: list[int]
     product_ids: list[int]
+    recipe_category_ids: list[int]
 
 
 class PreferenceMatchResponse(BaseModel):

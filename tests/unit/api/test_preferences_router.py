@@ -18,6 +18,7 @@ def _pref(id: int = 1, name: str = "Веган") -> Preference:
         mode=PreferenceMode.BLOCKED,
         category_ids=[],
         product_ids=[],
+        recipe_category_ids=[],
         user_id=UserId(1),
     )
 
@@ -28,6 +29,7 @@ _BODY = {
     "mode": "BLOCKED",
     "category_ids": [],
     "product_ids": [],
+    "recipe_category_ids": [],
 }
 
 
@@ -107,6 +109,31 @@ class TestDeletePreference:
         resp = client.delete("/api/preferences/1")
         assert resp.status_code == 204
         container.delete_preference.execute.assert_called_once()
+
+
+# ---- recipe_category_ids field ----
+
+class TestRecipeCategoryIds:
+    def test_create_with_recipe_category_ids_returns_201(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        from backend.domain.value_objects.types import RecipeCategoryId
+        pref = _pref()
+        pref.recipe_category_ids = [RecipeCategoryId(1), RecipeCategoryId(2)]
+        container.create_preference.execute.return_value = pref
+        body = {**_BODY, "recipe_category_ids": [1, 2]}
+        resp = client.post("/api/preferences", json=body)
+        assert resp.status_code == 201
+        assert resp.json()["recipe_category_ids"] == [1, 2]
+
+    def test_response_includes_recipe_category_ids(
+        self, client: TestClient, container: MagicMock
+    ) -> None:
+        container.list_preferences.execute.return_value = [_pref()]
+        resp = client.get("/api/preferences")
+        assert resp.status_code == 200
+        assert "recipe_category_ids" in resp.json()[0]
+        assert resp.json()[0]["recipe_category_ids"] == []
 
 
 # ---- GET /api/recipes/{id}/matching-preferences ----
