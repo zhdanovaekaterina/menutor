@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from backend.application.use_cases.manage_meal_type import CreateSystemMealTypes
 from backend.domain.entities.family_member import FamilyMember
 from backend.domain.entities.refresh_token import RefreshToken
 from backend.domain.entities.user import User
 from backend.domain.exceptions import AuthenticationError, UserAlreadyExistsError
-from backend.application.use_cases.manage_meal_type import CreateSystemMealTypes
 from backend.domain.ports.family_member_repository import FamilyMemberRepository
 from backend.domain.ports.meal_type_repository import MealTypeRepository
 from backend.domain.ports.refresh_token_repository import RefreshTokenRepository

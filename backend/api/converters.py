@@ -13,7 +13,11 @@ from backend.api.schemas.meal_summary import (
     MealSummaryResponseSchema,
     PiecesInfoSchema,
 )
-from backend.api.schemas.meal_type import MealTypeResponse, MealTypeUsageMenu, MealTypeUsageResponse
+from backend.api.schemas.meal_type import (
+    MealTypeResponse,
+    MealTypeUsageMenu,
+    MealTypeUsageResponse,
+)
 from backend.api.schemas.menu import MenuResponse, MenuSlotSchema
 from backend.api.schemas.preference import PreferenceCreate, PreferenceResponse
 from backend.api.schemas.product import ProductCreate, ProductResponse

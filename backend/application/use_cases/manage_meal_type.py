@@ -11,7 +11,6 @@ from backend.domain.exceptions import (
 from backend.domain.ports.meal_type_repository import MealTypeRepository
 from backend.domain.value_objects.types import MealTypeId, UserId
 
-
 SYSTEM_MEAL_TYPES = [
     ("Завтрак", time(8, 0), 0),
     ("Обед", time(13, 0), 1),

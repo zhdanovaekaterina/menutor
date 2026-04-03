@@ -4,7 +4,13 @@ from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.exceptions import ImportValidationError, InvalidEntityError
 from backend.domain.ports.menu_repository import MenuRepository
 from backend.domain.value_objects.import_result import ImportResult
-from backend.domain.value_objects.types import MealTypeId, MenuId, ProductId, RecipeId, UserId
+from backend.domain.value_objects.types import (
+    MealTypeId,
+    MenuId,
+    ProductId,
+    RecipeId,
+    UserId,
+)
 
 
 class MenuJsonImporter:

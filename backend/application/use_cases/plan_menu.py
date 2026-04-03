@@ -1,7 +1,13 @@
 from backend.application.use_cases.crud_base import load_owned
 from backend.domain.entities.menu import MenuSlot, WeeklyMenu
 from backend.domain.ports.menu_repository import MenuRepository
-from backend.domain.value_objects.types import MealTypeId, MenuId, ProductId, RecipeId, UserId
+from backend.domain.value_objects.types import (
+    MealTypeId,
+    MenuId,
+    ProductId,
+    RecipeId,
+    UserId,
+)
 
 
 class CreateMenu:
