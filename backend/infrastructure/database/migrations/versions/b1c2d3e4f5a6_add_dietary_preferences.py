@@ -3,8 +3,8 @@
 Add preference tables (preferences, preference_categories, preference_products,
 family_member_preferences) and migrate dietary_restrictions into comment.
 
-Revision ID: a1b2c3d4e5f6
-Revises: f1a2b3c4d5e6
+Revision ID: b1c2d3e4f5a6
+Revises: a9b8c7d6e5f4
 Create Date: 2026-04-02 12:00:00.000000
 
 """
@@ -14,8 +14,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "a1b2c3d4e5f6"
-down_revision: Union[str, None] = "f1a2b3c4d5e6"
+revision: str = "b1c2d3e4f5a6"
+down_revision: Union[str, None] = "a9b8c7d6e5f4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
