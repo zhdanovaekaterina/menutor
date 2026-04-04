@@ -8,6 +8,9 @@ import IngredientListEditor from './IngredientListEditor.vue'
 import StepListEditor from './StepListEditor.vue'
 import FlattenedProductList from './FlattenedProductList.vue'
 import CostSummaryBlock from './CostSummaryBlock.vue'
+import { useRecipeSettingsStore } from '@/stores/recipeSettings'
+
+const recipeSettings = useRecipeSettingsStore()
 
 const toast = useToastStore()
 const productStore = useProductStore()
@@ -271,6 +274,7 @@ function onSave() {
 
     <!-- Cost per portion -->
     <CostSummaryBlock
+      v-if="recipeSettings.showCostColumn"
       :ingredients="ingredients"
       :servings="servings"
       :total-pieces="totalPieces"

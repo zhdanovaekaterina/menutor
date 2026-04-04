@@ -60,7 +60,10 @@ from backend.domain.entities.saved_shopping_list import (
     SavedShoppingListItem,
 )
 from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
-from backend.domain.services.recipe_cost_calculator import IngredientCost, RecipeCostResult
+from backend.domain.services.recipe_cost_calculator import (
+    IngredientCost,
+    RecipeCostResult,
+)
 from backend.domain.services.shopping_list_builder import IngredientNode
 from backend.domain.value_objects.category import ActiveCategory, Category
 from backend.domain.value_objects.cooking_step import CookingStep
