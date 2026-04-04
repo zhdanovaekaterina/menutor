@@ -73,6 +73,9 @@ export interface Recipe {
   weight: number
   total_pieces: number | null
   pieces_per_portion: number | null
+  cost_per_portion: number | null
+  cost_currency: string | null
+  cost_is_partial: boolean
   link: string | null
   comment: string | null
 }
@@ -415,4 +418,38 @@ export interface MealTypeUsageResponse {
   meal_type_id: number
   menus: MealTypeUsageMenu[]
   count: number
+}
+
+/* Recipe Cost Preview */
+export interface CostPreviewIngredient {
+  product_id: number | null
+  sub_recipe_id: number | null
+  quantity_amount: number
+  quantity_unit: string
+}
+
+export interface CostPreviewRequest {
+  ingredients: CostPreviewIngredient[]
+  servings: number
+  total_pieces: number | null
+  pieces_per_portion: number | null
+}
+
+export interface IngredientCostItem {
+  product_id: number
+  product_name: string
+  quantity_amount: number
+  quantity_unit: string
+  cost_amount: number | null
+  cost_currency: string | null
+  has_price: boolean
+}
+
+export interface CostPreviewResponse {
+  cost_per_portion: number | null
+  cost_currency: string | null
+  cost_is_partial: boolean
+  total_cost: number | null
+  computed_servings: number
+  ingredient_costs: IngredientCostItem[]
 }
