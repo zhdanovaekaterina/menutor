@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from backend.application.use_cases.calculate_recipe_cost import CalculateRecipeCost
 from backend.application.use_cases.flatten_recipe_products import FlattenRecipeProducts
 from backend.application.use_cases.manage_recipe import (
     CreateRecipe,
@@ -14,8 +15,10 @@ from backend.application.use_cases.manage_recipe import (
 from backend.application.use_cases.preview_flattened_products import (
     PreviewFlattenedProducts,
 )
+from backend.application.use_cases.preview_recipe_cost import PreviewRecipeCost
 from backend.application.use_cases.validate_sub_recipe import ValidateSubRecipe
 from backend.composition._infrastructure import _Infrastructure
+from backend.domain.services.recipe_cost_calculator import RecipeCostCalculator
 from backend.domain.services.recipe_dependency_validator import (
     RecipeDependencyValidator,
 )
@@ -23,6 +26,7 @@ from backend.domain.services.recipe_dependency_validator import (
 
 def _wire_recipes(infra: _Infrastructure) -> dict[str, Any]:
     validator = RecipeDependencyValidator(infra.recipe_repo)
+    calculator = RecipeCostCalculator()
     return {
         "create_recipe": CreateRecipe(infra.recipe_repo, validator),
         "edit_recipe": EditRecipe(infra.recipe_repo, validator),
@@ -36,5 +40,11 @@ def _wire_recipes(infra: _Infrastructure) -> dict[str, Any]:
         ),
         "preview_flattened_products": PreviewFlattenedProducts(
             infra.product_repo, infra.builder
+        ),
+        "calculate_recipe_cost": CalculateRecipeCost(
+            infra.recipe_repo, infra.product_repo, infra.builder, calculator
+        ),
+        "preview_recipe_cost": PreviewRecipeCost(
+            infra.product_repo, infra.builder, calculator
         ),
     }

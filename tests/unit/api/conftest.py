@@ -130,7 +130,10 @@ def _build_test_app() -> FastAPI:
 
 @pytest.fixture
 def container() -> MagicMock:
-    return MagicMock()
+    mock = MagicMock()
+    mock.calculate_recipe_cost.execute.return_value = None
+    mock.preview_recipe_cost.execute.return_value = None
+    return mock
 
 
 @pytest.fixture

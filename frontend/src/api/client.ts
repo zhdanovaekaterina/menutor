@@ -2,6 +2,8 @@ import axios from 'axios'
 import type {
   ActiveCategory,
   Category,
+  CostPreviewRequest,
+  CostPreviewResponse,
   FamilyMember,
   FamilyMemberCreate,
   FlattenedProduct,
@@ -147,6 +149,9 @@ export const previewFlattenedProducts = (recipeId: number, ingredients: Ingredie
 
 export const fetchRecipeDependents = (recipeId: number) =>
   api.get<RecipeDependent[]>(`/recipes/${recipeId}/dependents`).then((r) => r.data)
+
+export const previewRecipeCost = (data: CostPreviewRequest) =>
+  api.post<CostPreviewResponse>('/recipes/cost-preview', data).then((r) => r.data)
 
 export const deleteRecipeWithCheck = (id: number) =>
   api.delete(`/recipes/${id}`, { params: { check_dependents: true } })

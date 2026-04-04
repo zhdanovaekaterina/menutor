@@ -51,6 +51,9 @@ class RecipeResponse(BaseModel):
     weight: int
     total_pieces: int | None = None
     pieces_per_portion: int | None = None
+    cost_per_portion: float | None = None
+    cost_currency: str | None = None
+    cost_is_partial: bool = False
     link: str | None = None
     comment: str | None = None
 
@@ -81,3 +84,36 @@ class IngredientPreviewItem(BaseModel):
 
 class FlattenedProductsPreviewRequest(BaseModel):
     ingredients: list[IngredientPreviewItem]
+
+
+class CostPreviewIngredientSchema(BaseModel):
+    product_id: int | None = None
+    sub_recipe_id: int | None = None
+    quantity_amount: float
+    quantity_unit: str
+
+
+class CostPreviewRequest(BaseModel):
+    ingredients: list[CostPreviewIngredientSchema]
+    servings: int
+    total_pieces: int | None = None
+    pieces_per_portion: int | None = None
+
+
+class IngredientCostSchema(BaseModel):
+    product_id: int
+    product_name: str
+    quantity_amount: float
+    quantity_unit: str
+    cost_amount: float | None = None
+    cost_currency: str | None = None
+    has_price: bool
+
+
+class CostPreviewResponse(BaseModel):
+    cost_per_portion: float | None = None
+    cost_currency: str | None = None
+    cost_is_partial: bool = False
+    total_cost: float | None = None
+    computed_servings: int
+    ingredient_costs: list[IngredientCostSchema] = []

@@ -67,6 +67,10 @@ const router = createRouter({
           component: () => import('@/components/settings/ShoppingListSettingsPanel.vue'),
         },
         {
+          path: 'recipes',
+          component: () => import('@/components/settings/RecipeSettingsPanel.vue'),
+        },
+        {
           path: 'preferences',
           component: () => import('@/components/settings/PreferencesSettings.vue'),
         },

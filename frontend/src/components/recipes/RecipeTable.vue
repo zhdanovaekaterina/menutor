@@ -2,6 +2,10 @@
 import { computed } from 'vue'
 import type { ActiveCategory, Recipe } from '@/api/types'
 import { useSortableTable } from '@/composables/useSortableTable'
+import { useRecipeSettingsStore } from '@/stores/recipeSettings'
+import CostBadge from './CostBadge.vue'
+
+const recipeSettings = useRecipeSettingsStore()
 
 const props = defineProps<{
   recipes: Recipe[]
@@ -17,7 +21,7 @@ const emit = defineEmits<{
   toggleSelectAll: [ids: number[]]
 }>()
 
-const { sortKey, sortAsc, toggleSort, sortIcon } = useSortableTable<'name' | 'category' | 'servings' | 'weight'>('name')
+const { sortKey, sortAsc, toggleSort, sortIcon } = useSortableTable<'name' | 'category' | 'servings' | 'cost' | 'weight'>('name')
 
 const catMap = computed(() => Object.fromEntries(props.categories.map((c) => [c.id, c.name])))
 
@@ -29,6 +33,11 @@ const sorted = computed(() => {
     else if (sortKey.value === 'category')
       cmp = (catMap.value[a.category_id] ?? '').localeCompare(catMap.value[b.category_id] ?? '')
     else if (sortKey.value === 'servings') cmp = a.servings - b.servings
+    else if (sortKey.value === 'cost') {
+      const aCost = a.cost_per_portion ?? Infinity
+      const bCost = b.cost_per_portion ?? Infinity
+      cmp = aCost - bCost
+    }
     else cmp = a.weight - b.weight
     return sortAsc.value ? cmp : -cmp
   })
@@ -71,6 +80,10 @@ function onRowClick(id: number) {
               @click="toggleSort('servings')">
             Порций {{ sortIcon('servings') }}
           </th>
+          <th v-if="recipeSettings.showCostColumn" class="hidden sm:table-cell text-right px-4 py-2 cursor-pointer select-none hover:bg-gray-100 w-24"
+              @click="toggleSort('cost')">
+            Стоимость {{ sortIcon('cost') }}
+          </th>
           <th class="hidden sm:table-cell text-right px-4 py-2 cursor-pointer select-none hover:bg-gray-100 w-24"
               @click="toggleSort('weight')">
             Вес {{ sortIcon('weight') }}
@@ -108,9 +121,23 @@ function onRowClick(id: number) {
               <path stroke-linecap="round" stroke-linejoin="round"
                 d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
             </svg>
+            <!-- Mobile cost badge -->
+            <CostBadge
+              v-if="recipeSettings.showCostColumn && r.cost_per_portion !== null"
+              :cost-per-portion="r.cost_per_portion"
+              :cost-is-partial="r.cost_is_partial"
+              badge
+              class="sm:hidden ml-2"
+            />
           </td>
           <td class="px-4 py-2 text-gray-600">{{ catMap[r.category_id] ?? '—' }}</td>
           <td class="px-4 py-2 text-center">{{ r.servings }}</td>
+          <td v-if="recipeSettings.showCostColumn" class="hidden sm:table-cell px-4 py-2 text-right text-sm">
+            <CostBadge
+              :cost-per-portion="r.cost_per_portion"
+              :cost-is-partial="r.cost_is_partial"
+            />
+          </td>
           <td class="hidden sm:table-cell px-4 py-2 text-right">{{ r.weight ? r.weight + ' г' : '—' }}</td>
         </tr>
       </tbody>

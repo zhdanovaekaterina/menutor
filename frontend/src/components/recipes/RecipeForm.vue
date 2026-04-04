@@ -7,6 +7,10 @@ import { fetchRecipeDependents } from '@/api/client'
 import IngredientListEditor from './IngredientListEditor.vue'
 import StepListEditor from './StepListEditor.vue'
 import FlattenedProductList from './FlattenedProductList.vue'
+import CostSummaryBlock from './CostSummaryBlock.vue'
+import { useRecipeSettingsStore } from '@/stores/recipeSettings'
+
+const recipeSettings = useRecipeSettingsStore()
 
 const toast = useToastStore()
 const productStore = useProductStore()
@@ -267,6 +271,16 @@ function onSave() {
         Порций: {{ autoServings }} (авто)
       </p>
     </div>
+
+    <!-- Cost per portion -->
+    <CostSummaryBlock
+      v-if="recipeSettings.showCostColumn"
+      :ingredients="ingredients"
+      :servings="servings"
+      :total-pieces="totalPieces"
+      :pieces-per-portion="piecesPerPortion"
+      :is-pieces-mode="isPiecesMode"
+    />
 
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-1">Ссылка <span class="text-gray-400 font-normal">(необязательно)</span></label>
