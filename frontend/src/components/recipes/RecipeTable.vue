@@ -2,7 +2,10 @@
 import { computed } from 'vue'
 import type { ActiveCategory, Recipe } from '@/api/types'
 import { useSortableTable } from '@/composables/useSortableTable'
+import { useRecipeSettingsStore } from '@/stores/recipeSettings'
 import CostBadge from './CostBadge.vue'
+
+const recipeSettings = useRecipeSettingsStore()
 
 const props = defineProps<{
   recipes: Recipe[]
@@ -77,7 +80,7 @@ function onRowClick(id: number) {
               @click="toggleSort('servings')">
             Порций {{ sortIcon('servings') }}
           </th>
-          <th class="hidden sm:table-cell text-right px-4 py-2 cursor-pointer select-none hover:bg-gray-100 w-24"
+          <th v-if="recipeSettings.showCostColumn" class="hidden sm:table-cell text-right px-4 py-2 cursor-pointer select-none hover:bg-gray-100 w-24"
               @click="toggleSort('cost')">
             Стоимость {{ sortIcon('cost') }}
           </th>
@@ -120,7 +123,7 @@ function onRowClick(id: number) {
             </svg>
             <!-- Mobile cost badge -->
             <CostBadge
-              v-if="r.cost_per_portion !== null"
+              v-if="recipeSettings.showCostColumn && r.cost_per_portion !== null"
               :cost-per-portion="r.cost_per_portion"
               :cost-is-partial="r.cost_is_partial"
               badge
@@ -129,7 +132,7 @@ function onRowClick(id: number) {
           </td>
           <td class="px-4 py-2 text-gray-600">{{ catMap[r.category_id] ?? '—' }}</td>
           <td class="px-4 py-2 text-center">{{ r.servings }}</td>
-          <td class="hidden sm:table-cell px-4 py-2 text-right text-sm">
+          <td v-if="recipeSettings.showCostColumn" class="hidden sm:table-cell px-4 py-2 text-right text-sm">
             <CostBadge
               :cost-per-portion="r.cost_per_portion"
               :cost-is-partial="r.cost_is_partial"
