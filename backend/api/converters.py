@@ -23,6 +23,8 @@ from backend.api.schemas.preference import PreferenceCreate, PreferenceResponse
 from backend.api.schemas.product import ProductCreate, ProductResponse
 from backend.api.schemas.recipe import (
     CookingStepSchema,
+    CostPreviewResponse,
+    IngredientCostSchema,
     RecipeCreate,
     RecipeIngredientSchema,
     RecipeResponse,
@@ -58,6 +60,7 @@ from backend.domain.entities.saved_shopping_list import (
     SavedShoppingListItem,
 )
 from backend.domain.entities.shopping_list import ShoppingList, ShoppingListItem
+from backend.domain.services.recipe_cost_calculator import IngredientCost, RecipeCostResult
 from backend.domain.services.shopping_list_builder import IngredientNode
 from backend.domain.value_objects.category import ActiveCategory, Category
 from backend.domain.value_objects.cooking_step import CookingStep
@@ -104,6 +107,7 @@ def schema_to_preference_data(body: PreferenceCreate) -> PreferenceData:
 def recipe_to_response(
     recipe: Recipe,
     sub_recipe_name_lookup: Callable[[RecipeId], str | None] | None = None,
+    cost_result: RecipeCostResult | None = None,
 ) -> RecipeResponse:
     ingredients = []
     for ing in recipe.ingredients:
@@ -132,8 +136,33 @@ def recipe_to_response(
         weight=recipe.weight,
         total_pieces=recipe.total_pieces,
         pieces_per_portion=recipe.pieces_per_portion,
+        cost_per_portion=float(cost_result.cost_per_portion) if cost_result and cost_result.cost_per_portion is not None else None,
+        cost_currency=cost_result.currency if cost_result else None,
+        cost_is_partial=cost_result.is_partial if cost_result else False,
         link=recipe.link,
         comment=recipe.comment,
+    )
+
+
+def cost_result_to_preview_response(result: RecipeCostResult) -> CostPreviewResponse:
+    return CostPreviewResponse(
+        cost_per_portion=float(result.cost_per_portion) if result.cost_per_portion is not None else None,
+        cost_currency=result.currency,
+        cost_is_partial=result.is_partial,
+        total_cost=float(result.total_cost) if result.total_cost is not None else None,
+        computed_servings=result.computed_servings,
+        ingredient_costs=[
+            IngredientCostSchema(
+                product_id=int(ic.product_id),
+                product_name=ic.product_name,
+                quantity_amount=ic.quantity.amount,
+                quantity_unit=ic.quantity.unit,
+                cost_amount=float(ic.cost.amount) if ic.cost is not None else None,
+                cost_currency=ic.cost.currency if ic.cost is not None else None,
+                has_price=ic.has_price,
+            )
+            for ic in result.ingredient_costs
+        ],
     )
 
 

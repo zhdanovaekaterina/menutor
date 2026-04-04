@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from backend.api.auth import get_current_user
 from backend.api.converters import (
     active_category_to_response,
+    cost_result_to_preview_response,
     preference_to_response,
     recipe_to_response,
     schema_to_recipe_data,
@@ -13,6 +14,8 @@ from backend.api.schemas.category import ActiveCategoryResponse
 from backend.api.schemas.pagination import PaginatedResponse
 from backend.api.schemas.preference import PreferenceMatchResponse
 from backend.api.schemas.recipe import (
+    CostPreviewRequest,
+    CostPreviewResponse,
     FlattenedProductResponse,
     FlattenedProductsPreviewRequest,
     RecipeCreate,
@@ -20,6 +23,10 @@ from backend.api.schemas.recipe import (
     RecipeUpdate,
     ValidateSubRecipeRequest,
     ValidateSubRecipeResponse,
+)
+from backend.application.use_cases.preview_recipe_cost import (
+    CostPreviewIngredient,
+    CostPreviewRequest as CostPreviewRequestData,
 )
 from backend.application.use_cases.preview_flattened_products import IngredientData
 from backend.composition_root import ApplicationContainer
@@ -52,8 +59,12 @@ def list_recipes(
         search=search,
     )
     lookup = _make_name_lookup(container, user.id)
+    items = []
+    for r in result.items:
+        cost = container.calculate_recipe_cost.execute(r.id, user.id)
+        items.append(recipe_to_response(r, lookup, cost))
     return PaginatedResponse[RecipeResponse](
-        items=[recipe_to_response(r, lookup) for r in result.items],
+        items=items,
         total=result.total,
         page=result.page,
         page_size=result.page_size,
@@ -70,6 +81,32 @@ def list_recipe_categories(
 
 
 # MUST be registered before /{recipe_id} routes
+@router.post("/cost-preview", response_model=CostPreviewResponse)
+def preview_recipe_cost(
+    body: CostPreviewRequest,
+    container: ApplicationContainer = Depends(get_container),
+    user: User = Depends(get_current_user),
+) -> CostPreviewResponse:
+    request_data = CostPreviewRequestData(
+        ingredients=[
+            CostPreviewIngredient(
+                product_id=ing.product_id,
+                sub_recipe_id=ing.sub_recipe_id,
+                quantity_amount=ing.quantity_amount,
+                quantity_unit=ing.quantity_unit,
+            )
+            for ing in body.ingredients
+        ],
+        servings=body.servings,
+        total_pieces=body.total_pieces,
+        pieces_per_portion=body.pieces_per_portion,
+    )
+    result = container.preview_recipe_cost.execute(
+        RecipeId(0), user.id, request_data
+    )
+    return cost_result_to_preview_response(result)
+
+
 @router.post("/validate-sub-recipe", response_model=ValidateSubRecipeResponse)
 def validate_sub_recipe(
     body: ValidateSubRecipeRequest,
@@ -96,7 +133,8 @@ def get_recipe(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Рецепт {recipe_id} не найден",
         )
-    return recipe_to_response(recipe, _make_name_lookup(container, user.id))
+    cost = container.calculate_recipe_cost.execute(RecipeId(recipe_id), user.id)
+    return recipe_to_response(recipe, _make_name_lookup(container, user.id), cost)
 
 
 @router.get("/{recipe_id}/flattened-products", response_model=list[FlattenedProductResponse])
@@ -177,7 +215,8 @@ def create_recipe(
         recipe = container.create_recipe.execute(data, user.id)
     except DuplicateNameError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-    return recipe_to_response(recipe, _make_name_lookup(container, user.id))
+    cost = container.calculate_recipe_cost.execute(recipe.id, user.id)
+    return recipe_to_response(recipe, _make_name_lookup(container, user.id), cost)
 
 
 @router.put("/{recipe_id}", response_model=RecipeResponse)
@@ -189,7 +228,8 @@ def update_recipe(
 ) -> RecipeResponse:
     data = schema_to_recipe_data(body)
     recipe = container.edit_recipe.execute(RecipeId(recipe_id), data, user.id)
-    return recipe_to_response(recipe, _make_name_lookup(container, user.id))
+    cost = container.calculate_recipe_cost.execute(recipe.id, user.id)
+    return recipe_to_response(recipe, _make_name_lookup(container, user.id), cost)
 
 
 @router.delete("/{recipe_id}", response_model=None)
