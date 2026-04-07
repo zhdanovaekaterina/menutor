@@ -39,7 +39,7 @@ const groupedItems = computed((): Record<string, SavedShoppingListItem[]> => {
     if (item.purchased) {
       if (!shoppingSettings.hidePurchased) purchased.push(item)
     } else {
-      const product = productStore.items.find((p) => p.id === item.product_id)
+      const product = productStore.allItems.find((p) => p.id === item.product_id)
       const key = product?.supplier?.trim() || 'Без поставщика'
       ;(grouped[key] ??= []).push(item)
     }
@@ -248,15 +248,17 @@ function onAddProduct(productId: number, quantity: number) {
   if (!product) return
   const nextOrder = store.items.length
   const category = productStore.categories.find((c) => c.id === product.category_id)?.name ?? ''
+  const buyAmount = product.purchase_unit === 'kg' ? quantity : Math.ceil(quantity)
+  const cost = (buyAmount * parseFloat(product.price_amount)).toFixed(2)
   const item: SavedShoppingListItem = {
     id: 0,
     product_id: product.id,
     product_name: product.name,
     category,
     quantity: { amount: quantity, unit: product.purchase_unit },
-    buy_quantity: { amount: product.purchase_unit === 'kg' ? quantity : Math.ceil(quantity), unit: product.purchase_unit },
+    buy_quantity: { amount: buyAmount, unit: product.purchase_unit },
     buy_quantity_overridden: false,
-    cost: { amount: '0', currency: 'RUB' },
+    cost: { amount: cost, currency: product.price_currency },
     purchased: false,
     recipe_quantity: null,
     item_order: nextOrder,
