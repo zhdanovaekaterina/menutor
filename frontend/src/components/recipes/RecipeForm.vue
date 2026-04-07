@@ -8,6 +8,7 @@ import IngredientListEditor from './IngredientListEditor.vue'
 import StepListEditor from './StepListEditor.vue'
 import FlattenedProductList from './FlattenedProductList.vue'
 import CostSummaryBlock from './CostSummaryBlock.vue'
+import PreferenceBadges from './PreferenceBadges.vue'
 import { useRecipeSettingsStore } from '@/stores/recipeSettings'
 
 const recipeSettings = useRecipeSettingsStore()
@@ -191,6 +192,9 @@ function onSave() {
       </svg>
       <span>Назад к: {{ parentRecipeName }}</span>
     </button>
+
+    <!-- Preference tags for existing recipe -->
+    <PreferenceBadges v-if="recipe" :recipe-id="recipe.id" />
 
     <!-- Used as sub-recipe banner -->
     <div

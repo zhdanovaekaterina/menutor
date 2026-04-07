@@ -4,6 +4,7 @@ import type { ActiveCategory, Recipe } from '@/api/types'
 import { useSortableTable } from '@/composables/useSortableTable'
 import { useRecipeSettingsStore } from '@/stores/recipeSettings'
 import CostBadge from './CostBadge.vue'
+import PreferenceBadges from './PreferenceBadges.vue'
 
 const recipeSettings = useRecipeSettingsStore()
 
@@ -110,7 +111,7 @@ function onRowClick(id: number) {
             />
           </td>
           <td class="px-4 py-2">
-            {{ r.name }}
+            <div>{{ r.name }}
             <svg
               v-if="r.ingredients.some((i) => i.sub_recipe_id != null)"
               class="inline-block w-3.5 h-3.5 text-amber-500 ml-1 align-text-bottom"
@@ -129,6 +130,8 @@ function onRowClick(id: number) {
               badge
               class="sm:hidden ml-2"
             />
+            </div>
+            <PreferenceBadges :recipe-id="r.id" class="mt-1" />
           </td>
           <td class="px-4 py-2 text-gray-600">{{ catMap[r.category_id] ?? '—' }}</td>
           <td class="px-4 py-2 text-center">{{ r.servings }}</td>
