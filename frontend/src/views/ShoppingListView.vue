@@ -58,6 +58,8 @@ const selectedProductId = ref<number | null>(null)
 const confirmRemoveOpen = ref(false)
 const editProductId = ref<number | null>(null)
 const editQtyValue = ref('')
+const editPriceProductId = ref<number | null>(null)
+const editPriceValue = ref('')
 
 const existingIds = computed(() =>
   store.items.map((i) => i.product_id).filter((id): id is number => id !== null),
@@ -114,6 +116,31 @@ function onEditConfirm(val: string) {
   const num = parseFloat(val)
   if (!isNaN(num) && num > 0) store.updateQuantity(editProductId.value, num)
   editProductId.value = null
+}
+
+// ---- Edit price ----
+function onEditPrice(productId: number) {
+  const item = store.items.find((i) => i.product_id === productId)
+  if (!item) return
+  const pricePerUnit = item.buy_quantity.amount > 0
+    ? Number(item.cost.amount) / item.buy_quantity.amount
+    : 0
+  editPriceProductId.value = productId
+  editPriceValue.value = pricePerUnit.toFixed(2)
+}
+
+async function onEditPriceConfirm(val: string) {
+  if (editPriceProductId.value == null) return
+  const num = parseFloat(val)
+  const productId = editPriceProductId.value
+  editPriceProductId.value = null
+  if (isNaN(num) || num < 0) return
+  store.updatePrice(productId, num)
+  try {
+    await productStore.patchPrice(productId, num)
+  } catch {
+    toast.show('Ошибка обновления цены продукта', 'error')
+  }
 }
 
 // ---- Remove ----
@@ -507,6 +534,7 @@ function onConfirmDeleteAll() {
               :selected-id="selectedProductId"
               @toggle="onToggle"
               @edit-quantity="onEditQuantity"
+              @edit-price="onEditPrice"
               @toggle-select="selection.toggle"
               @toggle-select-all="selection.toggleAll"
               @select="(id) => { selectedProductId = selectedProductId === id ? null : id }"
@@ -566,6 +594,16 @@ function onConfirmDeleteAll() {
       input-type="number"
       @confirm="onEditConfirm"
       @cancel="editProductId = null"
+    />
+
+    <InputDialog
+      :open="editPriceProductId != null"
+      title="Изменить цену за единицу"
+      label="Цена за единицу, руб."
+      :initial-value="editPriceValue"
+      input-type="number"
+      @confirm="onEditPriceConfirm"
+      @cancel="editPriceProductId = null"
     />
 
     <!-- Mobile: Compact summary bar (above bottom nav) -->

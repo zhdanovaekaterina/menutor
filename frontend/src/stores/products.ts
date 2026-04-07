@@ -109,6 +109,27 @@ export const useProductStore = defineStore('products', () => {
     useToastStore().show('Продукты удалены', 'success')
   }
 
+  async function patchPrice(id: number, priceAmount: number): Promise<void> {
+    const product = allItems.value.find((p) => p.id === id)
+    if (!product) return
+    const updated = await updateProduct(id, {
+      name: product.name,
+      category_id: product.category_id,
+      recipe_unit: product.recipe_unit,
+      purchase_unit: product.purchase_unit,
+      price_amount: priceAmount.toFixed(2),
+      price_currency: product.price_currency,
+      brand: product.brand,
+      supplier: product.supplier,
+      conversion_factor: product.conversion_factor,
+    })
+    // Update in-place without full reload
+    const allIdx = allItems.value.findIndex((p) => p.id === id)
+    if (allIdx !== -1) allItems.value[allIdx] = updated
+    const pageIdx = items.value.findIndex((p) => p.id === id)
+    if (pageIdx !== -1) items.value[pageIdx] = updated
+  }
+
   async function removeAll() {
     const ids = allItems.value.map((i) => i.id)
     if (!ids.length) return
@@ -133,6 +154,7 @@ export const useProductStore = defineStore('products', () => {
     setFilters,
     create,
     update,
+    patchPrice,
     remove,
     removeMany,
     removeAll,
