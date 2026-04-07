@@ -486,34 +486,31 @@ async function onGenerateShoppingList() {
           :active-portions-label="activePortionsLabel"
           @toggle-member="toggleMember"
           @toggle-all="toggleAll"
-        />
-        <div
-          v-if="activePreferences.length > 0"
-          class="flex items-center gap-1.5 flex-wrap text-xs"
-          aria-label="Активные предпочтения"
         >
-          <span class="text-gray-500 shrink-0">Предпочтения:</span>
-          <span
-            v-for="pref in activePreferences"
-            :key="pref.id"
-            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
-            :class="pref.type === 'ALLERGY'
-              ? 'bg-red-100 text-red-700'
-              : pref.mode === 'ALLOWED'
-                ? 'bg-green-100 text-green-700'
-                : 'bg-amber-100 text-amber-700'"
-            :title="pref.type === 'ALLERGY'
-              ? 'Аллергия'
-              : pref.mode === 'ALLOWED'
-                ? 'Разрешено'
-                : 'Запрещено'"
-          >
-            <span v-if="pref.type === 'ALLERGY'">⚠</span>
-            <span v-else-if="pref.mode === 'ALLOWED'">✓</span>
-            <span v-else>✕</span>
-            {{ pref.name }}
-          </span>
-        </div>
+          <template v-if="activePreferences.length > 0" #default>
+            <div class="w-px h-4 bg-gray-300 shrink-0" />
+            <span
+              v-for="pref in activePreferences"
+              :key="pref.id"
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0"
+              :class="pref.type === 'ALLERGY'
+                ? 'bg-red-100 text-red-700'
+                : pref.mode === 'ALLOWED'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-amber-100 text-amber-700'"
+              :title="pref.type === 'ALLERGY'
+                ? 'Аллергия'
+                : pref.mode === 'ALLOWED'
+                  ? 'Разрешено'
+                  : 'Запрещено'"
+            >
+              <span v-if="pref.type === 'ALLERGY'">⚠</span>
+              <span v-else-if="pref.mode === 'ALLOWED'">✓</span>
+              <span v-else>✕</span>
+              {{ pref.name }}
+            </span>
+          </template>
+        </MemberTagBar>
         <div class="flex-1 overflow-hidden lg:overflow-x-auto">
           <PlannerGrid
             :slots="slots"

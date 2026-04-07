@@ -40,6 +40,7 @@ defineEmits<{
       class="snap-start"
       @toggle="$emit('toggle-member', member.id)"
     />
+    <slot />
     <span class="ml-auto text-xs text-gray-500 whitespace-nowrap shrink-0">
       {{ activePortionsLabel }}
     </span>

@@ -292,6 +292,18 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     }
   }
 
+  function updatePrice(productId: number, newPricePerUnit: number) {
+    if (!data.value) return
+    const index = data.value.items.findIndex((i) => i.product_id === productId)
+    if (index === -1) return
+    const item = data.value.items[index]
+    if (!item) return
+    data.value.items[index] = {
+      ...item,
+      cost: { amount: (newPricePerUnit * item.buy_quantity.amount).toFixed(2), currency: item.cost.currency },
+    }
+  }
+
   function addItem(item: SavedShoppingListItem) {
     if (!data.value) return
     data.value.items.push(item)
@@ -327,6 +339,7 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     removeItem,
     removeMany,
     updateQuantity,
+    updatePrice,
     addItem,
     setSidebarOpen,
   }

@@ -28,7 +28,7 @@ const bgTint = computed(() => hexToRgba(effectiveColor.value, 0.08))
     :style="{ borderLeftColor: effectiveColor, backgroundColor: bgTint }"
     @click="emit('click')"
   >
-    <span class="truncate flex-1 flex items-center gap-1">
+    <span class="min-w-0 flex-1 flex items-start gap-1 flex-wrap">
       {{ name }}
       <span v-if="isMerged"
         class="shrink-0 w-4 h-4 rounded bg-amber-100 text-amber-700 text-[9px] font-bold flex items-center justify-center"

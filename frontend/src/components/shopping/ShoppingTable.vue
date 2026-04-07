@@ -13,6 +13,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   toggle: [productId: number]
   editQuantity: [productId: number]
+  editPrice: [productId: number]
   toggleSelect: [productId: number]
   toggleSelectAll: [productIds: number[]]
   select: [productId: number]
@@ -129,8 +130,9 @@ const allChecked = computed(() =>
             >✎</span>
           </td>
           <td
-            :class="!selectMode && item.purchased ? 'text-gray-400' : ''"
+            :class="!selectMode && item.purchased ? 'text-gray-400' : !selectMode ? 'cursor-pointer hover:text-blue-600' : ''"
             class="px-4 py-2 text-right tabular-nums"
+            @click.stop="!selectMode && !item.purchased && item.product_id !== null && emit('editPrice', item.product_id)"
           >
             {{ Number(item.cost.amount).toFixed(2) }}
           </td>
