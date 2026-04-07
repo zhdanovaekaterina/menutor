@@ -194,7 +194,7 @@ function onSave() {
     </button>
 
     <!-- Preference tags for existing recipe -->
-    <PreferenceBadges v-if="recipe" :recipe-id="recipe.id" />
+    <PreferenceBadges v-if="recipe && recipe.ingredients.length > 0" :recipe-id="recipe.id" />
 
     <!-- Used as sub-recipe banner -->
     <div

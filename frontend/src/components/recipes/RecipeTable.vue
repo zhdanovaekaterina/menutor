@@ -131,7 +131,7 @@ function onRowClick(id: number) {
               class="sm:hidden ml-2"
             />
             </div>
-            <PreferenceBadges :recipe-id="r.id" class="mt-1" />
+            <PreferenceBadges v-if="r.ingredients.length > 0" :recipe-id="r.id" class="mt-1" />
           </td>
           <td class="px-4 py-2 text-gray-600">{{ catMap[r.category_id] ?? '—' }}</td>
           <td class="px-4 py-2 text-center">{{ r.servings }}</td>
