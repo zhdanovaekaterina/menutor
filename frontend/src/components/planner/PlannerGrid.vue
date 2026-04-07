@@ -54,7 +54,7 @@ const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
   <!-- Desktop: original CSS grid layout (hidden below lg) -->
   <div
-    class="hidden lg:grid h-full min-w-[700px] grid-cols-[60px_repeat(7,1fr)] gap-px bg-gray-200 rounded-lg overflow-hidden text-sm"
+    class="hidden lg:grid h-full grid-cols-[60px_repeat(7,1fr)] gap-px bg-gray-200 rounded-lg overflow-hidden text-sm"
     :style="{ gridTemplateRows: `auto repeat(${(props.mealTypes ?? []).length}, 1fr)` }"
   >
     <!-- Header row -->
